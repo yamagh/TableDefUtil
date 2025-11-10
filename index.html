@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テーブル定義変換ツール</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body {
+            padding: 2rem;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        textarea {
+            height: 300px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <header class="container">
+        <h1>テーブル定義変換ツール</h1>
+    </header>
+
+    <main class="container">
+        <article>
+            <section>
+                <h2>1. 入力</h2>
+                <div class="tabs">
+                    <a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a>
+                    <a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a>
+                </div>
+                <div id="file-input" class="tab-content active">
+                    <input type="file" id="fileInput">
+                    <small>TSVまたはCSVファイルを選択してください。</small>
+                </div>
+                <div id="text-input" class="tab-content">
+                    <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
+                </div>
+            </section>
+
+            <section>
+                <h2>2. 変換オプション</h2>
+                <fieldset>
+                    <legend>変換先フォーマット</legend>
+                    <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
+                    <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript type</label>
+                    <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean) model</label>
+                    <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java repository</label>
+                    <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java service</label>
+                </fieldset>
+            </section>
+
+            <section>
+                <h2>3. 実行</h2>
+                <button id="convertBtn">変換実行</button>
+            </section>
+
+            <section>
+                <h2>4. 結果</h2>
+                <div class="tabs" id="result-tabs">
+                    <!-- 結果タブがここに追加されます -->
+                </div>
+                <div id="result-contents">
+                    <!-- 結果コンテンツがここに追加されます -->
+                </div>
+                <button id="downloadAllBtn" style="display: none;">すべてダウンロード (ZIP)</button>
+            </section>
+        </article>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('fileInput');
+            const textInput = document.getElementById('textInput');
+            const convertBtn = document.getElementById('convertBtn');
+            const resultTabs = document.getElementById('result-tabs');
+            const resultContents = document.getElementById('result-contents');
+            const downloadAllBtn = document.getElementById('downloadAllBtn');
+
+            // --- Tab UI ---
+            document.querySelectorAll('.tab-link').forEach(tab => {
+                tab.addEventListener('click', e => {
+                    e.preventDefault();
+                    const targetId = e.target.dataset.tab;
+                    
+                    // Handle input tabs
+                    if (e.target.closest('.tabs').nextElementSibling.id.includes('input')) {
+                        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            if (content.id === targetId) {
+                                content.classList.add('active');
+                            } else {
+                                content.classList.remove('active');
+                            }
+                        });
+                    }
+                    // Handle result tabs
+                    else {
+                         document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
+                         e.target.classList.add('active');
+                         document.querySelectorAll('#result-contents .tab-content').forEach(content => {
+                            if (content.id === `result-${targetId}`) {
+                                content.classList.add('active');
+                            } else {
+                                content.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // --- Main Logic ---
+            convertBtn.addEventListener('click', () => {
+                const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+                if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        parseAndConvert(e.target.result);
+                    };
+                    reader.readAsText(file);
+                } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
+                    parseAndConvert(textInput.value);
+                } else {
+                    alert('入力データがありません。');
+                }
+            });
+
+            function parseAndConvert(tsvData) {
+                Papa.parse(tsvData, {
+                    header: true,
+                    skipEmptyLines: true,
+                    delimiter: '\t',
+                    complete: (results) => {
+                        if (results.errors.length > 0) {
+                            console.error("CSV Parse Errors:", results.errors);
+                            alert('CSV/TSVのパースに失敗しました。フォーマットを確認してください。');
+                            return;
+                        }
+                        const intermediateData = transformToIntermediate(results.data);
+                        generateOutputs(intermediateData);
+                    }
+                });
+            }
+
+            function transformToIntermediate(data) {
+                const tables = {};
+                data.forEach(row => {
+                    const tableName = row.TableName;
+                    if (!tableName) return;
+
+                    if (!tables[tableName]) {
+                        tables[tableName] = {
+                            tableNo: row.TableNo,
+                            tableNameJP: row.TableName_JP,
+                            tableName: row.TableName,
+                            description: row.Description,
+                            columns: [],
+                            indexes: {}
+                        };
+                    }
+
+                    tables[tableName].columns.push({
+                        colNo: row.ColNo,
+                        colNameJP: row.ColName_JP,
+                        colName: row.ColName,
+                        pkfk: row['PK/FK'],
+                        type: row.Type,
+                        length: row.Length,
+                        constraint: row.Constraint,
+                        default: row.Default,
+                        description: row.Description // Description is often on the first row, let's assume it's the same for all columns for now
+                    });
+                    
+                    // Collect indexes
+                    for (let i = 1; i <= 5; i++) {
+                        const idxKey = `Idx${i}`;
+                        if (row[idxKey]) {
+                            if (!tables[tableName].indexes[idxKey]) {
+                                tables[tableName].indexes[idxKey] = [];
+                            }
+                            tables[tableName].indexes[idxKey].push({
+                                order: parseInt(row[idxKey], 10),
+                                colName: row.ColName
+                            });
+                        }
+                    }
+                });
+                
+                // Sort index columns by order
+                Object.values(tables).forEach(table => {
+                    Object.keys(table.indexes).forEach(idxKey => {
+                        table.indexes[idxKey].sort((a, b) => a.order - b.order);
+                    });
+                });
+
+                return Object.values(tables);
+            }
+
+            function generateOutputs(tables) {
+                resultTabs.innerHTML = '';
+                resultContents.innerHTML = '';
+                downloadAllBtn.style.display = 'block';
+
+                const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
+                let firstTab = true;
+
+                formats.forEach(format => {
+                    const tab = document.createElement('a');
+                    tab.href = '#';
+                    tab.dataset.tab = format;
+                    tab.className = 'tab-link' + (firstTab ? ' active' : '');
+                    tab.textContent = format.toUpperCase();
+                    resultTabs.appendChild(tab);
+
+                    const content = document.createElement('div');
+                    content.id = `result-${format}`;
+                    content.className = 'tab-content' + (firstTab ? ' active' : '');
+                    
+                    const textArea = document.createElement('textarea');
+                    textArea.readOnly = true;
+                    
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
+                    downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
+
+                    // Generate content using stub functions
+                    let output = '';
+                    switch (format) {
+                        case 'ddl': output = generateDDL(tables); break;
+                        case 'typescript': output = generateTypeScript(tables); break;
+
+                        case 'java-model': output = generateJavaModel(tables); break;
+                        case 'java-repo': output = generateJavaRepo(tables); break;
+                        case 'java-service': output = generateJavaService(tables); break;
+                    }
+                    textArea.value = output;
+
+                    content.appendChild(downloadBtn);
+                    content.appendChild(textArea);
+                    resultContents.appendChild(content);
+
+                    firstTab = false;
+                });
+                
+                // Re-add tab click listeners for result tabs
+                document.querySelectorAll('#result-tabs .tab-link').forEach(tab => {
+                    tab.addEventListener('click', e => {
+                        e.preventDefault();
+                        const targetId = e.target.dataset.tab;
+                        document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
+                        e.target.classList.add('active');
+                        document.querySelectorAll('#result-contents .tab-content').forEach(c => {
+                            c.classList.toggle('active', c.id === `result-${targetId}`);
+                        });
+                    });
+                });
+            }
+            
+            downloadAllBtn.addEventListener('click', () => {
+                const zip = new JSZip();
+                const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
+                
+                const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+                let tsvData = '';
+                 if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
+                    // This is async, so we need to handle it inside the reader's onload
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        proceedWithZipping(e.target.result);
+                    };
+                    reader.readAsText(fileInput.files[0]);
+                    return; // Exit here, proceedWithZipping will be called by reader
+                } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
+                    tsvData = textInput.value;
+                } else {
+                    alert('入力データがありません。');
+                    return;
+                }
+                proceedWithZipping(tsvData);
+
+                function proceedWithZipping(data) {
+                    Papa.parse(data, {
+                        header: true,
+                        skipEmptyLines: true,
+                        delimiter: '\t',
+                        complete: (results) => {
+                            if (results.errors.length > 0) {
+                                alert('CSV/TSVのパースに失敗しました。');
+                                return;
+                            }
+                            const tables = transformToIntermediate(results.data);
+                            
+                            formats.forEach(format => {
+                                let output = '';
+                                switch (format) {
+                                    case 'ddl':
+                                        output = generateDDL(tables);
+                                        zip.file('schema.sql', output);
+                                        break;
+                                    case 'typescript':
+                                        output = generateTypeScript(tables);
+                                        zip.file('entities.ts', output);
+                                        break;
+                                    case 'java-model':
+                                    case 'java-repo':
+                                    case 'java-service':
+                                        output = format === 'java-model' ? generateJavaModel(tables) :
+                                                 format === 'java-repo'  ? generateJavaRepo(tables)  :
+                                                                            generateJavaService(tables);
+                                        
+                                        const files = output.split('// --- FileName: ');
+                                        files.forEach(fileContent => {
+                                            if (fileContent.trim() === '') return;
+                                            const firstLineEnd = fileContent.indexOf(' ---\n');
+                                            const fileName = fileContent.substring(0, firstLineEnd).trim();
+                                            const content = fileContent.substring(firstLineEnd + 5);
+                                            
+                                            let path = '';
+                                            if (format === 'java-model') path = 'models/';
+                                            else if (format === 'java-repo') path = 'repository/';
+                                            else if (format === 'java-service') path = 'services/';
+                                            
+                                            zip.file(path + fileName, content.trim());
+                                        });
+                                        break;
+                                }
+                            });
+
+                            zip.generateAsync({ type: "blob" })
+                                .then(function(content) {
+                                    downloadFile(content, 'table-definitions.zip');
+                                });
+                        }
+                    });
+                }
+            });
+            
+            function downloadFile(content, fileName) {
+                const blob = (content instanceof Blob) ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // --- Conversion Stubs ---
+            function generateDDL(tables) {
+                let ddl = '';
+                tables.forEach(table => {
+                    const tableName = table.tableName;
+                    const pkColumns = table.columns.filter(c => c.pkfk === 'PK').map(c => c.colName);
+                    const akColumns = table.columns.filter(c => c.pkfk === 'AK').map(c => c.colName);
+
+                    // DROP TABLE
+                    ddl += `DROP TABLE IF EXISTS ${tableName};\n\n`;
+
+                    // CREATE TABLE
+                    ddl += `CREATE TABLE ${tableName} (\n`;
+                    const columnDefs = table.columns.map(col => {
+                        let def = `    ${col.colName}`;
+                        // Type and Length
+                        if (col.type === 'varchar' && col.Length) {
+                            def += ` VARCHAR(${col.Length})`;
+                        } else if (col.type === 'char' && col.Length) {
+                            def += ` CHAR(${col.Length})`;
+                        } else {
+                            def += ` ${col.type.toUpperCase()}`;
+                        }
+                        // Constraints
+                        if (col.constraint) {
+                            if (col.constraint.includes('NN')) {
+                                def += ' NOT NULL';
+                            }
+                            if (col.constraint.includes('U')) {
+                                def += ' UNIQUE';
+                            }
+                        }
+                        // Default
+                        if (col.default) {
+                            def += ` DEFAULT ${col.default}`;
+                        }
+                        return def;
+                    });
+                    
+                    ddl += columnDefs.join(',\n');
+                    
+                    // Primary Key
+                    if (pkColumns.length > 0) {
+                        ddl += `,\n    PRIMARY KEY (${pkColumns.join(', ')})`;
+                    }
+                    
+                    // Alternate Key (Unique Constraint)
+                    if (akColumns.length > 0) {
+                        ddl += `,\n    CONSTRAINT ${tableName}_ak UNIQUE (${akColumns.join(', ')})`;
+                    }
+
+                    ddl += '\n);\n\n';
+
+                    // Comments
+                    ddl += `COMMENT ON TABLE ${tableName} IS '${table.tableNameJP}';\n`;
+                    table.columns.forEach(col => {
+                        ddl += `COMMENT ON COLUMN ${tableName}.${col.colName} IS '${col.colNameJP}';\n`;
+                    });
+                    ddl += '\n';
+
+                    // Indexes
+                    Object.keys(table.indexes).forEach(idxKey => {
+                        const index = table.indexes[idxKey];
+                        const indexName = `${tableName}_${idxKey.toLowerCase()}`;
+                        const indexColumns = index.map(i => i.colName).join(', ');
+                        ddl += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
+                    });
+                    ddl += '\n-- --------------------------------------------------\n\n';
+                });
+                return ddl;
+            }
+            function generateTypeScript(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                const toCamelCase = (s) => {
+                    const pascal = toPascalCase(s);
+                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+                };
+
+                const mapPostgresToTsType = (pgType) => {
+                    pgType = pgType.toLowerCase();
+                    if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
+                        return 'number';
+                    }
+                    if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
+                        return 'string';
+                    }
+                    if (['boolean'].includes(pgType)) {
+                        return 'boolean';
+                    }
+                    if (['date', 'time', 'timestamp'].includes(pgType)) {
+                        return 'string'; // Or Date, but string is often safer for serialization
+                    }
+                    return 'any';
+                };
+
+                let tsString = '';
+                tables.forEach(table => {
+                    const typeName = toPascalCase(table.tableName);
+                    tsString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
+                    tsString += `export type ${typeName} = {\n`;
+
+                    table.columns.forEach(col => {
+                        const propName = toCamelCase(col.colName);
+                        const tsType = mapPostgresToTsType(col.type);
+                        tsString += `  /** ${col.colNameJP} */\n`;
+                        // All properties are optional for flexibility
+                        tsString += `  ${propName}?: ${tsType};\n`;
+                    });
+
+                    tsString += '};\n\n';
+                });
+
+                return tsString;
+            }
+            function generateJavaModel(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                const toCamelCase = (s) => {
+                    const pascal = toPascalCase(s);
+                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+                };
+
+                const mapPostgresToJavaType = (pgType) => {
+                    pgType = pgType.toLowerCase();
+                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+                    if (['boolean'].includes(pgType)) return 'Boolean';
+                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+                    if (['bytea'].includes(pgType)) return 'byte[]';
+                    return 'Object';
+                };
+                
+                const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+
+                const baseModelContent = `
+// --- FileName: BaseModel.java ---
+package models;
+
+import io.ebean.Model;
+import io.ebean.annotation.WhenCreated;
+import io.ebean.annotation.WhenModified;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * 全テーブル共通の項目を定義する基底モデル
+ */
+@MappedSuperclass
+@Getter
+@Setter
+public class BaseModel extends Model {
+    @Id
+    public Long id;
+
+    /**
+     * 論理削除フラグ
+     */
+    public Boolean isDeleted = false;
+
+    /**
+     * 作成日時
+     */
+    @WhenCreated
+    public Instant createdAt;
+    
+    /** 
+     * 作成者ID
+     */
+    public String createdBy;
+
+    /**
+     * 更新日時
+     */
+    @WhenModified
+    public Instant updatedAt;
+    
+    /**
+     * 更新者ID
+     */
+    public String updatedBy;
+}
+`;
+                let javaString = baseModelContent.trim() + '\n\n';
+
+                tables.forEach(table => {
+                    const className = toPascalCase(table.tableName);
+                    let classContent = `// --- FileName: ${className}.java ---\n`;
+                    classContent += `package models;\n\n`;
+                    classContent += `import io.ebean.Finder;\n`;
+                    classContent += `import jakarta.persistence.Entity;\n`;
+                    classContent += `import jakarta.persistence.Table;\n`;
+                    classContent += `import lombok.Getter;\n`;
+                    classContent += `import lombok.Setter;\n\n`;
+
+                    classContent += `/**\n * ${table.tableNameJP}\n */\n`;
+                    classContent += `@Entity\n@Getter\n@Setter\n`;
+                    classContent += `@Table(name = "${table.tableName}")\n`;
+                    classContent += `public class ${className} extends BaseModel {\n\n`;
+
+                    table.columns.forEach(col => {
+                        if (baseModelCols.has(col.colName)) {
+                            return; // Skip columns defined in BaseModel
+                        }
+                        const fieldName = toCamelCase(col.colName);
+                        const javaType = mapPostgresToJavaType(col.type);
+                        classContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
+                        classContent += `    public ${javaType} ${fieldName};\n\n`;
+                    });
+                    
+                    classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
+                    classContent += `}\n`;
+                    javaString += classContent + '\n';
+                });
+
+                return javaString;
+            }
+            function generateJavaRepo(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                const toCamelCase = (s) => {
+                    const pascal = toPascalCase(s);
+                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+                };
+                 const mapPostgresToJavaType = (pgType) => {
+                    pgType = pgType.toLowerCase();
+                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+                    if (['boolean'].includes(pgType)) return 'Boolean';
+                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+                    if (['bytea'].includes(pgType)) return 'byte[]';
+                    return 'Object';
+                };
+                const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+
+                let javaString = '';
+                tables.forEach(table => {
+                    const modelName = toPascalCase(table.tableName);
+                    const repoName = `${modelName}Repository`;
+                    const modelVar = toCamelCase(modelName);
+                    const akColumns = table.columns.filter(c => c.pkfk === 'AK');
+
+                    let classContent = `// --- FileName: ${repoName}.java ---\n`;
+                    classContent += `package repository;\n\n`;
+                    classContent += `import io.ebean.DB;\n`;
+                    classContent += `import models.${modelName};\n`;
+                    classContent += `import jakarta.persistence.EntityNotFoundException;\n`;
+                    classContent += `import javax.inject.Inject;\n`;
+                    classContent += `import java.util.List;\n`;
+                    classContent += `import java.util.Optional;\n`;
+                    classContent += `import java.util.concurrent.CompletionStage;\n\n`;
+                    classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
+
+                    classContent += `/**\n * ${table.tableNameJP} のリポジトリ\n */\n`;
+                    classContent += `public class ${repoName} {\n`;
+                    classContent += `    private final DatabaseExecutionContext executionContext;\n\n`;
+                    classContent += `    @Inject\n`;
+                    classContent += `    public ${repoName}(DatabaseExecutionContext executionContext) {\n`;
+                    classContent += `        this.executionContext = executionContext;\n`;
+                    classContent += `    }\n\n`;
+
+                    // findById
+                    classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
+                    classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
+                    classContent += `        return supplyAsync(() ->\n`;
+                    classContent += `            DB.find(${modelName}.class)\n`;
+                    classContent += `                .where()\n`;
+                    classContent += `                .eq("id", id)\n`;
+                    classContent += `                .eq("isDeleted", false)\n`;
+                    classContent += `                .findOneOrEmpty()\n`;
+                    classContent += `        , executionContext);\n`;
+                    classContent += `    }\n\n`;
+                    
+                    // findByAK
+                    akColumns.forEach(col => {
+                        const colCamel = toCamelCase(col.colName);
+                        const colPascal = toPascalCase(col.colName);
+                        const colType = mapPostgresToJavaType(col.type);
+                        classContent += `    /**\n     * ${col.colNameJP} で ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param ${colCamel} ${col.colNameJP}\n     * @return 検索結果\n     */\n`;
+                        classContent += `    public CompletionStage<Optional<${modelName}>> findBy${colPascal}(${colType} ${colCamel}) {\n`;
+                        classContent += `        return supplyAsync(() ->\n`;
+                        classContent += `            DB.find(${modelName}.class)\n`;
+                        classContent += `                .where()\n`;
+                        classContent += `                .eq("${colCamel}", ${colCamel})\n`;
+                        classContent += `                .eq("isDeleted", false)\n`;
+                        classContent += `                .findOneOrEmpty()\n`;
+                        classContent += `        , executionContext);\n`;
+                        classContent += `    }\n\n`;
+                    });
+
+                    // findAll
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+                    classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
+                    classContent += `        return supplyAsync(() ->\n`;
+                    classContent += `            DB.find(${modelName}.class)\n`;
+                    classContent += `                .where()\n`;
+                    classContent += `                .eq("isDeleted", false)\n`;
+                    classContent += `                .findList()\n`;
+                    classContent += `        , executionContext);\n`;
+                    classContent += `    }\n\n`;
+
+                    // insert
+                    classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
+                    classContent += `    public CompletionStage<${modelName}> insert(${modelName} ${modelVar}) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            DB.insert(${modelVar});\n`;
+                    classContent += `            return ${modelVar};\n`;
+                    classContent += `        }, executionContext);\n`;
+                    classContent += `    }\n\n`;
+                    
+                    // batchInsert
+                    classContent += `    /**\n     * ${table.tableNameJP} を一括で新規登録します。\n     * @param ${modelVar}s 登録データリスト\n     * @return 登録件数\n     */\n`;
+                    classContent += `    public CompletionStage<Integer> batchInsert(List<${modelName}> ${modelVar}s) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            DB.saveAll(${modelVar}s);\n`;
+                    classContent += `            return ${modelVar}s.size();\n`;
+                    classContent += `        }, executionContext);\n`;
+                    classContent += `    }\n\n`;
+
+                    // update
+                    classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param newData 更新データ\n     * @return 更新後のデータ\n     */\n`;
+                    classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} newData) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            ${modelName} ${modelVar} = DB.find(${modelName}.class).setId(id).findOne();\n`;
+                    classContent += `            if (${modelVar} == null) {\n`;
+                    classContent += `                throw new EntityNotFoundException("${modelName} not found with id: " + id);\n`;
+                    classContent += `            }\n`;
+                    table.columns.forEach(col => {
+                        if (!baseModelCols.has(col.colName)) {
+                            const colCamel = toCamelCase(col.colName);
+                            const colPascal = toPascalCase(col.colName);
+                            classContent += `            ${modelVar}.set${colPascal}(newData.get${colPascal}());\n`;
+                        }
+                    });
+                    classContent += `            ${modelVar}.update();\n`;
+                    classContent += `            return ${modelVar};\n`;
+                    classContent += `        }, executionContext);\n`;
+                    classContent += `    }\n\n`;
+
+                    // delete (logical)
+                    classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @return 削除したデータ\n     */\n`;
+                    classContent += `    public CompletionStage<${modelName}> delete(Long id) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            ${modelName} ${modelVar} = DB.find(${modelName}.class).setId(id).findOne();\n`;
+                    classContent += `            if (${modelVar} == null) {\n`;
+                    classContent += `                throw new EntityNotFoundException("${modelName} not found with id: " + id);\n`;
+                    classContent += `            }\n`;
+                    classContent += `            ${modelVar}.setIsDeleted(true);\n`;
+                    classContent += `            ${modelVar}.update();\n`;
+                    classContent += `            return ${modelVar};\n`;
+                    classContent += `        }, executionContext);\n`;
+                    classContent += `    }\n`;
+
+                    classContent += `}\n`;
+                    javaString += classContent + '\n';
+                });
+
+                return javaString;
+            }
+            function generateJavaService(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                const toCamelCase = (s) => {
+                    const pascal = toPascalCase(s);
+                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+                };
+
+                let javaString = '';
+                tables.forEach(table => {
+                    const modelName = toPascalCase(table.tableName);
+                    const serviceName = `${modelName}Service`;
+                    const repoName = `${modelName}Repository`;
+                    const repoVar = toCamelCase(repoName);
+                    const modelVar = toCamelCase(modelName);
+
+                    let classContent = `// --- FileName: ${serviceName}.java ---\n`;
+                    classContent += `package services;\n\n`;
+                    classContent += `import com.fasterxml.jackson.databind.ObjectNode;\n`;
+                    classContent += `import models.${modelName};\n`;
+                    classContent += `import play.libs.Json;\n`;
+                    classContent += `import repository.${repoName};\n`;
+                    classContent += `import javax.inject.Inject;\n`;
+                    classContent += `import java.io.File;\n`;
+                    classContent += `import java.util.List;\n`;
+                    classContent += `import java.util.Optional;\n`;
+                    classContent += `import java.util.concurrent.CompletionStage;\n`;
+                    classContent += `import java.util.function.Function;\n`;
+                    classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
+
+
+                    classContent += `/**\n * ${table.tableNameJP} のサービス\n */\n`;
+                    classContent += `public class ${serviceName} {\n`;
+                    classContent += `    private final ${repoName} ${repoVar};\n\n`;
+                    classContent += `    @Inject\n`;
+                    classContent += `    public ${serviceName}(${repoName} ${repoVar}) {\n`;
+                    classContent += `        this.${repoVar} = ${repoVar};\n`;
+                    classContent += `    }\n\n`;
+
+                    // find (as JSON)
+                    classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
+                    classContent += `    public CompletionStage<ObjectNode> find() {\n`;
+                    classContent += `        return ${repoVar}.findAll().thenApply(list -> {\n`;
+                    classContent += `            ObjectNode result = Json.newObject();\n`;
+                    classContent += `            result.put("total", list.size());\n`;
+                    classContent += `            result.set("data", Json.toJson(list));\n`;
+                    classContent += `            return result;\n`;
+                    classContent += `        });\n`;
+                    classContent += `    }\n\n`;
+
+                    // findById
+                    classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
+                    classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
+                    classContent += `        return ${repoVar}.findById(id);\n`;
+                    classContent += `    }\n\n`;
+
+                    // create
+                    classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
+                    classContent += `    public CompletionStage<${modelName}> create(${modelName} ${modelVar}) {\n`;
+                    classContent += `        return ${repoVar}.insert(${modelVar});\n`;
+                    classContent += `    }\n\n`;
+
+                    // update
+                    classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param ${modelVar} 更新データ\n     * @return 更新後のデータ\n     */\n`;
+                    classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} ${modelVar}) {\n`;
+                    classContent += `        return ${repoVar}.update(id, ${modelVar});\n`;
+                    classContent += `    }\n\n`;
+
+                    // delete
+                    classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @return 削除したデータ (見つかった場合)\n     */\n`;
+                    classContent += `    public CompletionStage<Optional<${modelName}>> delete(Long id) {\n`;
+                    classContent += `        return ${repoVar}.delete(id).thenApply(Optional::ofNullable);\n`;
+                    classContent += `    }\n\n`;
+                    
+                    // exportCsv
+                    const csvHeader = table.columns.map(c => `"${c.colNameJP}"`).join(", ");
+                    const csvRow = table.columns.map(c => `m.get${toPascalCase(c.colName)}()`).join(', ');
+                    classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @return 生成されたCSVファイル\n     */\n`;
+                    classContent += `    public CompletionStage<File> exportCsv() {\n`;
+                    classContent += `        return ${repoVar}.findAll().thenApply(list -> {\n`;
+                    classContent += `            // TODO: Implement actual file creation logic\n`;
+                    classContent += `            final String header = "${csvHeader}\\n";\n`;
+                    classContent += `            Function<${modelName}, String> rowMapper = m -> ${csvRow} + "\\n";\n`;
+                    classContent += `            // final File file = createCsvFile(header, list, rowMapper);\n`;
+                    classContent += `            // return file;\n`;
+                    classContent += `            return new File("export.csv"); // Placeholder\n`;
+                    classContent += `        });\n`;
+                    classContent += `    }\n\n`;
+                    
+                    // importCsv
+                    classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
+                    classContent += `    public CompletionStage<Integer> importCsv(File csvFile) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            // TODO: Implement CSV parsing and validation logic\n`;
+                    classContent += `            // List<String[]> rows = parseCsv(csvFile);\n`;
+                    classContent += `            // validateHeader(rows.get(0));\n`;
+                    classContent += `            // List<${modelName}> models = new java.util.ArrayList<>();\n`;
+                    classContent += `            // for (String[] row : rows.subList(1, rows.size())) {\n`;
+                    classContent += `            //     ${modelName} model = new ${modelName}();\n`;
+                    table.columns.forEach((col, i) => {
+                         if (!col.colName.includes('id') && !col.colName.includes('_at') && !col.colName.includes('_by')) {
+                            const setter = `set${toPascalCase(col.colName)}`;
+                            classContent += `            //     model.${setter}(parseRowValue(row[${i}])); // TODO: Implement parseRowValue for each type\n`;
+                         }
+                    });
+                    classContent += `            //     models.add(model);\n`;
+                    classContent += `            // }\n`;
+                    classContent += `            // return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
+                    classContent += `            return 0; // Placeholder\n`;
+                    classContent += `        });\n`;
+                    classContent += `    }\n`;
+
+                    classContent += `}\n`;
+                    javaString += classContent + '\n';
+                });
+
+                return javaString;
+            }
+        });
+    </script>
+</body>
+</html>

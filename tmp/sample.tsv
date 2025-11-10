@@ -1,0 +1,11 @@
+TableNo	TableName_JP	TableName	ColNo	ColName_JP	ColName	PK/FK	Type	Length	Constraint	Default	Idx1	Idx2	Idx3	Idx4	Idx5	Description
+5	ユーザマスタ	m_user	1	Id	id	PK	bigserial		NN,U		1					代理キー
+5	ユーザマスタ	m_user	2	ユーザID	user_id	AK	varchar	16	NN			2				ユーザID
+5	ユーザマスタ	m_user	3	ユーザ名	user_name		varchar	32	NN							ユーザ名称
+5	ユーザマスタ	m_user	4	パスワード	password		varchar	60	NN							パスワードに指定文字を加えてSHA256でハッシュ化した文字列（例：$2a$10$8sKUrdvJn7gpWmMH2qfRduF.vhe2n3diyzf8CvY8GtTsmNJ6HRnBe）
+5	ユーザマスタ	m_user	5	権限ID	role_id	FK	integer		NN			3				利用権限マスタのID
+5	ユーザマスタ	m_user	6	削除フラグ	is_deleted		boolean									対象レコードの削除有無
+5	ユーザマスタ	m_user	7	登録日時	created_at		timestamp									レコード追加を行った日時
+5	ユーザマスタ	m_user	8	登録者	created_by		varchar	32								レコード追加を行ったユーザID、プロセス名
+5	ユーザマスタ	m_user	9	更新日時	updated_at		timestamp									レコード追加・更新を行った日時
+5	ユーザマスタ	m_user	10	更新者	updated_by		varchar	32								レコード追加・更新を行ったユーザID、プロセス名
