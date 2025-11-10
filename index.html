@@ -651,7 +651,7 @@ public class BaseModel extends Model {
                     });
 
                     // findAll
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論-理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
                     classContent += `        return supplyAsync(() ->\n`;
                     classContent += `            DB.find(${modelName}.class)\n`;
@@ -659,6 +659,29 @@ public class BaseModel extends Model {
                     classContent += `                .eq("isDeleted", false)\n`;
                     classContent += `                .findList()\n`;
                     classContent += `        , executionContext);\n`;
+                    classContent += `    }\n\n`;
+
+                    // find (with filter)
+                    classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
+                    classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            io.ebean.ExpressionList<${modelName}> query = DB.find(${modelName}.class).where().eq("isDeleted", false);\n\n`;
+                    table.columns.forEach(col => {
+                        if (!baseModelCols.has(col.colName)) {
+                            const colCamel = toCamelCase(col.colName);
+                            const colPascal = toPascalCase(col.colName);
+                            const javaType = mapPostgresToJavaType(col.type);
+                            classContent += `            if (filter.get${colPascal}() != null) {\n`;
+                            if (javaType === 'String') {
+                                classContent += `                query.contains("${colCamel}", filter.get${colPascal}());\n`;
+                            } else {
+                                classContent += `                query.eq("${colCamel}", filter.get${colPascal}());\n`;
+                            }
+                            classContent += `            }\n`;
+                        }
+                    });
+                    classContent += `\n            return query.findList();\n`;
+                    classContent += `        }, executionContext);\n`;
                     classContent += `    }\n\n`;
 
                     // insert
@@ -761,6 +784,17 @@ public class BaseModel extends Model {
                     classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
                     classContent += `    public CompletionStage<ObjectNode> find() {\n`;
                     classContent += `        return ${repoVar}.findAll().thenApply(list -> {\n`;
+                    classContent += `            ObjectNode result = Json.newObject();\n`;
+                    classContent += `            result.put("total", list.size());\n`;
+                    classContent += `            result.set("data", Json.toJson(list));\n`;
+                    classContent += `            return result;\n`;
+                    classContent += `        });\n`;
+                    classContent += `    }\n\n`;
+
+                    // find (with filter)
+                    classContent += `    /**\n     * ${table.tableNameJP} を検索し、リストをJSONで取得します。\n     * @param filter 検索条件\n     * @return JSON形式の検索結果\n     */\n`;
+                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter) {\n`;
+                    classContent += `        return ${repoVar}.find(filter).thenApply(list -> {\n`;
                     classContent += `            ObjectNode result = Json.newObject();\n`;
                     classContent += `            result.put("total", list.size());\n`;
                     classContent += `            result.set("data", Json.toJson(list));\n`;
