@@ -542,8 +542,18 @@ zod Schema への変換も同様にして最小値の制約の追加をしたい
 
 次の内容を元に tmp/plan/4.md に実装計画を作成せよ。
 
-- Java の repository の変換時に楽観排他の処理を追加したい
+- Java の repository の変換時に `update` と `delete` メソッドに楽観排他の処理を追加したい
 - 排他は `updatedAt` の時刻印ロックで行いたい
 
+---
 
+次の内容を元に tmp/plan/5.md に実装計画を作成せよ。
+
+- Java の repository への変換で List を返すメソッド（`find`, `findAll`）にオフセットする件数と取得件数を指定可能にする
+
+---
+
+次の内容を元に tmp/plan/6.md に実装計画を作成せよ。
+
+- Java の repository への変換で List を返すメソッド（`find`, `findAll`）に対応する、件数を数えるメソッドを追加する
 
