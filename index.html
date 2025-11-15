@@ -817,6 +817,16 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `        , executionContext);\n`;
                     classContent += `    }\n\n`;
 
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} の件数を取得します（論理削除済みは除く）。\n     * @return 件数\n     */\n`;
+                    classContent += `    public CompletionStage<Integer> countAll() {\n`;
+                    classContent += `        return supplyAsync(() ->\n`;
+                    classContent += `            DB.find(${modelName}.class)\n`;
+                    classContent += `                .where()\n`;
+                    classContent += `                .eq("isDeleted", false)\n`;
+                    classContent += `                .findCount()\n`;
+                    classContent += `        , executionContext);\n`;
+                    classContent += `    }\n\n`;
+
                     // find (with filter)
                     classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter) {\n`;
@@ -843,6 +853,28 @@ public class OptimisticLockingFailureException extends RuntimeException {
                         }
                     });
                     classContent += `\n            return query.setFirstRow(offset).setMaxRows(limit).findList();\n`;
+                    classContent += `        }, executionContext);\n`;
+                    classContent += `    }\n\n`;
+
+                    classContent += `    /**\n     * ${table.tableNameJP} の件数を検索条件に基づいて取得します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 件数\n     */\n`;
+                    classContent += `    public CompletionStage<Integer> count(${modelName} filter) {\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            io.ebean.ExpressionList<${modelName}> query = DB.find(${modelName}.class).where().eq("isDeleted", false);\n\n`;
+                    table.columns.forEach(col => {
+                        if (!baseModelCols.has(col.colName)) {
+                            const colCamel = toCamelCase(col.colName);
+                            const colPascal = toPascalCase(col.colName);
+                            const javaType = mapPostgresToJavaType(col.type);
+                            classContent += `            if (filter.get${colPascal}() != null) {\n`;
+                            if (javaType === 'String') {
+                                classContent += `                query.contains("${colCamel}", filter.get${colPascal}());\n`;
+                            } else {
+                                classContent += `                query.eq("${colCamel}", filter.get${colPascal}());\n`;
+                            }
+                            classContent += `            }\n`;
+                        }
+                    });
+                    classContent += `\n            return query.findCount();\n`;
                     classContent += `        }, executionContext);\n`;
                     classContent += `    }\n\n`;
 
@@ -955,10 +987,12 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     // find (as JSON)
                     classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
                     classContent += `    public CompletionStage<ObjectNode> find(int offset, int limit) {\n`;
-                    classContent += `        return ${repoVar}.findAll(offset, limit).thenApply(list -> {\n`;
+                    classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.countAll();\n`;
+                    classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.findAll(offset, limit);\n`;
+                    classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
                     classContent += `            ObjectNode result = Json.newObject();\n`;
-                    classContent += `            result.put("total", list.size());\n`;
-                    classContent += `            result.set("data", Json.toJson(list));\n`;
+                    classContent += `            result.put("total", total);\n`;
+                    classContent += `            result.set("data", Json.toJson(data));\n`;
                     classContent += `            return result;\n`;
                     classContent += `        });\n`;
                     classContent += `    }\n\n`;
@@ -970,10 +1004,12 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     // find (with filter)
                     classContent += `    /**\n     * ${table.tableNameJP} を検索し、リストをJSONで取得します。\n     * @param filter 検索条件\n     * @return JSON形式の検索結果\n     */\n`;
                     classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter, int offset, int limit) {\n`;
-                    classContent += `        return ${repoVar}.find(filter, offset, limit).thenApply(list -> {\n`;
+                    classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.count(filter);\n`;
+                    classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.find(filter, offset, limit);\n`;
+                    classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
                     classContent += `            ObjectNode result = Json.newObject();\n`;
-                    classContent += `            result.put("total", list.size());\n`;
-                    classContent += `            result.set("data", Json.toJson(list));\n`;
+                    classContent += `            result.put("total", total);\n`;
+                    classContent += `            result.set("data", Json.toJson(data));\n`;
                     classContent += `            return result;\n`;
                     classContent += `        });\n`;
                     classContent += `    }\n\n`;
