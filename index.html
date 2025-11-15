@@ -505,6 +505,12 @@
                         zodType = 'z.number()';
                     } else if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
                         zodType = 'z.string()';
+                        const isNotNull = col.constraint && col.constraint.includes('NN');
+                        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+
+                        if (isNotNull && !excludeMinLength) {
+                            zodType += '.min(1)';
+                        }
                         if (col.length) {
                             zodType += `.max(${col.length})`;
                         }
@@ -644,29 +650,58 @@ public class BaseModel extends Model {
 
                 tables.forEach(table => {
                     const className = toPascalCase(table.tableName);
-                    let classContent = `// --- FileName: ${className}.java ---\n`;
-                    classContent += `package models;\n\n`;
-                    classContent += `import io.ebean.Finder;\n`;
-                    classContent += `import jakarta.persistence.Entity;\n`;
-                    classContent += `import jakarta.persistence.Table;\n`;
-                    classContent += `import lombok.Getter;\n`;
-                    classContent += `import lombok.Setter;\n\n`;
+                    const imports = new Set([
+                        'import io.ebean.Finder;',
+                        'import jakarta.persistence.Entity;',
+                        'import jakarta.persistence.Table;',
+                        'import lombok.Getter;',
+                        'import lombok.Setter;'
+                    ]);
 
-                    classContent += `/**\n * ${table.tableNameJP}\n */\n`;
-                    classContent += `@Entity\n@Getter\n@Setter\n`;
-                    classContent += `@Table(name = "${table.tableName}")\n`;
-                    classContent += `public class ${className} extends BaseModel {\n\n`;
-
+                    let fieldsContent = '';
                     table.columns.forEach(col => {
                         if (baseModelCols.has(col.colName)) {
                             return; // Skip columns defined in BaseModel
                         }
                         const fieldName = toCamelCase(col.colName);
                         const javaType = mapPostgresToJavaType(col.type);
-                        classContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
-                        classContent += `    public ${javaType} ${fieldName};\n\n`;
+                        
+                        let annotations = [];
+                        const isNotNull = col.constraint && col.constraint.includes('NN');
+                        
+                        if (isNotNull) {
+                            annotations.push('@NotNull');
+                            imports.add('import javax.validation.constraints.NotNull;');
+                        }
+
+                        const sizeAttributes = [];
+                        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+                        if (javaType === 'String' && isNotNull && !excludeMinLength) {
+                            sizeAttributes.push('min = 1');
+                        }
+                        if (col.length) {
+                            sizeAttributes.push(`max = ${col.length}`);
+                        }
+                        if (sizeAttributes.length > 0) {
+                            annotations.push(`@Size(${sizeAttributes.join(', ')})`);
+                            imports.add('import javax.validation.constraints.Size;');
+                        }
+
+                        fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
+                        if (annotations.length > 0) {
+                            fieldsContent += `    ${annotations.join('\n    ')}\n`;
+                        }
+                        fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
                     });
-                    
+
+                    let classContent = `// --- FileName: ${className}.java ---\n`;
+                    classContent += `package models;\n\n`;
+                    classContent += `${[...imports].sort().join('\n')}\n\n`;
+                    classContent += `/**\n * ${table.tableNameJP}\n */\n`;
+                    classContent += `@Entity\n@Getter\n@Setter\n`;
+                    classContent += `@Table(name = "${table.tableName}")\n`;
+                    classContent += `public class ${className} extends BaseModel {\n\n`;
+                    classContent += fieldsContent;
                     classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
                     classContent += `}\n`;
                     javaString += classContent + '\n';

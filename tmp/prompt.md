@@ -512,3 +512,38 @@ public class TaskService {
 - `zod` ライブラリを使ってスキーマを出力する機能を追加したい。
 - 既存の type 出力機能とは別でスキーマを元に TypeScript の type (例:`type User = z.infer<typeof UserSchema>;`) を出力できるようにしたい。
 
+---
+
+次の内容を元に tmp/plan/3.md に実装計画を作成せよ。
+
+- Java の model に変換時に `javax.validation.constraints` を使った制約を追加したい
+- NotNull 制約: `Constraint` カラムに `NN` が含まれていたら `NotNull` にしたい
+- 最小値の制約: 文字列型で NotNull のカラムは最小文字数を 1 にしたい
+- 最大値の制約: `Length` カラムの値を制約にしたい
+
+---
+
+最小値の制約の条件を次のとおり変更したい。
+
+- 最小値の制約:
+  - 文字列型で NotNull のカラムは最小文字数を 1 にしたい
+  - カラム名に `description`,`note`,`remarks` を含む場合は最小文字数の制約は無しとしたい。
+
+---
+
+zod Schema への変換も同様にして最小値の制約の追加をしたい。
+
+- 最小値の制約:
+  - 文字列型で NotNull のカラムは最小文字数を 1 にしたい
+  - カラム名に `description`,`note`,`remarks` を含む場合は最小文字数の制約は無しとしたい。
+
+
+---
+
+次の内容を元に tmp/plan/4.md に実装計画を作成せよ。
+
+- Java の repository の変換時に楽観排他の処理を追加したい
+- 排他は `updatedAt` の時刻印ロックで行いたい
+
+
+
