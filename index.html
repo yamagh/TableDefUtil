@@ -801,10 +801,18 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     // findAll
                     classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論-理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
+                    classContent += `        return findAll(0, Integer.MAX_VALUE);\n`;
+                    classContent += `    }\n\n`;
+
+                    // findAll
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論-理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+                    classContent += `    public CompletionStage<List<${modelName}>> findAll(int offset, int limit) {\n`;
                     classContent += `        return supplyAsync(() ->\n`;
                     classContent += `            DB.find(${modelName}.class)\n`;
                     classContent += `                .where()\n`;
                     classContent += `                .eq("isDeleted", false)\n`;
+                    classContent += `                .setFirstRow(offset)\n`;
+                    classContent += `                .setMaxRows(limit)\n`;
                     classContent += `                .findList()\n`;
                     classContent += `        , executionContext);\n`;
                     classContent += `    }\n\n`;
@@ -812,6 +820,12 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     // find (with filter)
                     classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter) {\n`;
+                    classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
+                    classContent += `    }\n\n`;
+
+                    // find (with filter)
+                    classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
+                    classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter, int offset, int limit) {\n`;
                     classContent += `        return supplyAsync(() -> {\n`;
                     classContent += `            io.ebean.ExpressionList<${modelName}> query = DB.find(${modelName}.class).where().eq("isDeleted", false);\n\n`;
                     table.columns.forEach(col => {
@@ -828,7 +842,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
                             classContent += `            }\n`;
                         }
                     });
-                    classContent += `\n            return query.findList();\n`;
+                    classContent += `\n            return query.setFirstRow(offset).setMaxRows(limit).findList();\n`;
                     classContent += `        }, executionContext);\n`;
                     classContent += `    }\n\n`;
 
@@ -912,7 +926,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
 
                     let classContent = `// --- FileName: ${serviceName}.java ---\n`;
                     classContent += `package services;\n\n`;
-                    classContent += `import com.fasterxml.jackson.databind.ObjectNode;\n`;
+                    classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
                     classContent += `import models.${modelName};\n`;
                     classContent += `import play.libs.Json;\n`;
                     classContent += `import repository.${repoName};\n`;
@@ -934,10 +948,14 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `        this.${repoVar} = ${repoVar};\n`;
                     classContent += `    }\n\n`;
 
+                    classContent += `    public CompletionStage<ObjectNode> find() {\n`;
+                    classContent += `        return find(0, Integer.MAX_VALUE);\n`;
+                    classContent += `    }\n\n`;
+                    
                     // find (as JSON)
                     classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<ObjectNode> find() {\n`;
-                    classContent += `        return ${repoVar}.findAll().thenApply(list -> {\n`;
+                    classContent += `    public CompletionStage<ObjectNode> find(int offset, int limit) {\n`;
+                    classContent += `        return ${repoVar}.findAll(offset, limit).thenApply(list -> {\n`;
                     classContent += `            ObjectNode result = Json.newObject();\n`;
                     classContent += `            result.put("total", list.size());\n`;
                     classContent += `            result.set("data", Json.toJson(list));\n`;
@@ -945,10 +963,14 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `        });\n`;
                     classContent += `    }\n\n`;
 
+                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter) {\n`;
+                    classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
+                    classContent += `    }\n\n`;
+                    
                     // find (with filter)
                     classContent += `    /**\n     * ${table.tableNameJP} を検索し、リストをJSONで取得します。\n     * @param filter 検索条件\n     * @return JSON形式の検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter) {\n`;
-                    classContent += `        return ${repoVar}.find(filter).thenApply(list -> {\n`;
+                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter, int offset, int limit) {\n`;
+                    classContent += `        return ${repoVar}.find(filter, offset, limit).thenApply(list -> {\n`;
                     classContent += `            ObjectNode result = Json.newObject();\n`;
                     classContent += `            result.put("total", list.size());\n`;
                     classContent += `            result.set("data", Json.toJson(list));\n`;
@@ -981,7 +1003,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `    }\n\n`;
                     
                     // exportCsv
-                    const csvHeader = table.columns.map(c => `"${c.colNameJP}"`).join(", ");
+                    const csvHeader = table.columns.map(c => `\\"${c.colNameJP}\\"`).join(", ");
                     const csvRow = table.columns.map(c => `m.get${toPascalCase(c.colName)}()`).join(', ');
                     classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @return 生成されたCSVファイル\n     */\n`;
                     classContent += `    public CompletionStage<File> exportCsv() {\n`;

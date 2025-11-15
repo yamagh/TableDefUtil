@@ -549,7 +549,7 @@ zod Schema への変換も同様にして最小値の制約の追加をしたい
 
 次の内容を元に tmp/plan/5.md に実装計画を作成せよ。
 
-- Java の repository への変換で List を返すメソッド（`find`, `findAll`）にオフセットする件数と取得件数を指定可能にする
+- Java の repository への変換で List を返すメソッド（`find`, `findAll`）にオフセットする件数（またはページ番号）と取得件数を指定可能にする
 
 ---
 
