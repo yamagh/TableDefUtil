@@ -557,3 +557,8 @@ zod Schema への変換も同様にして最小値の制約の追加をしたい
 
 - Java の repository への変換で List を返すメソッド（`find`, `findAll`）に対応する、件数を数えるメソッドを追加する
 
+---
+
+次の内容を元に tmp/plan/7.md に実装計画を作成せよ。
+
+- Java の repository への変換で作る `find` メソッドと `count` メソッドの中で利用する `query` は同一となるため、共通化したい
