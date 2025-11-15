@@ -569,3 +569,32 @@ zod Schema への変換も同様にして最小値の制約の追加をしたい
 
 - Java の service への変換で作る `exportCSV` メソッドを実装したい。repository の `find(Foo filter, int offset, int limit)` の結果をそのまま CSV として出力するようにしたい
 - Java の service への変換で作る `importCSV` メソッドを実装したい。`exportCSV` で出力するフォーマットの CSV を受け取り、repository の `batchInsert` で一括登録したい
+
+---
+
+次の内容を元に tmp/plan/9.md に実装計画を作成せよ。
+
+- `PrintWriter` を使って `exportCSV` の出力ロジックを改善したい
+
+```java:PrintWriterの使用サンプル
+import java.io.PrintWriter;
+// ... 
+
+// BufferedWriterをラップしてPrintWriterを作成
+// PrintWriterはコンストラクタでFileWriterやBufferedWriterを受け取れます
+PrintWriter printWriter = new PrintWriter(writer); 
+
+for (Foo m : list) {
+    // printWriter.printf() または printWriter.println() を使用
+    // printfの例 (C言語のprintfのような書式指定が可能)
+    printWriter.printf("%s,%s,%s%n",
+        String.valueOf(m.getBar()),
+        String.valueOf(m.getBaz()),
+        String.valueOf(m.getQux())
+    );
+    // %n はプラットフォーム依存の改行文字を挿入します
+}
+// printWriter は close() を呼び出す際に、ラップしている writer も flush/close します
+```
+
+

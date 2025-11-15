@@ -970,6 +970,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `import java.io.BufferedWriter;\n`;
                     classContent += `import java.io.File;\n`;
                     classContent += `import java.io.IOException;\n`;
+                    classContent += `import java.io.PrintWriter;\n`;
                     classContent += `import java.nio.file.Files;\n`;
                     classContent += `import java.time.Instant;\n`;
                     classContent += `import java.util.ArrayList;\n`;
@@ -1049,19 +1050,18 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     
                     const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
                     const csvHeader = nonKeyColumns.map(c => `\\"${c.colNameJP}\\"`).join(",");
-                    const csvRow = nonKeyColumns.map(c => `String.valueOf(m.get${toPascalCase(c.colName)}())`).join(', ');
+                    const csvPlaceHolder = nonKeyColumns.map(c => `%s`).join(",");
+                    const csvRow = nonKeyColumns.map(c => `\\"String.valueOf(m.get${toPascalCase(c.colName)}())\\"`).join(',');
 
                     classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @param filter 検索条件\n     * @return 生成されたCSVファイル\n     */\n`;
                     classContent += `    public CompletionStage<File> exportCsv(${modelName} filter) {\n`;
                     classContent += `        return ${repoVar}.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {\n`;
                     classContent += `            try {\n`;
                     classContent += `                File file = Files.createTempFile("${table.tableName}_", ".csv").toFile();\n`;
-                    classContent += `                try (BufferedWriter writer = Files.newBufferedWriter(file.toPath())) {\n`;
-                    classContent += `                    writer.write("${csvHeader}");\n`;
-                    classContent += `                    writer.newLine();\n`;
+                    classContent += `                try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath()))) {\n`;
+                    classContent += `                    writer.printf("${csvPlaceHolder}","${csvHeader}");\n`;
                     classContent += `                    for (${modelName} m : list) {\n`;
-                    classContent += `                        writer.write(${csvRow});\n`;
-                    classContent += `                        writer.newLine();\n`;
+                    classContent += `                        writer.printf("${csvPlaceHolder}","${csvRow}");\n`;
                     classContent += `                    }\n`;
                     classContent += `                }\n`;
                     classContent += `                return file;\n`;
