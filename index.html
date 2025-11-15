@@ -30,10 +30,12 @@
         <article>
             <section>
                 <h2>1. 入力</h2>
-                <div class="tabs">
-                    <a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a>
-                    <a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a>
-                </div>
+                <nav role="tab-control" class="tabs">
+                  <ul>
+                    <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
+                    <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
+                  </ul>
+                </nav>
                 <div id="file-input" class="tab-content active">
                     <input type="file" id="fileInput">
                     <small>TSVまたはCSVファイルを選択してください。</small>
@@ -78,8 +80,8 @@
     </main>
 
     <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="js/papaparse.min.js"></script>
     <script src="js/jszip.min.js"></script>
     <script>
