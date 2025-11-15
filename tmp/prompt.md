@@ -504,3 +504,11 @@ public class TaskService {
 ---
 
 `repository` の出力に find メソッドを追加したい。find メソッドは該当のモデルの全てのプロパティを指定してフィルターが可能なメソッド。文字列の場合は部分一致をサポートする。
+
+---
+
+次の内容をもとに tmp/plan/2.md に実装計画を作成せよ。
+
+- `zod` ライブラリを使ってスキーマを出力する機能を追加したい。
+- 既存の type 出力機能とは別でスキーマを元に TypeScript の type (例:`type User = z.infer<typeof UserSchema>;`) を出力できるようにしたい。
+

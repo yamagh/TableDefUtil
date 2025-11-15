@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>テーブル定義変換ツール</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="css/pico.min.css">
     <style>
         body {
             padding: 2rem;
@@ -49,6 +49,8 @@
                     <legend>変換先フォーマット</legend>
                     <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
                     <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript type</label>
+                    <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
+                    <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from Zod</label>
                     <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean) model</label>
                     <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java repository</label>
                     <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java service</label>
@@ -62,9 +64,11 @@
 
             <section>
                 <h2>4. 結果</h2>
-                <div class="tabs" id="result-tabs">
-                    <!-- 結果タブがここに追加されます -->
-                </div>
+                <nav role="tab-control" class="tabs">
+                    <ul id="result-tabs">
+                        <!-- 結果タブがここに追加されます -->
+                    </ul>
+                </nav>
                 <div id="result-contents">
                     <!-- 結果コンテンツがここに追加されます -->
                 </div>
@@ -73,8 +77,9 @@
         </article>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
     <script src="js/papaparse.min.js"></script>
     <script src="js/jszip.min.js"></script>
     <script>
@@ -216,11 +221,13 @@
                 let firstTab = true;
 
                 formats.forEach(format => {
-                    const tab = document.createElement('a');
-                    tab.href = '#';
-                    tab.dataset.tab = format;
-                    tab.className = 'tab-link' + (firstTab ? ' active' : '');
-                    tab.textContent = format.toUpperCase();
+                    const tab = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.dataset.tab = format;
+                    link.className = 'tab-link' + (firstTab ? ' active' : '');
+                    link.textContent = format.toUpperCase();
+                    tab.appendChild(link);
                     resultTabs.appendChild(tab);
 
                     const content = document.createElement('div');
@@ -239,7 +246,8 @@
                     switch (format) {
                         case 'ddl': output = generateDDL(tables); break;
                         case 'typescript': output = generateTypeScript(tables); break;
-
+                        case 'zod-schema': output = generateZodSchema(tables); break;
+                        case 'zod-type': output = generateZodType(tables); break;
                         case 'java-model': output = generateJavaModel(tables); break;
                         case 'java-repo': output = generateJavaRepo(tables); break;
                         case 'java-service': output = generateJavaService(tables); break;
@@ -311,6 +319,14 @@
                                     case 'typescript':
                                         output = generateTypeScript(tables);
                                         zip.file('entities.ts', output);
+                                        break;
+                                    case 'zod-schema':
+                                        output = generateZodSchema(tables);
+                                        zip.file('schemas.ts', output);
+                                        break;
+                                    case 'zod-type':
+                                        output = generateZodType(tables);
+                                        zip.file('zod-types.ts', output);
                                         break;
                                     case 'java-model':
                                     case 'java-repo':
@@ -471,6 +487,85 @@
                 });
 
                 return tsString;
+            }
+            function generateZodSchema(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                const toCamelCase = (s) => {
+                    const pascal = toPascalCase(s);
+                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+                };
+
+                const mapPostgresToZod = (col) => {
+                    const pgType = col.type.toLowerCase();
+                    let zodType;
+
+                    if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
+                        zodType = 'z.number()';
+                    } else if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
+                        zodType = 'z.string()';
+                        if (col.length) {
+                            zodType += `.max(${col.length})`;
+                        }
+                    } else if (['boolean'].includes(pgType)) {
+                        zodType = 'z.boolean()';
+                    } else if (['date', 'time', 'timestamp'].includes(pgType)) {
+                        zodType = 'z.iso.datetime()'; // Or z.date()
+                    } else {
+                        zodType = 'z.any()';
+                    }
+                    
+                    if (col.constraint && !col.constraint.includes('NN')) {
+                        zodType += '.optional()';
+                    }
+                     if (col.default) {
+                        // This is a simplification, default values in Zod need to match the type
+                        // For now, we just add a comment.
+                        // zodType += `.default(${col.default})`;
+                    }
+                    if (col.colNameJP) {
+                         zodType += `.describe('${col.colNameJP}')`;
+                    }
+
+
+                    return zodType;
+                };
+
+                let zodString = `import { z } from 'zod';\n\n`;
+                tables.forEach(table => {
+                    const schemaName = `${toPascalCase(table.tableName)}Schema`;
+                    zodString += `/**\n * ${table.tableNameJP}\n */\n`;
+                    zodString += `export const ${schemaName} = z.object({\n`;
+
+                    table.columns.forEach(col => {
+                        const propName = toCamelCase(col.colName);
+                        const zodType = mapPostgresToZod(col);
+                        zodString += `  ${propName}: ${zodType},\n`;
+                    });
+
+                    zodString += '});\n\n';
+                });
+
+                return zodString;
+            }
+
+            function generateZodType(tables) {
+                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                let typeString = `import { z } from 'zod';\n`;
+                typeString += `import { `;
+                
+                const schemaNames = tables.map(table => `${toPascalCase(table.tableName)}Schema`);
+                typeString += schemaNames.join(', ');
+                
+                typeString += ` } from './schemas'; // Assuming schemas are in a file named schemas.ts\n\n`;
+
+                tables.forEach(table => {
+                    const typeName = toPascalCase(table.tableName);
+                    const schemaName = `${typeName}Schema`;
+                    typeString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
+                    typeString += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n\n`;
+                });
+
+                return typeString;
             }
             function generateJavaModel(tables) {
                 const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
