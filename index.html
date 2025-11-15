@@ -941,6 +941,17 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     return pascal.charAt(0).toLowerCase() + pascal.slice(1);
                 };
 
+                const mapPostgresToJavaType = (pgType) => {
+                    pgType = pgType.toLowerCase();
+                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+                    if (['boolean'].includes(pgType)) return 'Boolean';
+                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+                    if (['bytea'].includes(pgType)) return 'byte[]';
+                    return 'Object';
+                };
+
                 let javaString = '';
                 tables.forEach(table => {
                     const modelName = toPascalCase(table.tableName);
@@ -956,12 +967,17 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `import play.libs.Json;\n`;
                     classContent += `import repository.${repoName};\n`;
                     classContent += `import javax.inject.Inject;\n`;
+                    classContent += `import java.io.BufferedWriter;\n`;
                     classContent += `import java.io.File;\n`;
+                    classContent += `import java.io.IOException;\n`;
+                    classContent += `import java.nio.file.Files;\n`;
                     classContent += `import java.time.Instant;\n`;
+                    classContent += `import java.util.ArrayList;\n`;
                     classContent += `import java.util.List;\n`;
                     classContent += `import java.util.Optional;\n`;
                     classContent += `import java.util.concurrent.CompletionStage;\n`;
                     classContent += `import java.util.function.Function;\n`;
+                    classContent += `import java.util.stream.Collectors;\n`;
                     classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
 
 
@@ -1031,41 +1047,60 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `        return ${repoVar}.delete(id, updatedAt);\n`;
                     classContent += `    }\n\n`;
                     
-                    // exportCsv
-                    const csvHeader = table.columns.map(c => `\\"${c.colNameJP}\\"`).join(", ");
-                    const csvRow = table.columns.map(c => `m.get${toPascalCase(c.colName)}()`).join(', ');
-                    classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @return 生成されたCSVファイル\n     */\n`;
-                    classContent += `    public CompletionStage<File> exportCsv() {\n`;
-                    classContent += `        return ${repoVar}.findAll().thenApply(list -> {\n`;
-                    classContent += `            // TODO: Implement actual file creation logic\n`;
-                    classContent += `            final String header = "${csvHeader}\\n";\n`;
-                    classContent += `            Function<${modelName}, String> rowMapper = m -> ${csvRow} + "\\n";\n`;
-                    classContent += `            // final File file = createCsvFile(header, list, rowMapper);\n`;
-                    classContent += `            // return file;\n`;
-                    classContent += `            return new File("export.csv"); // Placeholder\n`;
+                    const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+                    const csvHeader = nonKeyColumns.map(c => `\\"${c.colNameJP}\\"`).join(",");
+                    const csvRow = nonKeyColumns.map(c => `String.valueOf(m.get${toPascalCase(c.colName)}())`).join(', ');
+
+                    classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @param filter 検索条件\n     * @return 生成されたCSVファイル\n     */\n`;
+                    classContent += `    public CompletionStage<File> exportCsv(${modelName} filter) {\n`;
+                    classContent += `        return ${repoVar}.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {\n`;
+                    classContent += `            try {\n`;
+                    classContent += `                File file = Files.createTempFile("${table.tableName}_", ".csv").toFile();\n`;
+                    classContent += `                try (BufferedWriter writer = Files.newBufferedWriter(file.toPath())) {\n`;
+                    classContent += `                    writer.write("${csvHeader}");\n`;
+                    classContent += `                    writer.newLine();\n`;
+                    classContent += `                    for (${modelName} m : list) {\n`;
+                    classContent += `                        writer.write(${csvRow});\n`;
+                    classContent += `                        writer.newLine();\n`;
+                    classContent += `                    }\n`;
+                    classContent += `                }\n`;
+                    classContent += `                return file;\n`;
+                    classContent += `            } catch (IOException e) {\n`;
+                    classContent += `                throw new RuntimeException(e);\n`;
+                    classContent += `            }\n`;
                     classContent += `        });\n`;
                     classContent += `    }\n\n`;
                     
-                    // importCsv
+                    const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+                    
                     classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
                     classContent += `    public CompletionStage<Integer> importCsv(File csvFile) {\n`;
                     classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            // TODO: Implement CSV parsing and validation logic\n`;
-                    classContent += `            // List<String[]> rows = parseCsv(csvFile);\n`;
-                    classContent += `            // validateHeader(rows.get(0));\n`;
-                    classContent += `            // List<${modelName}> models = new java.util.ArrayList<>();\n`;
-                    classContent += `            // for (String[] row : rows.subList(1, rows.size())) {\n`;
-                    classContent += `            //     ${modelName} model = new ${modelName}();\n`;
-                    table.columns.forEach((col, i) => {
-                         if (!col.colName.includes('id') && !col.colName.includes('_at') && !col.colName.includes('_by')) {
-                            const setter = `set${toPascalCase(col.colName)}`;
-                            classContent += `            //     model.${setter}(parseRowValue(row[${i}])); // TODO: Implement parseRowValue for each type\n`;
-                         }
+                    classContent += `            try {\n`;
+                    classContent += `                List<${modelName}> models = Files.lines(csvFile.toPath())\n`;
+                    classContent += `                    .skip(1) // Skip header\n`;
+                    classContent += `                    .map(line -> line.split(","))\n`;
+                    classContent += `                    .map(values -> {\n`;
+                    classContent += `                        ${modelName} model = new ${modelName}();\n`;
+                    nonKeyColumnsForImport.forEach((col, i) => {
+                        const setter = `set${toPascalCase(col.colName)}`;
+                        const javaType = mapPostgresToJavaType(col.type);
+                        let parseLogic = `values[${i}]`;
+                        if (javaType === 'Long') parseLogic = `Long.parseLong(values[${i}])`;
+                        else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;
+                        else if (javaType === 'Boolean') parseLogic = `Boolean.parseBoolean(values[${i}])`;
+                        else if (javaType === 'java.time.Instant') parseLogic = `Instant.parse(values[${i}])`;
+                        
+                        classContent += `                        if (values.length > ${i} && !values[${i}].isEmpty()) model.${setter}(${parseLogic});\n`;
                     });
-                    classContent += `            //     models.add(model);\n`;
-                    classContent += `            // }\n`;
-                    classContent += `            // return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
-                    classContent += `            return 0; // Placeholder\n`;
+                    classContent += `                        return model;\n`;
+                    classContent += `                    })\n`;
+                    classContent += `                    .collect(Collectors.toList());\n`;
+                    classContent += `\n`;
+                    classContent += `                return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
+                    classContent += `            } catch (IOException e) {\n`;
+                    classContent += `                throw new RuntimeException(e);\n`;
+                    classContent += `            }\n`;
                     classContent += `        });\n`;
                     classContent += `    }\n`;
 

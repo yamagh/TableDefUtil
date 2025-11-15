@@ -562,3 +562,10 @@ zod Schema への変換も同様にして最小値の制約の追加をしたい
 次の内容を元に tmp/plan/7.md に実装計画を作成せよ。
 
 - Java の repository への変換で作る `find` メソッドと `count` メソッドの中で利用する `query` は同一となるため、共通化したい
+
+---
+
+次の内容を元に tmp/plan/8.md に実装計画を作成せよ。
+
+- Java の service への変換で作る `exportCSV` メソッドを実装したい。repository の `find(Foo filter, int offset, int limit)` の結果をそのまま CSV として出力するようにしたい
+- Java の service への変換で作る `importCSV` メソッドを実装したい。`exportCSV` で出力するフォーマットの CSV を受け取り、repository の `batchInsert` で一括登録したい
