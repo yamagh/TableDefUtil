@@ -1,7 +1,7 @@
 package repository;
 
 import io.ebean.DB;
-import models.Users;
+import models.Department;
 import jakarta.persistence.EntityNotFoundException;
 import javax.inject.Inject;
 import java.time.Instant;
@@ -12,24 +12,24 @@ import java.util.concurrent.CompletionStage;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 /**
- * ユーザー のリポジトリ
+ * 部署 のリポジトリ
  */
-public class UsersRepository {
+public class DepartmentRepository {
     private final DatabaseExecutionContext executionContext;
 
     @Inject
-    public UsersRepository(DatabaseExecutionContext executionContext) {
+    public DepartmentRepository(DatabaseExecutionContext executionContext) {
         this.executionContext = executionContext;
     }
 
     /**
-     * IDで ユーザー を検索します（論理削除済みは除く）。
+     * IDで 部署 を検索します（論理削除済みは除く）。
      * @param id 主キー
      * @return 検索結果
      */
-    public CompletionStage<Optional<Users>> findById(Long id) {
+    public CompletionStage<Optional<Department>> findById(Long id) {
         return supplyAsync(() ->
-            DB.find(Users.class)
+            DB.find(Department.class)
                 .where()
                 .eq("id", id)
                 .eq("isDeleted", false)
@@ -38,35 +38,35 @@ public class UsersRepository {
     }
 
     /**
-     * ユーザー名 で ユーザー を検索します（論理削除済みは除く）。
-     * @param userName ユーザー名
+     * 部署コード で 部署 を検索します（論理削除済みは除く）。
+     * @param code 部署コード
      * @return 検索結果
      */
-    public CompletionStage<Optional<Users>> findByUserName(String userName) {
+    public CompletionStage<Optional<Department>> findByCode(String code) {
         return supplyAsync(() ->
-            DB.find(Users.class)
+            DB.find(Department.class)
                 .where()
-                .eq("userName", userName)
+                .eq("code", code)
                 .eq("isDeleted", false)
                 .findOneOrEmpty()
         , executionContext);
     }
 
     /**
-     * 全ての ユーザー を取得します（論-理削除済みは除く）。
+     * 全ての 部署 を取得します（論-理削除済みは除く）。
      * @return 全件リスト
      */
-    public CompletionStage<List<Users>> findAll() {
+    public CompletionStage<List<Department>> findAll() {
         return findAll(0, Integer.MAX_VALUE);
     }
 
     /**
-     * 全ての ユーザー を取得します（論-理削除済みは除く）。
+     * 全ての 部署 を取得します（論-理削除済みは除く）。
      * @return 全件リスト
      */
-    public CompletionStage<List<Users>> findAll(int offset, int limit) {
+    public CompletionStage<List<Department>> findAll(int offset, int limit) {
         return supplyAsync(() ->
-            DB.find(Users.class)
+            DB.find(Department.class)
                 .where()
                 .eq("isDeleted", false)
                 .setFirstRow(offset)
@@ -76,12 +76,12 @@ public class UsersRepository {
     }
 
     /**
-     * 全ての ユーザー の件数を取得します（論理削除済みは除く）。
+     * 全ての 部署 の件数を取得します（論理削除済みは除く）。
      * @return 件数
      */
     public CompletionStage<Integer> countAll() {
         return supplyAsync(() ->
-            DB.find(Users.class)
+            DB.find(Department.class)
                 .where()
                 .eq("isDeleted", false)
                 .findCount()
@@ -89,20 +89,20 @@ public class UsersRepository {
     }
 
     /**
-     * ユーザー を検索します（論理削除済みは除く）。
+     * 部署 を検索します（論理削除済みは除く）。
      * @param filter 検索条件
      * @return 検索結果リスト
      */
-    public CompletionStage<List<Users>> find(Users filter) {
+    public CompletionStage<List<Department>> find(Department filter) {
         return find(filter, 0, Integer.MAX_VALUE);
     }
 
     /**
-     * ユーザー を検索します（論理削除済みは除く）。
+     * 部署 を検索します（論理削除済みは除く）。
      * @param filter 検索条件
      * @return 検索結果リスト
      */
-    public CompletionStage<List<Users>> find(Users filter, int offset, int limit) {
+    public CompletionStage<List<Department>> find(Department filter, int offset, int limit) {
         return supplyAsync(() ->
             createQueryWithFilter(filter)
                 .setFirstRow(offset)
@@ -112,11 +112,11 @@ public class UsersRepository {
     }
 
     /**
-     * ユーザー の件数を検索条件に基づいて取得します（論理削除済みは除く）。
+     * 部署 の件数を検索条件に基づいて取得します（論理削除済みは除く）。
      * @param filter 検索条件
      * @return 件数
      */
-    public CompletionStage<Integer> count(Users filter) {
+    public CompletionStage<Integer> count(Department filter) {
         return supplyAsync(() ->
             createQueryWithFilter(filter).findCount()
         , executionContext);
@@ -127,90 +127,86 @@ public class UsersRepository {
      * @param filter 検索条件
      * @return 構築されたクエリ
      */
-    private io.ebean.ExpressionList<Users> createQueryWithFilter(Users filter) {
-        io.ebean.ExpressionList<Users> query = DB.find(Users.class).where().eq("isDeleted", false);
+    private io.ebean.ExpressionList<Department> createQueryWithFilter(Department filter) {
+        io.ebean.ExpressionList<Department> query = DB.find(Department.class).where().eq("isDeleted", false);
 
-        if (filter.getUserName() != null) {
-            query.contains("userName", filter.getUserName());
+        if (filter.getCode() != null) {
+            query.contains("code", filter.getCode());
         }
-        if (filter.getEmail() != null) {
-            query.contains("email", filter.getEmail());
+        if (filter.getDescription() != null) {
+            query.contains("description", filter.getDescription());
         }
-        if (filter.getNote() != null) {
-            query.contains("note", filter.getNote());
-        }
-        if (filter.getDemartmentCode() != null) {
-            query.contains("demartmentCode", filter.getDemartmentCode());
+        if (filter.getName() != null) {
+            query.contains("name", filter.getName());
         }
 
         return query;
     }
 
     /**
-     * ユーザー を新規登録します。
-     * @param users 登録データ
+     * 部署 を新規登録します。
+     * @param department 登録データ
      * @return 登録後のデータ
      */
-    public CompletionStage<Users> insert(Users users) {
+    public CompletionStage<Department> insert(Department department) {
         return supplyAsync(() -> {
-            DB.insert(users);
-            return users;
+            DB.insert(department);
+            return department;
         }, executionContext);
     }
 
     /**
-     * ユーザー を一括で新規登録します。
-     * @param userss 登録データリスト
+     * 部署 を一括で新規登録します。
+     * @param departments 登録データリスト
      * @return 登録件数
      */
-    public CompletionStage<Integer> batchInsert(List<Users> userss) {
+    public CompletionStage<Integer> batchInsert(List<Department> departments) {
         return supplyAsync(() -> {
-            DB.saveAll(userss);
-            return userss.size();
+            DB.saveAll(departments);
+            return departments.size();
         }, executionContext);
     }
 
     /**
-     * ユーザー を更新します。
+     * 部署 を更新します。
      * @param id 主キー
      * @param newData 更新データ
      * @param updatedAt タイムスタンプ
      * @return 更新後のデータ
      */
-    public CompletionStage<Users> update(Long id, Users newData, Instant updatedAt) {
+    public CompletionStage<Department> update(Long id, Department newData, Instant updatedAt) {
         return supplyAsync(() -> {
             newData.setId(id);
-            int updatedRows = DB.update(Users.class)
+            int updatedRows = DB.update(Department.class)
                 .set("updatedAt", Instant.now())
-                .set("userName", newData.getUserName())
-                .set("email", newData.getEmail())
-                .set("note", newData.getNote())
-                .set("demartmentCode", newData.getDemartmentCode())
+                .set("code", newData.getCode())
+                .set("description", newData.getDescription())
+                .set("name", newData.getName())
                 .where().eq("id", id).eq("updatedAt", updatedAt)
                 .update();
 
             if (updatedRows == 0) {
-                throw new OptimisticLockingFailureException("Users not found with id: " + id + " and updatedAt: " + updatedAt);
+                throw new OptimisticLockingFailureException("Department not found with id: " + id + " and updatedAt: " + updatedAt);
             }
             return newData;
         }, executionContext);
     }
 
     /**
-     * ユーザー を論理削除します。
+     * 部署 を論理削除します。
      * @param id 主キー
      * @param updatedAt タイムスタンプ
      */
     public CompletionStage<Void> delete(Long id, Instant updatedAt) {
         return supplyAsync(() -> {
-            int updatedRows = DB.update(Users.class)
+            int updatedRows = DB.update(Department.class)
                 .set("isDeleted", true)
                 .set("updatedAt", Instant.now())
                 .where().eq("id", id).eq("updatedAt", updatedAt)
                 .update();
 
             if (updatedRows == 0) {
-                throw new OptimisticLockingFailureException("Users not found with id: " + id + " and updatedAt: " + updatedAt);
+                throw new OptimisticLockingFailureException("Department not found with id: " + id + " and updatedAt: " + updatedAt);
             }
             return null;
         }, executionContext);

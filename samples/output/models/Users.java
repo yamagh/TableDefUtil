@@ -31,5 +31,17 @@ public class Users extends BaseModel {
     @Size(min = 1, max = 255)
     public String email;
 
+    /**
+     * 説明
+     */
+    public String note;
+
+    /**
+     * 部署コード
+     */
+    @NotNull
+    @Size(min = 1, max = 3)
+    public String demartmentCode;
+
     public static Finder<Long, Users> find = new Finder<>(Users.class);
 }

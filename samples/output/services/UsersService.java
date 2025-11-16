@@ -113,9 +113,9 @@ public class UsersService {
             try {
                 File file = Files.createTempFile("users_", ".csv").toFile();
                 try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath()))) {
-                    writer.printf("%s,%s,%s\n","ユーザー名","メールアドレス","作成日時");
+                    writer.printf("%s,%s,%s,%s,%s,%s\n","ユーザー名","メールアドレス","説明","部署コード","削除フラグ","作成日時");
                     for (Users m : list) {
-                        writer.printf("%s,%s,%s\n",String.valueOf(m.getUserName()),String.valueOf(m.getEmail()),String.valueOf(m.getCreatedAt()));
+                        writer.printf("%s,%s,%s,%s,%s,%s\n",String.valueOf(m.getUserName()),String.valueOf(m.getEmail()),String.valueOf(m.getNote()),String.valueOf(m.getDemartmentCode()),String.valueOf(m.getIsDeleted()),String.valueOf(m.getCreatedAt()));
                     }
                 }
                 return file;
@@ -140,7 +140,10 @@ public class UsersService {
                         Users model = new Users();
                         if (values.length > 0 && !values[0].isEmpty()) model.setUserName(values[0]);
                         if (values.length > 1 && !values[1].isEmpty()) model.setEmail(values[1]);
-                        if (values.length > 2 && !values[2].isEmpty()) model.setCreatedAt(Instant.parse(values[2]));
+                        if (values.length > 2 && !values[2].isEmpty()) model.setNote(values[2]);
+                        if (values.length > 3 && !values[3].isEmpty()) model.setDemartmentCode(values[3]);
+                        if (values.length > 4 && !values[4].isEmpty()) model.setIsDeleted(Boolean.parseBoolean(values[4]));
+                        if (values.length > 5 && !values[5].isEmpty()) model.setCreatedAt(Instant.parse(values[5]));
                         return model;
                     })
                     .collect(Collectors.toList());
