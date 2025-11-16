@@ -58,6 +58,8 @@ users	ユーザー	created_at	作成日時		timestamp			now()
 
 - index.html : テーブル定義変換ツール本体。UI となる HTML と変換ロジックを全て含むシングルページアプリ。
 - js/ : 外部ライブラリを入れるディレクトリ
+- samples/input.tsv : 変換元のサンプルファイル
+- samples/output : 変換後のサンプルファイル
 
 ## 使用技術
 

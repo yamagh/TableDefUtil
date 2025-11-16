@@ -1,0 +1,5 @@
+TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1
+users	ユーザー	id	ID	PK	bigserial			-		
+users	ユーザー	user_name	ユーザー名	AK	varchar	255	NN			1
+users	ユーザー	email	メールアドレス		varchar	255	NN, U			
+users	ユーザー	created_at	作成日時		timestamp			now()		
