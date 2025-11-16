@@ -724,4 +724,14 @@ public class TaskController extends Controller {
 }
 ```
 
+---
 
+次の内容を元に tmp/plan/11.md に実装計画を作成せよ。
+
+- Java の変換後コードを改善。データベースへのアクセス時に行レベルセキュリティ（RLS:Row-Level Security）の仕組みを取り入れたい。
+- RLS はデータベース側ではなく、Java 側で行いたい
+- 実現イメージ:
+  - @samples/input.tsv の `user` テーブルには `department_code` というカラムがある、このカラムの値がセッションの `department_code` と一致する場合、そのレコードへアクセス可能。一致しない場合はアクセス不可。
+  - ただし、`user.is_admin` が true の場合は常にアクセス可能。
+  - 注意1: 上記の `user` テーブルや `department_code` は固定値ではなく、動的に変更、または指定可能とする（`indexhtml` で指定で指定ができると良いと思われる）。
+  - 注意2: RLS の制御が不要なテーブルも存在する（`department_code` カラムを持っていないテーブルも存在する）

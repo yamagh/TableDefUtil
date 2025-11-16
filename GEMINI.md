@@ -47,11 +47,19 @@ TSVまたはCSV形式で記述されたテーブル定義書から、各種プ�
 ### サンプルデータ (TSV)
 
 ```tsv
-TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1
-users	ユーザー	id	ID	PK	bigserial			-		
-users	ユーザー	user_name	ユーザー名	AK	varchar	255	NN			1
-users	ユーザー	email	メールアドレス		varchar	255	NN, U			
-users	ユーザー	created_at	作成日時		timestamp			now()		
+TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1	Idx2	Idx3
+users	ユーザー	id	ID	PK	bigserial		NN			1		
+users	ユーザー	user_name	ユーザー名	AK	varchar	255	NN, U		ユーザーのディスプレイネーム		1	2
+users	ユーザー	email	メールアドレス		varchar	255	NN, U				2	3
+users	ユーザー	note	説明		varchar							
+users	ユーザー	demartment_code	部署コード		char	3	NN				3	1
+users	ユーザー	is_deleted	削除フラグ		boolean		NN	false				
+users	ユーザー	created_at	作成日時		timestamp		NN	now()				
+department	部署	id	ID	PK	bigserial		NN			1		
+department	部署	code	部署コード	AK	char	3	NN				1	
+department	部署	description	説明		varchar							
+department	部署	name	部署名		varchar	256	NN					
+department	部署	created_at	作成日時		timestamp		NN	now()				
 ```
 
 ## ディレクトリ構成

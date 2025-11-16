@@ -58,6 +58,23 @@
                     <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java service</label>
                     <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java controller</label>
                 </fieldset>
+                <fieldset>
+                    <legend>Java RLS (Row-Level Security) オプション</legend>
+                    <label>
+                        <input type="checkbox" id="rlsEnabled" name="rls">
+                        RLSを有効にする
+                    </label>
+                    <div id="rlsOptions" style="display: none;">
+                        <label for="tenantIdColumn">
+                            テナントIDカラム名
+                            <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="department_code">
+                        </label>
+                        <label for="adminFlagColumn">
+                            管理者フラグカラム名
+                            <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
+                        </label>
+                    </div>
+                </fieldset>
             </section>
 
             <section>
@@ -93,6 +110,12 @@
             const resultTabs = document.getElementById('result-tabs');
             const resultContents = document.getElementById('result-contents');
             const downloadAllBtn = document.getElementById('downloadAllBtn');
+            const rlsEnabled = document.getElementById('rlsEnabled');
+            const rlsOptions = document.getElementById('rlsOptions');
+
+            rlsEnabled.addEventListener('change', () => {
+                rlsOptions.style.display = rlsEnabled.checked ? 'block' : 'none';
+            });
 
             // --- Tab UI ---
             document.querySelectorAll('.tab-link').forEach(tab => {
@@ -156,7 +179,12 @@
                             return;
                         }
                         const intermediateData = transformToIntermediate(results.data);
-                        generateOutputs(intermediateData);
+                        const rlsOptions = {
+                            enabled: document.getElementById('rlsEnabled').checked,
+                            tenantIdColumn: document.getElementById('tenantIdColumn').value,
+                            adminFlagColumn: document.getElementById('adminFlagColumn').value
+                        };
+                        generateOutputs(intermediateData, rlsOptions);
                     }
                 });
             }
@@ -215,7 +243,7 @@
                 return Object.values(tables);
             }
 
-            function generateOutputs(tables) {
+            function generateOutputs(tables, rlsOptions) {
                 resultTabs.innerHTML = '';
                 resultContents.innerHTML = '';
                 downloadAllBtn.style.display = 'block';
@@ -251,10 +279,10 @@
                         case 'typescript': output = generateTypeScript(tables); break;
                         case 'zod-schema': output = generateZodSchema(tables); break;
                         case 'zod-type': output = generateZodType(tables); break;
-                        case 'java-model': output = generateJavaModel(tables); break;
-                        case 'java-repo': output = generateJavaRepo(tables); break;
-                        case 'java-service': output = generateJavaService(tables); break;
-                        case 'java-controller': output = generateJavaController(tables); break;
+                        case 'java-model': output = generateJavaModel(tables, rlsOptions); break;
+                        case 'java-repo': output = generateJavaRepo(tables, rlsOptions); break;
+                        case 'java-service': output = generateJavaService(tables, rlsOptions); break;
+                        case 'java-controller': output = generateJavaController(tables, rlsOptions); break;
                     }
                     textArea.value = output;
 
@@ -312,6 +340,11 @@
                                 return;
                             }
                             const tables = transformToIntermediate(results.data);
+                            const rlsOptions = {
+                                enabled: document.getElementById('rlsEnabled')?.checked,
+                                tenantIdColumn: document.getElementById('tenantIdColumn')?.value,
+                                adminFlagColumn: document.getElementById('adminFlagColumn')?.value
+                            };
                             
                             formats.forEach(format => {
                                 let output = '';
@@ -336,12 +369,14 @@
                                     case 'java-repo':
                                     case 'java-service':
                                     case 'java-controller':
-                                        output = format === 'java-model' ? generateJavaModel(tables) :
-                                                 format === 'java-repo'  ? generateJavaRepo(tables)  :
-                                                 format === 'java-controller' ? generateJavaController(tables) :
-                                                                            generateJavaService(tables);
+                                        output = format === 'java-model' ? generateJavaModel(tables, rlsOptions) :
+                                                 format === 'java-repo'  ? generateJavaRepo(tables, rlsOptions)  :
+                                                 format === 'java-controller' ? generateJavaController(tables, rlsOptions) :
+                                                                            generateJavaService(tables, rlsOptions);
                                         
                                         const files = output.split('// --- FileName: ');
+                                        console.log(rlsOptions)
+                                        console.log(files)
                                         files.forEach(fileContent => {
                                             if (fileContent.trim() === '') return;
                                             const firstLineEnd = fileContent.indexOf(' ---\n');
@@ -353,6 +388,7 @@
                                             else if (format === 'java-repo') path = 'repository/';
                                             else if (format === 'java-service') path = 'services/';
                                             else if (format === 'java-controller') path = 'controllers/api/';
+                                            console.log(format,fileName,path)
                                             
                                             zip.file(path + fileName, content.trim());
                                         });
@@ -580,7 +616,7 @@
 
                 return typeString;
             }
-            function generateJavaModel(tables) {
+            function generateJavaModel(tables, rlsOptions) {
                 const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
                 const toCamelCase = (s) => {
                     const pascal = toPascalCase(s);
@@ -599,6 +635,46 @@
                 };
                 
                 const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+
+                let javaString = '';
+
+                if (rlsOptions && rlsOptions.enabled) {
+                    const sessionInfoContent = `
+// --- FileName: SessionInfo.java ---
+package models;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * RLS用のセッション情報
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class SessionInfo {
+    private boolean isAdmin;
+    private String tenantId;
+}
+`;
+                    const rlsAwareContent = `
+// --- FileName: RlsAware.java ---
+package models;
+
+/**
+ * RLS対象のモデルであることを示すマーカーインターフェース
+ */
+public interface RlsAware {
+    String getTenantId();
+}
+`;
+                    javaString += sessionInfoContent.trim() + '\n\n';
+                    javaString += rlsAwareContent.trim() + '\n\n';
+                }
+
 
                 const baseModelContent = `
 // --- FileName: BaseModel.java ---
@@ -651,7 +727,7 @@ public class BaseModel extends Model {
     public String updatedBy;
 }
 `;
-                let javaString = baseModelContent.trim() + '\n\n';
+                javaString += baseModelContent.trim() + '\n\n';
 
                 tables.forEach(table => {
                     const className = toPascalCase(table.tableName);
@@ -664,6 +740,9 @@ public class BaseModel extends Model {
                     ]);
 
                     let fieldsContent = '';
+                    let implementsRls = false;
+                    let tenantIdGetter = '';
+
                     table.columns.forEach(col => {
                         if (baseModelCols.has(col.colName)) {
                             return; // Skip columns defined in BaseModel
@@ -671,6 +750,16 @@ public class BaseModel extends Model {
                         const fieldName = toCamelCase(col.colName);
                         const javaType = mapPostgresToJavaType(col.type);
                         
+                        if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
+                            implementsRls = true;
+                            tenantIdGetter = `
+    @Override
+    public String getTenantId() {
+        return this.${fieldName};
+    }
+`;
+                        }
+
                         let annotations = [];
                         const isNotNull = col.constraint && col.constraint.includes('NN');
                         
@@ -705,8 +794,19 @@ public class BaseModel extends Model {
                     classContent += `/**\n * ${table.tableNameJP}\n */\n`;
                     classContent += `@Entity\n@Getter\n@Setter\n`;
                     classContent += `@Table(name = "${table.tableName}")\n`;
-                    classContent += `public class ${className} extends BaseModel {\n\n`;
+                    
+                    let extendsPart = 'extends BaseModel';
+                    if (implementsRls) {
+                        extendsPart += ' implements RlsAware';
+                    }
+                    classContent += `public class ${className} ${extendsPart} {\n\n`;
+                    
                     classContent += fieldsContent;
+                    
+                    if (implementsRls) {
+                        classContent += tenantIdGetter;
+                    }
+
                     classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
                     classContent += `}\n`;
                     javaString += classContent + '\n';
@@ -714,7 +814,7 @@ public class BaseModel extends Model {
 
                 return javaString;
             }
-            function generateJavaRepo(tables) {
+            function generateJavaRepo(tables, rlsOptions) {
                 const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
                 const toCamelCase = (s) => {
                     const pascal = toPascalCase(s);
@@ -732,6 +832,8 @@ public class BaseModel extends Model {
                 };
                 const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
 
+                let javaString = '';
+
                 const exceptionContent = `
 // --- FileName: OptimisticLockingFailureException.java ---
 package repository;
@@ -745,7 +847,56 @@ public class OptimisticLockingFailureException extends RuntimeException {
     }
 }
 `;
-                let javaString = exceptionContent.trim() + '\n\n';
+                javaString += exceptionContent.trim() + '\n\n';
+
+                console.log(`rlsOptions:${rlsOptions},rlsOptions.enabled:${rlsOptions.enabled}`)
+                console.log(rlsOptions)
+                if (rlsOptions && rlsOptions.enabled) {
+                  console.log('--- yes ---');
+                    const baseRepoContent = `
+// --- FileName: BaseRepository.java ---
+package repository;
+
+import io.ebean.DB;
+import io.ebean.ExpressionList;
+import models.BaseModel;
+import models.RlsAware;
+import models.SessionInfo;
+import javax.inject.Inject;
+
+/**
+ * RLSフィルタリング機能を提供する基底リポジトリ
+ * @param <T> モデルの型
+ */
+public abstract class BaseRepository<T extends BaseModel> {
+
+    protected final DatabaseExecutionContext executionContext;
+    protected final SessionInfo sessionInfo;
+    private final Class<T> beanType;
+
+    @Inject
+    public BaseRepository(DatabaseExecutionContext executionContext, SessionInfo sessionInfo, Class<T> beanType) {
+        this.executionContext = executionContext;
+        this.sessionInfo = sessionInfo;
+        this.beanType = beanType;
+    }
+
+    /**
+     * RLSフィルタを適用した検索クエリを返します。
+     * @return RLSフィルタ適用後の ExpressionList
+     */
+    protected ExpressionList<T> rlsFilter() {
+        ExpressionList<T> query = DB.find(beanType).where();
+
+        if (sessionInfo != null && !sessionInfo.isAdmin() && RlsAware.class.isAssignableFrom(beanType)) {
+            query.eq("${toCamelCase(rlsOptions.tenantIdColumn)}", sessionInfo.getTenantId());
+        }
+        return query;
+    }
+}
+`;
+                    javaString += baseRepoContent.trim() + '\n\n';
+                }
 
 
                 tables.forEach(table => {
@@ -753,11 +904,18 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     const repoName = `${modelName}Repository`;
                     const modelVar = toCamelCase(modelName);
                     const akColumns = table.columns.filter(c => c.pkfk === 'AK');
+                    const hasTenantId = table.columns.some(c => c.colName === (rlsOptions && rlsOptions.tenantIdColumn));
+                    const extendsBaseRepo = rlsOptions && rlsOptions.enabled;
+
 
                     let classContent = `// --- FileName: ${repoName}.java ---\n`;
                     classContent += `package repository;\n\n`;
                     classContent += `import io.ebean.DB;\n`;
+                    classContent += `import io.ebean.ExpressionList;\n`;
                     classContent += `import models.${modelName};\n`;
+                    if (extendsBaseRepo) {
+                       classContent += `import models.SessionInfo;\n`;
+                    }
                     classContent += `import jakarta.persistence.EntityNotFoundException;\n`;
                     classContent += `import javax.inject.Inject;\n`;
                     classContent += `import java.time.Instant;\n`;
@@ -767,23 +925,31 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
 
                     classContent += `/**\n * ${table.tableNameJP} のリポジトリ\n */\n`;
-                    classContent += `public class ${repoName} {\n`;
-                    classContent += `    private final DatabaseExecutionContext executionContext;\n\n`;
+                    classContent += `public class ${repoName} ${extendsBaseRepo ? `extends BaseRepository<${modelName}>` : ''}{\n`;
+                    
+                    if (!extendsBaseRepo) {
+                        classContent += `    private final DatabaseExecutionContext executionContext;\n\n`;
+                    }
+
                     classContent += `    @Inject\n`;
-                    classContent += `    public ${repoName}(DatabaseExecutionContext executionContext) {\n`;
-                    classContent += `        this.executionContext = executionContext;\n`;
+                    if (extendsBaseRepo) {
+                        classContent += `    public ${repoName}(DatabaseExecutionContext executionContext, SessionInfo sessionInfo) {\n`;
+                        classContent += `        super(executionContext, sessionInfo, ${modelName}.class);\n`;
+                    } else {
+                        classContent += `    public ${repoName}(DatabaseExecutionContext executionContext) {\n`;
+                        classContent += `        this.executionContext = executionContext;\n`;
+                    }
                     classContent += `    }\n\n`;
 
                     // findById
                     classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
                     classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
-                    classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            DB.find(${modelName}.class)\n`;
-                    classContent += `                .where()\n`;
-                    classContent += `                .eq("id", id)\n`;
+                    classContent += `        return supplyAsync(() -> {\n`;
+                    classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
+                    classContent += `            return query.eq("id", id)\n`;
                     classContent += `                .eq("isDeleted", false)\n`;
-                    classContent += `                .findOneOrEmpty()\n`;
-                    classContent += `        , executionContext);\n`;
+                    classContent += `                .findOneOrEmpty();\n`;
+                    classContent += `        }, executionContext);\n`;
                     classContent += `    }\n\n`;
                     
                     // findByAK
@@ -793,28 +959,26 @@ public class OptimisticLockingFailureException extends RuntimeException {
                         const colType = mapPostgresToJavaType(col.type);
                         classContent += `    /**\n     * ${col.colNameJP} で ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param ${colCamel} ${col.colNameJP}\n     * @return 検索結果\n     */\n`;
                         classContent += `    public CompletionStage<Optional<${modelName}>> findBy${colPascal}(${colType} ${colCamel}) {\n`;
-                        classContent += `        return supplyAsync(() ->\n`;
-                        classContent += `            DB.find(${modelName}.class)\n`;
-                        classContent += `                .where()\n`;
-                        classContent += `                .eq("${colCamel}", ${colCamel})\n`;
+                        classContent += `        return supplyAsync(() -> {\n`;
+                        classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
+                        classContent += `            return query.eq("${colCamel}", ${colCamel})\n`;
                         classContent += `                .eq("isDeleted", false)\n`;
-                        classContent += `                .findOneOrEmpty()\n`;
-                        classContent += `        , executionContext);\n`;
+                        classContent += `                .findOneOrEmpty();\n`;
+                        classContent += `        }, executionContext);\n`;
                         classContent += `    }\n\n`;
                     });
 
                     // findAll
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論-理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
                     classContent += `        return findAll(0, Integer.MAX_VALUE);\n`;
                     classContent += `    }\n\n`;
 
                     // findAll
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論-理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
                     classContent += `    public CompletionStage<List<${modelName}>> findAll(int offset, int limit) {\n`;
                     classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            DB.find(${modelName}.class)\n`;
-                    classContent += `                .where()\n`;
+                    classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
                     classContent += `                .eq("isDeleted", false)\n`;
                     classContent += `                .setFirstRow(offset)\n`;
                     classContent += `                .setMaxRows(limit)\n`;
@@ -825,8 +989,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `    /**\n     * 全ての ${table.tableNameJP} の件数を取得します（論理削除済みは除く）。\n     * @return 件数\n     */\n`;
                     classContent += `    public CompletionStage<Integer> countAll() {\n`;
                     classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            DB.find(${modelName}.class)\n`;
-                    classContent += `                .where()\n`;
+                    classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
                     classContent += `                .eq("isDeleted", false)\n`;
                     classContent += `                .findCount()\n`;
                     classContent += `        , executionContext);\n`;
@@ -858,7 +1021,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
 
                     classContent += `    /**\n     * 検索条件に基づいてクエリを構築します。\n     * @param filter 検索条件\n     * @return 構築されたクエリ\n     */\n`;
                     classContent += `    private io.ebean.ExpressionList<${modelName}> createQueryWithFilter(${modelName} filter) {\n`;
-                    classContent += `        io.ebean.ExpressionList<${modelName}> query = DB.find(${modelName}.class).where().eq("isDeleted", false);\n\n`;
+                    classContent += `        io.ebean.ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}.eq("isDeleted", false);\n\n`;
                     table.columns.forEach(col => {
                         if (!baseModelCols.has(col.colName)) {
                             const colCamel = toCamelCase(col.colName);
@@ -939,7 +1102,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
 
                 return javaString;
             }
-            function generateJavaService(tables) {
+            function generateJavaService(tables, rlsOptions) {
                 const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
                 const toCamelCase = (s) => {
                     const pascal = toPascalCase(s);
@@ -987,6 +1150,7 @@ public class OptimisticLockingFailureException extends RuntimeException {
                     classContent += `/**\n * ${table.tableNameJP} のサービス\n */\n`;
                     classContent += `public class ${serviceName} {\n`;
                     classContent += `    private final ${repoName} ${repoVar};\n\n`;
+
                     classContent += `    @Inject\n`;
                     classContent += `    public ${serviceName}(${repoName} ${repoVar}) {\n`;
                     classContent += `        this.${repoVar} = ${repoVar};\n`;
