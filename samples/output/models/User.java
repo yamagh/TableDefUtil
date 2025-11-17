@@ -14,8 +14,8 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "users")
-public class Users extends BaseModel {
+@Table(name = "user")
+public class User extends BaseModel {
 
     /**
      * ユーザー名
@@ -37,11 +37,17 @@ public class Users extends BaseModel {
     public String note;
 
     /**
+     * 管理者フラグ
+     */
+    @NotNull
+    public Boolean isAdmin;
+
+    /**
      * 部署コード
      */
     @NotNull
     @Size(min = 1, max = 3)
     public String demartmentCode;
 
-    public static Finder<Long, Users> find = new Finder<>(Users.class);
+    public static Finder<Long, User> find = new Finder<>(User.class);
 }

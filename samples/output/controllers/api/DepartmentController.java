@@ -11,9 +11,12 @@ import play.mvc.Http;
 import play.mvc.Result;
 import services.DepartmentService;
 import libraries.CsvResult;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import java.time.Instant;
-import java.util.concurrent.CompletionStage;
 
 /**
  * 部署 のコントローラー
@@ -31,8 +34,10 @@ public class DepartmentController extends Controller {
     public CompletionStage<Result> find(Http.Request request) {
         int offset = request.queryString("offset").map(Integer::parseInt).orElse(0);
         int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);
-        JsonNode json = request.body().asJson();
-        Department filter = json == null ? new Department() : Json.fromJson(json, Department.class);
+        Map<String, String> params = request.queryString().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));
+        ObjectMapper mapper = new ObjectMapper();
+        Department filter = mapper.convertValue(params, Department.class);
         return departmentService.find(filter, offset, limit).thenApply(result -> ok(result));
     }
 
@@ -64,8 +69,10 @@ public class DepartmentController extends Controller {
     }
 
     public CompletionStage<Result> exportCsv(Http.Request request) {
-        JsonNode json = request.body().asJson();
-        Department filter = json == null ? new Department() : Json.fromJson(json, Department.class);
+        Map<String, String> params = request.queryString().entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));
+        ObjectMapper mapper = new ObjectMapper();
+        Department filter = mapper.convertValue(params, Department.class);
         return departmentService.exportCsv(filter).thenApply(csv ->
             CsvResult.ok(csv, "department.csv")
         );

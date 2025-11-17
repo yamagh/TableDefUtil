@@ -1,7 +1,9 @@
 package repository;
 
 import io.ebean.DB;
-import models.Users;
+import io.ebean.ExpressionList;
+import models.User;
+import models.SessionInfo;
 import jakarta.persistence.EntityNotFoundException;
 import javax.inject.Inject;
 import java.time.Instant;
@@ -14,12 +16,10 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 /**
  * ユーザー のリポジトリ
  */
-public class UsersRepository {
-    private final DatabaseExecutionContext executionContext;
-
+public class UserRepository extends BaseRepository<User>{
     @Inject
-    public UsersRepository(DatabaseExecutionContext executionContext) {
-        this.executionContext = executionContext;
+    public UserRepository(DatabaseExecutionContext executionContext, SessionInfo sessionInfo) {
+        super(executionContext, sessionInfo, User.class);
     }
 
     /**
@@ -27,14 +27,13 @@ public class UsersRepository {
      * @param id 主キー
      * @return 検索結果
      */
-    public CompletionStage<Optional<Users>> findById(Long id) {
-        return supplyAsync(() ->
-            DB.find(Users.class)
-                .where()
-                .eq("id", id)
+    public CompletionStage<Optional<User>> findById(Long id) {
+        return supplyAsync(() -> {
+            ExpressionList<User> query = rlsFilter();
+            return query.eq("id", id)
                 .eq("isDeleted", false)
-                .findOneOrEmpty()
-        , executionContext);
+                .findOneOrEmpty();
+        }, executionContext);
     }
 
     /**
@@ -42,32 +41,30 @@ public class UsersRepository {
      * @param userName ユーザー名
      * @return 検索結果
      */
-    public CompletionStage<Optional<Users>> findByUserName(String userName) {
-        return supplyAsync(() ->
-            DB.find(Users.class)
-                .where()
-                .eq("userName", userName)
+    public CompletionStage<Optional<User>> findByUserName(String userName) {
+        return supplyAsync(() -> {
+            ExpressionList<User> query = rlsFilter();
+            return query.eq("userName", userName)
                 .eq("isDeleted", false)
-                .findOneOrEmpty()
-        , executionContext);
+                .findOneOrEmpty();
+        }, executionContext);
     }
 
     /**
-     * 全ての ユーザー を取得します（論-理削除済みは除く）。
+     * 全ての ユーザー を取得します（論理削除済みは除く）。
      * @return 全件リスト
      */
-    public CompletionStage<List<Users>> findAll() {
+    public CompletionStage<List<User>> findAll() {
         return findAll(0, Integer.MAX_VALUE);
     }
 
     /**
-     * 全ての ユーザー を取得します（論-理削除済みは除く）。
+     * 全ての ユーザー を取得します（論理削除済みは除く）。
      * @return 全件リスト
      */
-    public CompletionStage<List<Users>> findAll(int offset, int limit) {
+    public CompletionStage<List<User>> findAll(int offset, int limit) {
         return supplyAsync(() ->
-            DB.find(Users.class)
-                .where()
+            rlsFilter()
                 .eq("isDeleted", false)
                 .setFirstRow(offset)
                 .setMaxRows(limit)
@@ -81,8 +78,7 @@ public class UsersRepository {
      */
     public CompletionStage<Integer> countAll() {
         return supplyAsync(() ->
-            DB.find(Users.class)
-                .where()
+            rlsFilter()
                 .eq("isDeleted", false)
                 .findCount()
         , executionContext);
@@ -93,7 +89,7 @@ public class UsersRepository {
      * @param filter 検索条件
      * @return 検索結果リスト
      */
-    public CompletionStage<List<Users>> find(Users filter) {
+    public CompletionStage<List<User>> find(User filter) {
         return find(filter, 0, Integer.MAX_VALUE);
     }
 
@@ -102,7 +98,7 @@ public class UsersRepository {
      * @param filter 検索条件
      * @return 検索結果リスト
      */
-    public CompletionStage<List<Users>> find(Users filter, int offset, int limit) {
+    public CompletionStage<List<User>> find(User filter, int offset, int limit) {
         return supplyAsync(() ->
             createQueryWithFilter(filter)
                 .setFirstRow(offset)
@@ -116,7 +112,7 @@ public class UsersRepository {
      * @param filter 検索条件
      * @return 件数
      */
-    public CompletionStage<Integer> count(Users filter) {
+    public CompletionStage<Integer> count(User filter) {
         return supplyAsync(() ->
             createQueryWithFilter(filter).findCount()
         , executionContext);
@@ -127,8 +123,8 @@ public class UsersRepository {
      * @param filter 検索条件
      * @return 構築されたクエリ
      */
-    private io.ebean.ExpressionList<Users> createQueryWithFilter(Users filter) {
-        io.ebean.ExpressionList<Users> query = DB.find(Users.class).where().eq("isDeleted", false);
+    private io.ebean.ExpressionList<User> createQueryWithFilter(User filter) {
+        io.ebean.ExpressionList<User> query = rlsFilter().eq("isDeleted", false);
 
         if (filter.getUserName() != null) {
             query.contains("userName", filter.getUserName());
@@ -139,6 +135,9 @@ public class UsersRepository {
         if (filter.getNote() != null) {
             query.contains("note", filter.getNote());
         }
+        if (filter.getIsAdmin() != null) {
+            query.eq("isAdmin", filter.getIsAdmin());
+        }
         if (filter.getDemartmentCode() != null) {
             query.contains("demartmentCode", filter.getDemartmentCode());
         }
@@ -148,25 +147,25 @@ public class UsersRepository {
 
     /**
      * ユーザー を新規登録します。
-     * @param users 登録データ
+     * @param user 登録データ
      * @return 登録後のデータ
      */
-    public CompletionStage<Users> insert(Users users) {
+    public CompletionStage<User> insert(User user) {
         return supplyAsync(() -> {
-            DB.insert(users);
-            return users;
+            DB.insert(user);
+            return user;
         }, executionContext);
     }
 
     /**
      * ユーザー を一括で新規登録します。
-     * @param userss 登録データリスト
+     * @param users 登録データリスト
      * @return 登録件数
      */
-    public CompletionStage<Integer> batchInsert(List<Users> userss) {
+    public CompletionStage<Integer> batchInsert(List<User> users) {
         return supplyAsync(() -> {
-            DB.saveAll(userss);
-            return userss.size();
+            DB.saveAll(users);
+            return users.size();
         }, executionContext);
     }
 
@@ -177,20 +176,21 @@ public class UsersRepository {
      * @param updatedAt タイムスタンプ
      * @return 更新後のデータ
      */
-    public CompletionStage<Users> update(Long id, Users newData, Instant updatedAt) {
+    public CompletionStage<User> update(Long id, User newData, Instant updatedAt) {
         return supplyAsync(() -> {
             newData.setId(id);
-            int updatedRows = DB.update(Users.class)
+            int updatedRows = DB.update(User.class)
                 .set("updatedAt", Instant.now())
                 .set("userName", newData.getUserName())
                 .set("email", newData.getEmail())
                 .set("note", newData.getNote())
+                .set("isAdmin", newData.getIsAdmin())
                 .set("demartmentCode", newData.getDemartmentCode())
                 .where().eq("id", id).eq("updatedAt", updatedAt)
                 .update();
 
             if (updatedRows == 0) {
-                throw new OptimisticLockingFailureException("Users not found with id: " + id + " and updatedAt: " + updatedAt);
+                throw new OptimisticLockingFailureException("User not found with id: " + id + " and updatedAt: " + updatedAt);
             }
             return newData;
         }, executionContext);
@@ -203,14 +203,14 @@ public class UsersRepository {
      */
     public CompletionStage<Void> delete(Long id, Instant updatedAt) {
         return supplyAsync(() -> {
-            int updatedRows = DB.update(Users.class)
+            int updatedRows = DB.update(User.class)
                 .set("isDeleted", true)
                 .set("updatedAt", Instant.now())
                 .where().eq("id", id).eq("updatedAt", updatedAt)
                 .update();
 
             if (updatedRows == 0) {
-                throw new OptimisticLockingFailureException("Users not found with id: " + id + " and updatedAt: " + updatedAt);
+                throw new OptimisticLockingFailureException("User not found with id: " + id + " and updatedAt: " + updatedAt);
             }
             return null;
         }, executionContext);

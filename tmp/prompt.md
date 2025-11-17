@@ -735,3 +735,10 @@ public class TaskController extends Controller {
   - ただし、`user.is_admin` が true の場合は常にアクセス可能。
   - 注意1: 上記の `user` テーブルや `department_code` は固定値ではなく、動的に変更、または指定可能とする（`indexhtml` で指定で指定ができると良いと思われる）。
   - 注意2: RLS の制御が不要なテーブルも存在する（`department_code` カラムを持っていないテーブルも存在する）
+
+---
+
+次の内容を元に tmp/plan/12.md を作成せよ。
+
+Java の変換後の Controller の `find` メソッドは `request.body().asJson()` 賭して、 body を使用している。しかし、一般的な慣例として GET リクエストにおいて body を使うことは推奨されていない。この点についての改善案を提案せよ。
+

@@ -1,7 +1,7 @@
 /**
- * @type Users ユーザー
+ * @type User ユーザー
  */
-export type Users = {
+export type User = {
   /** ID */
   id?: number;
   /** ユーザー名 */
@@ -10,6 +10,8 @@ export type Users = {
   email?: string;
   /** 説明 */
   note?: string;
+  /** 管理者フラグ */
+  isAdmin?: boolean;
   /** 部署コード */
   demartmentCode?: string;
   /** 削除フラグ */

@@ -67,7 +67,7 @@
                     <div id="rlsOptions" style="display: none;">
                         <label for="tenantIdColumn">
                             テナントIDカラム名
-                            <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="department_code">
+                            <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
                         </label>
                         <label for="adminFlagColumn">
                             管理者フラグカラム名
@@ -1308,9 +1308,12 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `import play.mvc.Result;\n`;
                     classContent += `import services.${serviceName};\n`;
                     classContent += `import libraries.CsvResult;\n`;
+                    classContent += `import com.fasterxml.jackson.databind.ObjectMapper;\n`;
+                    classContent += `import java.util.Map;\n`;
+                    classContent += `import java.util.stream.Collectors;\n`;
+                    classContent += `import java.util.concurrent.CompletionStage;\n`;
                     classContent += `import javax.inject.Inject;\n`;
-                    classContent += `import java.time.Instant;\n`;
-                    classContent += `import java.util.concurrent.CompletionStage;\n\n`;
+                    classContent += `import java.time.Instant;\n\n`;
 
                     classContent += `/**\n * ${table.tableNameJP} のコントローラー\n */\n`;
                     classContent += `@Authenticated\n`;
@@ -1325,8 +1328,10 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `    public CompletionStage<Result> find(Http.Request request) {\n`;
                     classContent += `        int offset = request.queryString("offset").map(Integer::parseInt).orElse(0);\n`;
                     classContent += `        int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);\n`;
-                    classContent += `        JsonNode json = request.body().asJson();\n`;
-                    classContent += `        ${modelName} filter = json == null ? new ${modelName}() : Json.fromJson(json, ${modelName}.class);\n`;
+                    classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
+                    classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+                    classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
+                    classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
                     classContent += `        return ${serviceVar}.find(filter, offset, limit).thenApply(result -> ok(result));\n`;
                     classContent += `    }\n\n`;
 
@@ -1363,8 +1368,10 @@ public abstract class BaseRepository<T extends BaseModel> {
                     
                     // exportCsv
                     classContent += `    public CompletionStage<Result> exportCsv(Http.Request request) {\n`;
-                    classContent += `        JsonNode json = request.body().asJson();\n`;
-                    classContent += `        ${modelName} filter = json == null ? new ${modelName}() : Json.fromJson(json, ${modelName}.class);\n`;
+                    classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
+                    classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+                    classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
+                    classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
                     classContent += `        return ${serviceVar}.exportCsv(filter).thenApply(csv ->\n`;
                     classContent += `            CsvResult.ok(csv, "${table.tableName}.csv")\n`;
                     classContent += `        );\n`;

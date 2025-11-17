@@ -1,9 +1,9 @@
 package services;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import models.Users;
+import models.User;
 import play.libs.Json;
-import repository.UsersRepository;
+import repository.UserRepository;
 import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -19,12 +19,12 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 /**
  * ユーザー のサービス
  */
-public class UsersService {
-    private final UsersRepository usersRepository;
+public class UserService {
+    private final UserRepository userRepository;
 
     @Inject
-    public UsersService(UsersRepository usersRepository) {
-        this.usersRepository = usersRepository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public CompletionStage<ObjectNode> find() {
@@ -36,8 +36,8 @@ public class UsersService {
      * @return JSON形式の検索結果
      */
     public CompletionStage<ObjectNode> find(int offset, int limit) {
-        CompletionStage<Integer> totalFuture = usersRepository.countAll();
-        CompletionStage<List<Users>> dataFuture = usersRepository.findAll(offset, limit);
+        CompletionStage<Integer> totalFuture = userRepository.countAll();
+        CompletionStage<List<User>> dataFuture = userRepository.findAll(offset, limit);
         return totalFuture.thenCombine(dataFuture, (total, data) -> {
             ObjectNode result = Json.newObject();
             result.put("total", total);
@@ -46,7 +46,7 @@ public class UsersService {
         });
     }
 
-    public CompletionStage<ObjectNode> find(Users filter) {
+    public CompletionStage<ObjectNode> find(User filter) {
         return find(filter, 0, Integer.MAX_VALUE);
     }
 
@@ -55,9 +55,9 @@ public class UsersService {
      * @param filter 検索条件
      * @return JSON形式の検索結果
      */
-    public CompletionStage<ObjectNode> find(Users filter, int offset, int limit) {
-        CompletionStage<Integer> totalFuture = usersRepository.count(filter);
-        CompletionStage<List<Users>> dataFuture = usersRepository.find(filter, offset, limit);
+    public CompletionStage<ObjectNode> find(User filter, int offset, int limit) {
+        CompletionStage<Integer> totalFuture = userRepository.count(filter);
+        CompletionStage<List<User>> dataFuture = userRepository.find(filter, offset, limit);
         return totalFuture.thenCombine(dataFuture, (total, data) -> {
             ObjectNode result = Json.newObject();
             result.put("total", total);
@@ -71,27 +71,27 @@ public class UsersService {
      * @param id 主キー
      * @return 検索結果
      */
-    public CompletionStage<Optional<Users>> findById(Long id) {
-        return usersRepository.findById(id);
+    public CompletionStage<Optional<User>> findById(Long id) {
+        return userRepository.findById(id);
     }
 
     /**
      * ユーザー を新規登録します。
-     * @param users 登録データ
+     * @param user 登録データ
      * @return 登録後のデータ
      */
-    public CompletionStage<Users> create(Users users) {
-        return usersRepository.insert(users);
+    public CompletionStage<User> create(User user) {
+        return userRepository.insert(user);
     }
 
     /**
      * ユーザー を更新します。
      * @param id 主キー
-     * @param users 更新データ
+     * @param user 更新データ
      * @return 更新後のデータ
      */
-    public CompletionStage<Users> update(Long id, Users users) {
-        return usersRepository.update(id, users, users.getUpdatedAt());
+    public CompletionStage<User> update(Long id, User user) {
+        return userRepository.update(id, user, user.getUpdatedAt());
     }
 
     /**
@@ -100,7 +100,7 @@ public class UsersService {
      * @param updatedAt タイムスタンプ
      */
     public CompletionStage<Void> delete(Long id, Instant updatedAt) {
-        return usersRepository.delete(id, updatedAt);
+        return userRepository.delete(id, updatedAt);
     }
 
     /**
@@ -108,14 +108,14 @@ public class UsersService {
      * @param filter 検索条件
      * @return 生成されたCSVファイル
      */
-    public CompletionStage<File> exportCsv(Users filter) {
-        return usersRepository.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {
+    public CompletionStage<File> exportCsv(User filter) {
+        return userRepository.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {
             try {
-                File file = Files.createTempFile("users_", ".csv").toFile();
+                File file = Files.createTempFile("user_", ".csv").toFile();
                 try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath()))) {
-                    writer.printf("%s,%s,%s,%s,%s,%s\n","ユーザー名","メールアドレス","説明","部署コード","削除フラグ","作成日時");
-                    for (Users m : list) {
-                        writer.printf("%s,%s,%s,%s,%s,%s\n",String.valueOf(m.getUserName()),String.valueOf(m.getEmail()),String.valueOf(m.getNote()),String.valueOf(m.getDemartmentCode()),String.valueOf(m.getIsDeleted()),String.valueOf(m.getCreatedAt()));
+                    writer.printf("%s,%s,%s,%s,%s,%s,%s\n","ユーザー名","メールアドレス","説明","管理者フラグ","部署コード","削除フラグ","作成日時");
+                    for (User m : list) {
+                        writer.printf("%s,%s,%s,%s,%s,%s,%s\n",String.valueOf(m.getUserName()),String.valueOf(m.getEmail()),String.valueOf(m.getNote()),String.valueOf(m.getIsAdmin()),String.valueOf(m.getDemartmentCode()),String.valueOf(m.getIsDeleted()),String.valueOf(m.getCreatedAt()));
                     }
                 }
                 return file;
@@ -133,22 +133,23 @@ public class UsersService {
     public CompletionStage<Integer> importCsv(File csvFile) {
         return supplyAsync(() -> {
             try {
-                List<Users> models = Files.lines(csvFile.toPath())
+                List<User> models = Files.lines(csvFile.toPath())
                     .skip(1) // Skip header
                     .map(line -> line.split(","))
                     .map(values -> {
-                        Users model = new Users();
+                        User model = new User();
                         if (values.length > 0 && !values[0].isEmpty()) model.setUserName(values[0]);
                         if (values.length > 1 && !values[1].isEmpty()) model.setEmail(values[1]);
                         if (values.length > 2 && !values[2].isEmpty()) model.setNote(values[2]);
-                        if (values.length > 3 && !values[3].isEmpty()) model.setDemartmentCode(values[3]);
-                        if (values.length > 4 && !values[4].isEmpty()) model.setIsDeleted(Boolean.parseBoolean(values[4]));
-                        if (values.length > 5 && !values[5].isEmpty()) model.setCreatedAt(Instant.parse(values[5]));
+                        if (values.length > 3 && !values[3].isEmpty()) model.setIsAdmin(Boolean.parseBoolean(values[3]));
+                        if (values.length > 4 && !values[4].isEmpty()) model.setDemartmentCode(values[4]);
+                        if (values.length > 5 && !values[5].isEmpty()) model.setIsDeleted(Boolean.parseBoolean(values[5]));
+                        if (values.length > 6 && !values[6].isEmpty()) model.setCreatedAt(Instant.parse(values[6]));
                         return model;
                     })
                     .collect(Collectors.toList());
 
-                return usersRepository.batchInsert(models).toCompletableFuture().join();
+                return userRepository.batchInsert(models).toCompletableFuture().join();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -1,7 +1,9 @@
 package repository;
 
 import io.ebean.DB;
+import io.ebean.ExpressionList;
 import models.Department;
+import models.SessionInfo;
 import jakarta.persistence.EntityNotFoundException;
 import javax.inject.Inject;
 import java.time.Instant;
@@ -14,12 +16,10 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 /**
  * 部署 のリポジトリ
  */
-public class DepartmentRepository {
-    private final DatabaseExecutionContext executionContext;
-
+public class DepartmentRepository extends BaseRepository<Department>{
     @Inject
-    public DepartmentRepository(DatabaseExecutionContext executionContext) {
-        this.executionContext = executionContext;
+    public DepartmentRepository(DatabaseExecutionContext executionContext, SessionInfo sessionInfo) {
+        super(executionContext, sessionInfo, Department.class);
     }
 
     /**
@@ -28,13 +28,12 @@ public class DepartmentRepository {
      * @return 検索結果
      */
     public CompletionStage<Optional<Department>> findById(Long id) {
-        return supplyAsync(() ->
-            DB.find(Department.class)
-                .where()
-                .eq("id", id)
+        return supplyAsync(() -> {
+            ExpressionList<Department> query = rlsFilter();
+            return query.eq("id", id)
                 .eq("isDeleted", false)
-                .findOneOrEmpty()
-        , executionContext);
+                .findOneOrEmpty();
+        }, executionContext);
     }
 
     /**
@@ -43,17 +42,16 @@ public class DepartmentRepository {
      * @return 検索結果
      */
     public CompletionStage<Optional<Department>> findByCode(String code) {
-        return supplyAsync(() ->
-            DB.find(Department.class)
-                .where()
-                .eq("code", code)
+        return supplyAsync(() -> {
+            ExpressionList<Department> query = rlsFilter();
+            return query.eq("code", code)
                 .eq("isDeleted", false)
-                .findOneOrEmpty()
-        , executionContext);
+                .findOneOrEmpty();
+        }, executionContext);
     }
 
     /**
-     * 全ての 部署 を取得します（論-理削除済みは除く）。
+     * 全ての 部署 を取得します（論理削除済みは除く）。
      * @return 全件リスト
      */
     public CompletionStage<List<Department>> findAll() {
@@ -61,13 +59,12 @@ public class DepartmentRepository {
     }
 
     /**
-     * 全ての 部署 を取得します（論-理削除済みは除く）。
+     * 全ての 部署 を取得します（論理削除済みは除く）。
      * @return 全件リスト
      */
     public CompletionStage<List<Department>> findAll(int offset, int limit) {
         return supplyAsync(() ->
-            DB.find(Department.class)
-                .where()
+            rlsFilter()
                 .eq("isDeleted", false)
                 .setFirstRow(offset)
                 .setMaxRows(limit)
@@ -81,8 +78,7 @@ public class DepartmentRepository {
      */
     public CompletionStage<Integer> countAll() {
         return supplyAsync(() ->
-            DB.find(Department.class)
-                .where()
+            rlsFilter()
                 .eq("isDeleted", false)
                 .findCount()
         , executionContext);
@@ -128,7 +124,7 @@ public class DepartmentRepository {
      * @return 構築されたクエリ
      */
     private io.ebean.ExpressionList<Department> createQueryWithFilter(Department filter) {
-        io.ebean.ExpressionList<Department> query = DB.find(Department.class).where().eq("isDeleted", false);
+        io.ebean.ExpressionList<Department> query = rlsFilter().eq("isDeleted", false);
 
         if (filter.getCode() != null) {
             query.contains("code", filter.getCode());

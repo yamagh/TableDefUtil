@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { UsersSchema, DepartmentSchema } from './schemas'; // Assuming schemas are in a file named schemas.ts
+import { UserSchema, DepartmentSchema } from './schemas'; // Assuming schemas are in a file named schemas.ts
 
 /**
- * @type Users ユーザー
+ * @type User ユーザー
  */
-export type Users = z.infer<typeof UsersSchema>;
+export type User = z.infer<typeof UserSchema>;
 
 /**
  * @type Department 部署
