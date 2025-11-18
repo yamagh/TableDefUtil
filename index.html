@@ -1330,6 +1330,8 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `        int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);\n`;
                     classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
                     classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+                    classContent += `        params.remove("offset");\n`;
+                    classContent += `        params.remove("limit");\n`;
                     classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
                     classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
                     classContent += `        return ${serviceVar}.find(filter, offset, limit).thenApply(result -> ok(result));\n`;
@@ -1370,6 +1372,8 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `    public CompletionStage<Result> exportCsv(Http.Request request) {\n`;
                     classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
                     classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+                    classContent += `        params.remove("offset");\n`;
+                    classContent += `        params.remove("limit");\n`;
                     classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
                     classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
                     classContent += `        return ${serviceVar}.exportCsv(filter).thenApply(csv ->\n`;
