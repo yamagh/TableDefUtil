@@ -433,10 +433,10 @@
                     const columnDefs = table.columns.map(col => {
                         let def = `    ${col.colName}`;
                         // Type and Length
-                        if (col.type === 'varchar' && col.Length) {
-                            def += ` VARCHAR(${col.Length})`;
-                        } else if (col.type === 'char' && col.Length) {
-                            def += ` CHAR(${col.Length})`;
+                        if (col.type === 'varchar' && col.length) {
+                            def += ` VARCHAR(${col.length})`;
+                        } else if (col.type === 'char' && col.length) {
+                            def += ` CHAR(${col.length})`;
                         } else {
                             def += ` ${col.type.toUpperCase()}`;
                         }
