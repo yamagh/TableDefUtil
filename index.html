@@ -1139,6 +1139,8 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `import java.io.IOException;\n`;
                     classContent += `import java.io.PrintWriter;\n`;
                     classContent += `import java.nio.file.Files;\n`;
+                    classContent += `import java.nio.charset.Charset;\n`;
+                    classContent += `import java.nio.file.StandardOpenOption;\n`;
                     classContent += `import java.time.Instant;\n`;
                     classContent += `import java.util.List;\n`;
                     classContent += `import java.util.Optional;\n`;
@@ -1214,20 +1216,26 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `        return ${repoVar}.delete(id, updatedAt);\n`;
                     classContent += `    }\n\n`;
                     
+                    // export CSV
                     const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
-                    const csvHeader = nonKeyColumns.map(c => `"${c.colNameJP}"`).join(",");
-                    const csvPlaceHolder = nonKeyColumns.map(c => `%s`).join(",") + "\\n";
-                    const csvRow = nonKeyColumns.map(c => `String.valueOf(m.get${toPascalCase(c.colName)}())`).join(',');
+                    const csvHeader = nonKeyColumns.map(c => `"${c.colNameJP}"`).join("\n                        ,");
+                    const csvPlaceHolder = nonKeyColumns.map(c => `\\"%s\\"`).join(",") + "\\n";
+                    const csvRow = nonKeyColumns.map(c => `String.valueOf(m.get${toPascalCase(c.colName)}())`).join('\n                        ,');
 
                     classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @param filter 検索条件\n     * @return 生成されたCSVファイル\n     */\n`;
                     classContent += `    public CompletionStage<File> exportCsv(${modelName} filter) {\n`;
+                    classContent += `        final Charset SHIFT_JIS = Charset.forName("Shift-JIS");\n`;
                     classContent += `        return ${repoVar}.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {\n`;
                     classContent += `            try {\n`;
                     classContent += `                File file = Files.createTempFile("${table.tableName}_", ".csv").toFile();\n`;
-                    classContent += `                try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath()))) {\n`;
-                    classContent += `                    writer.printf("${csvPlaceHolder}",${csvHeader});\n`;
+                    classContent += `                try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath(), SHIFT_JIS, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING))) {\n`;
+                    classContent += `                    writer.printf(\n`;
+                    classContent += `                        "${csvPlaceHolder}"\n`;
+                    classContent += `                        ,${csvHeader});\n`;
                     classContent += `                    for (${modelName} m : list) {\n`;
-                    classContent += `                        writer.printf("${csvPlaceHolder}",${csvRow});\n`;
+                    classContent += `                        writer.printf(\n`;
+                    classContent += `                        "${csvPlaceHolder}"\n`;
+                    classContent += `                        ,${csvRow});\n`;
                     classContent += `                    }\n`;
                     classContent += `                }\n`;
                     classContent += `                return file;\n`;
@@ -1237,6 +1245,7 @@ public abstract class BaseRepository<T extends BaseModel> {
                     classContent += `        });\n`;
                     classContent += `    }\n\n`;
                     
+                    // importCsv
                     const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
                     
                     classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
@@ -1256,6 +1265,7 @@ public abstract class BaseRepository<T extends BaseModel> {
                         else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;
                         else if (javaType === 'Boolean') parseLogic = `Boolean.parseBoolean(values[${i}])`;
                         else if (javaType === 'java.time.Instant') parseLogic = `Instant.parse(values[${i}])`;
+                        else if (javaType === 'byte[]') parseLogic = `java.util.HexFormat.of().parseHex(values[${i}])`;
                         
                         classContent += `                        if (values.length > ${i} && !values[${i}].isEmpty()) model.${setter}(${parseLogic});\n`;
                     });
