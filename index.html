@@ -39,6 +39,7 @@
           <ul>
             <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
             <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
+            <li><a href="#" data-tab="sql-builder" class="tab-link">SQL構築</a></li>
           </ul>
         </nav>
         <div id="file-input" class="tab-content active">
@@ -47,6 +48,64 @@
         </div>
         <div id="text-input" class="tab-content">
           <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
+        </div>
+
+        <div id="sql-builder" class="tab-content">
+          <h3>SQL構築</h3>
+          <div class="grid">
+            <div>
+              <h4>1. テーブル選択</h4>
+              <div class="grid">
+                <select id="sql-table-select">
+                  <option value="">テーブルを追加...</option>
+                </select>
+                <button id="sql-add-table-btn">追加</button>
+              </div>
+              <table role="grid">
+                <thead>
+                  <tr>
+                    <th>Alias</th>
+                    <th>Table Name</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="sql-selected-tables">
+                  <!-- Selected tables will go here -->
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <h4>2. 結合条件</h4>
+              <button id="sql-add-join-btn" class="secondary outline">結合条件を追加</button>
+              <div id="sql-joins-container">
+                <!-- Join conditions will go here -->
+              </div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div>
+              <h4>3. 絞り込み条件 (WHERE)</h4>
+              <button id="sql-add-filter-btn" class="secondary outline">条件を追加</button>
+              <div id="sql-filters-container">
+                <!-- Filter inputs -->
+              </div>
+            </div>
+            <div>
+              <h4>4. ソート順 (ORDER BY)</h4>
+              <button id="sql-add-sort-btn" class="secondary outline">ソートを追加</button>
+              <div id="sql-sorts-container">
+                <!-- Sort inputs -->
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <h4>5. 生成結果</h4>
+          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 200px;"></textarea>
+          <button id="sql-copy-btn">クリップボードにコピー</button>
         </div>
       </section>
 
@@ -189,6 +248,7 @@
               return;
             }
             const intermediateData = transformToIntermediate(results.data);
+            initSqlBuilder(intermediateData);
             const rlsOptions = {
               enabled: document.getElementById('rlsEnabled').checked,
               tenantIdColumn: document.getElementById('tenantIdColumn').value,
@@ -1420,7 +1480,384 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         return javaString;
       }
+      // --- SQL Builder Logic ---
+      let parsedTables = [];
+      const sqlState = {
+        selectedTables: [],
+        joins: [],
+        filters: [],
+        sorts: []
+      };
+
+      const sqlTableSelect = document.getElementById('sql-table-select');
+      const sqlSelectedTables = document.getElementById('sql-selected-tables');
+      const sqlJoinsContainer = document.getElementById('sql-joins-container');
+      const sqlFiltersContainer = document.getElementById('sql-filters-container');
+      const sqlSortsContainer = document.getElementById('sql-sorts-container');
+      const sqlOutput = document.getElementById('sql-output');
+
+      function initSqlBuilder(tables) {
+        parsedTables = tables;
+        sqlState.selectedTables = [];
+        sqlState.joins = [];
+        sqlState.filters = [];
+        sqlState.sorts = [];
+
+        sqlTableSelect.innerHTML = '<option value="">テーブルを追加...</option>';
+        tables.forEach(table => {
+          const option = document.createElement('option');
+          option.value = table.tableName;
+          option.textContent = `${table.tableName} (${table.tableNameJP})`;
+          sqlTableSelect.appendChild(option);
+        });
+
+        renderSqlBuilderUI();
+      }
+
+      function renderSqlBuilderUI() {
+        renderSqlTables();
+        renderSqlJoins();
+        renderSqlFilters();
+        renderSqlSorts();
+        updateSqlOutput();
+      }
+
+      // 1. Table Selection
+      document.getElementById('sql-add-table-btn').addEventListener('click', () => {
+        const tableName = sqlTableSelect.value;
+        if (!tableName) return;
+        const alias = `t${sqlState.selectedTables.length}`;
+        sqlState.selectedTables.push({ tableName, alias });
+        renderSqlBuilderUI();
+      });
+
+      function renderSqlTables() {
+        sqlSelectedTables.innerHTML = '';
+        sqlState.selectedTables.forEach((item, index) => {
+          // Re-assign aliases based on order to ensure t0, t1, ...
+          item.alias = `t${index}`;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${item.alias}</td>
+            <td>${item.tableName}</td>
+            <td>
+              <button class="outline secondary" onclick="moveSqlTable(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+              <button class="outline secondary" onclick="moveSqlTable(${index}, 1)" ${index === sqlState.selectedTables.length - 1 ? 'disabled' : ''}>↓</button>
+              <button class="outline contrast" onclick="removeSqlTable(${index})">削除</button>
+            </td>
+          `;
+          sqlSelectedTables.appendChild(tr);
+        });
+      }
+
+      window.removeSqlTable = (index) => {
+        sqlState.selectedTables.splice(index, 1);
+        renderSqlBuilderUI();
+      };
+
+      window.moveSqlTable = (index, direction) => {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= sqlState.selectedTables.length) return;
+        const item = sqlState.selectedTables.splice(index, 1)[0];
+        sqlState.selectedTables.splice(newIndex, 0, item);
+        renderSqlBuilderUI();
+      };
+
+      // 2. Joins
+      document.getElementById('sql-add-join-btn').addEventListener('click', () => {
+        if (sqlState.selectedTables.length < 2) {
+          alert('結合するには少なくとも2つのテーブルを選択してください。');
+          return;
+        }
+        // Default join: last table with second to last table? Or just basics.
+        // Let's default to t(last-1) and t(last)
+        const rightIdx = sqlState.selectedTables.length - 1;
+        const leftIdx = Math.max(0, rightIdx - 1);
+
+        sqlState.joins.push({
+          leftAlias: sqlState.selectedTables[leftIdx].alias,
+          rightAlias: sqlState.selectedTables[rightIdx].alias,
+          type: 'INNER JOIN',
+          condition: generateDefaultJoinCondition(sqlState.selectedTables[leftIdx], sqlState.selectedTables[rightIdx])
+        });
+        renderSqlBuilderUI();
+      });
+
+      function generateDefaultJoinCondition(leftTableState, rightTableState) {
+        const leftDef = parsedTables.find(t => t.tableName === leftTableState.tableName);
+        const rightDef = parsedTables.find(t => t.tableName === rightTableState.tableName);
+
+        let condition = '';
+        // Look for matching _id columns
+        // Simple heuristic: if right table has left_table_id
+        const leftIdCol = `${leftDef.tableName}_id`; // simplistic
+        // Better: iterate columns
+
+        // Requirement: "_id を含むカラム選択した２つのテーブル両方に存在する場合"
+        // Interpreted as: if both have "xxx_id", or if one has "other_id" that matches "id" of other?
+        // Let's try to match: left.id = right.left_id OR left.right_id = right.id
+
+        let joinColMatch = false;
+
+        // Check if Right has Left_ID
+        // Actually, let's look for common column names that end in _id? 
+        // Or if one is "id" and other is "{table}_id"
+        // The prompt says: "_id を含むカラム選択した２つのテーブル両方に存在する場合、該当のカラムで結合する（t0.foo_id = t1.foo_id）"
+        // This suggests joining on SAME column name that contains "_id".
+
+        const leftCols = leftDef.columns.map(c => c.colName);
+        const rightCols = rightDef.columns.map(c => c.colName);
+
+        const commonIdCols = leftCols.filter(c => rightCols.includes(c) && c.includes('_id'));
+
+        if (commonIdCols.length > 0) {
+          condition = `${leftTableState.alias}.${commonIdCols[0]} = ${rightTableState.alias}.${commonIdCols[0]}`;
+        } else {
+          // Fallback (not specified but useful): ID matching
+          // t0.id = t1.user_id
+          // check if left has right_id
+          if (leftCols.includes(`${rightTableState.tableName}_id`)) {
+            condition = `${leftTableState.alias}.${rightTableState.tableName}_id = ${rightTableState.alias}.id`;
+          } else if (rightCols.includes(`${leftTableState.tableName}_id`)) {
+            condition = `${leftTableState.alias}.id = ${rightTableState.alias}.${leftTableState.tableName}_id`;
+          } else {
+            condition = '/* 結合条件を設定してください */';
+          }
+        }
+
+        // Add delete flag check
+        // "削除フラグを除外する条件（t0.is_deleted = false and t1.is_deleted = false）"
+        // Check if columns exist
+        if (leftCols.includes('is_deleted')) {
+          condition += ` AND ${leftTableState.alias}.is_deleted = false`;
+        }
+        if (rightCols.includes('is_deleted')) {
+          condition += ` AND ${rightTableState.alias}.is_deleted = false`;
+        }
+
+        // Clean up leading AND if condition was empty
+        if (condition.startsWith(' AND ')) condition = condition.substring(5);
+
+        return condition;
+      }
+
+      function renderSqlJoins() {
+        sqlJoinsContainer.innerHTML = '';
+        sqlState.joins.forEach((join, index) => {
+          const div = document.createElement('div');
+          div.className = 'grid';
+          div.style.marginBottom = '10px';
+
+          // Options for Alias dropdowns
+          const options = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.leftAlias || t.alias === join.rightAlias ? 'selected' : ''}>${t.alias} (${t.tableName})</option>`).join(''); // Note: simplistic matching for selected, improves below
+
+          const leftOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.leftAlias ? 'selected' : ''}>${t.alias}</option>`).join('');
+          const rightOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.rightAlias ? 'selected' : ''}>${t.alias}</option>`).join('');
+
+          div.innerHTML = `
+            <div style="display:flex; gap:5px; align-items:center;">
+              <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" style="width:80px;">${leftOptions}</select>
+              <select onchange="updateSqlJoin(${index}, 'type', this.value)" style="width:120px;">
+                <option value="INNER JOIN" ${join.type === 'INNER JOIN' ? 'selected' : ''}>INNER JOIN</option>
+                <option value="LEFT JOIN" ${join.type === 'LEFT JOIN' ? 'selected' : ''}>LEFT JOIN</option>
+              </select>
+              <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width:80px;">${rightOptions}</select>
+              <span>ON</span>
+              <input type="text" value="${join.condition}" onchange="updateSqlJoin(${index}, 'condition', this.value)" style="flex-grow:1;">
+              <button class="outline secondary" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto;">↑</button>
+              <button class="outline secondary" onclick="moveSqlJoin(${index}, 1)" ${index === sqlState.joins.length - 1 ? 'disabled' : ''} style="width:auto;">↓</button>
+              <button class="outline contrast" onclick="removeSqlJoin(${index})" style="width:auto;">x</button>
+            </div>
+          `;
+          sqlJoinsContainer.appendChild(div);
+        });
+      }
+
+      window.updateSqlJoin = (index, key, value) => {
+        sqlState.joins[index][key] = value;
+        updateSqlOutput();
+      };
+
+      window.removeSqlJoin = (index) => {
+        sqlState.joins.splice(index, 1);
+        renderSqlBuilderUI();
+      };
+
+      window.moveSqlJoin = (index, direction) => {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= sqlState.joins.length) return;
+        const item = sqlState.joins.splice(index, 1)[0];
+        sqlState.joins.splice(newIndex, 0, item);
+        renderSqlBuilderUI();
+      };
+
+      // 3. Filters
+      document.getElementById('sql-add-filter-btn').addEventListener('click', () => {
+        sqlState.filters.push('');
+        renderSqlBuilderUI();
+      });
+
+      function renderSqlFilters() {
+        sqlFiltersContainer.innerHTML = '';
+        sqlState.filters.forEach((filter, index) => {
+          const div = document.createElement('div');
+          div.style.display = 'flex';
+          div.style.gap = '5px';
+          div.style.marginBottom = '5px';
+          div.innerHTML = `
+             <input type="text" value="${filter}" onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100">
+             <button class="outline contrast" onclick="removeSqlFilter(${index})" style="width:auto;">x</button>
+          `;
+          sqlFiltersContainer.appendChild(div);
+        });
+      }
+
+      window.updateSqlFilter = (index, value) => {
+        sqlState.filters[index] = value;
+        updateSqlOutput();
+      };
+
+      window.removeSqlFilter = (index) => {
+        sqlState.filters.splice(index, 1);
+        renderSqlBuilderUI();
+      };
+
+      // 4. Sorts
+      document.getElementById('sql-add-sort-btn').addEventListener('click', () => {
+        if (sqlState.selectedTables.length === 0) return;
+
+        // Default to first table, first column
+        const firstTbl = sqlState.selectedTables[0];
+        const firstDef = parsedTables.find(t => t.tableName === firstTbl.tableName);
+
+        sqlState.sorts.push({
+          alias: firstTbl.alias,
+          column: firstDef.columns[0].colName,
+          direction: 'ASC'
+        });
+        renderSqlBuilderUI();
+      });
+
+      function renderSqlSorts() {
+        sqlSortsContainer.innerHTML = '';
+        sqlState.sorts.forEach((sort, index) => {
+          const div = document.createElement('div');
+          div.style.display = 'flex';
+          div.style.gap = '5px';
+          div.style.marginBottom = '5px';
+
+          const aliasOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === sort.alias ? 'selected' : ''}>${t.alias}</option>`).join('');
+
+          // Column options depend on selected alias
+          const tblState = sqlState.selectedTables.find(t => t.alias === sort.alias);
+          let colOptions = '';
+          if (tblState) {
+            const def = parsedTables.find(t => t.tableName === tblState.tableName);
+            if (def) {
+              colOptions = def.columns.map(c => `<option value="${c.colName}" ${c.colName === sort.column ? 'selected' : ''}>${c.colName}</option>`).join('');
+            }
+          }
+
+          div.innerHTML = `
+            <select onchange="updateSqlSort(${index}, 'alias', this.value)" style="width:80px;">${aliasOptions}</select>
+            <select onchange="updateSqlSort(${index}, 'column', this.value)">${colOptions}</select>
+            <select onchange="updateSqlSort(${index}, 'direction', this.value)" style="width:100px;">
+                <option value="ASC" ${sort.direction === 'ASC' ? 'selected' : ''}>ASC</option>
+                <option value="DESC" ${sort.direction === 'DESC' ? 'selected' : ''}>DESC</option>
+            </select>
+            <button class="outline secondary" onclick="moveSqlSort(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto;">↑</button>
+            <button class="outline secondary" onclick="moveSqlSort(${index}, 1)" ${index === sqlState.sorts.length - 1 ? 'disabled' : ''} style="width:auto;">↓</button>
+            <button class="outline contrast" onclick="removeSqlSort(${index})" style="width:auto;">x</button>
+          `;
+          sqlSortsContainer.appendChild(div);
+        });
+      }
+
+      window.updateSqlSort = (index, key, value) => {
+        sqlState.sorts[index][key] = value;
+        // If alias changed, reset column to first available
+        if (key === 'alias') {
+          const tblState = sqlState.selectedTables.find(t => t.alias === value);
+          const def = parsedTables.find(t => t.tableName === tblState.tableName);
+          if (def && def.columns.length > 0) {
+            sqlState.sorts[index].column = def.columns[0].colName;
+          }
+          renderSqlBuilderUI(); // Need full re-render to update columns
+        } else {
+          updateSqlOutput();
+        }
+      };
+
+      window.removeSqlSort = (index) => {
+        sqlState.sorts.splice(index, 1);
+        renderSqlBuilderUI();
+      };
+
+      window.moveSqlSort = (index, direction) => {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= sqlState.sorts.length) return;
+        const item = sqlState.sorts.splice(index, 1)[0];
+        sqlState.sorts.splice(newIndex, 0, item);
+        renderSqlBuilderUI();
+      };
+
+      // 5. Generation
+      function updateSqlOutput() {
+        if (sqlState.selectedTables.length === 0) {
+          sqlOutput.value = '';
+          return;
+        }
+
+        let sql = 'SELECT\n';
+
+        // Select logic (simplified: select *)
+        // sql += sqlState.selectedTables.map(t => `    ${t.alias}.*`).join(',\n');
+        // Let's make it slightly nicer: t0.*, t1.*
+        const selects = [];
+        sqlState.selectedTables.forEach(t => {
+          selects.push(`    ${t.alias}.*`);
+        });
+        sql += selects.join(',\n');
+
+        sql += '\nFROM\n';
+
+        // From first table
+        const first = sqlState.selectedTables[0];
+        sql += `    ${first.tableName} AS ${first.alias}\n`;
+
+        // Joins
+        sqlState.joins.forEach(join => {
+          const rightTbl = sqlState.selectedTables.find(t => t.alias === join.rightAlias);
+          const rightName = rightTbl ? rightTbl.tableName : '???';
+          sql += `${join.type} ${rightName} AS ${join.rightAlias} ON ${join.condition}\n`;
+        });
+
+        // Where
+        const validFilters = sqlState.filters.filter(f => f.trim() !== '');
+        if (validFilters.length > 0) {
+          sql += 'WHERE\n';
+          sql += validFilters.map(f => `    ${f}`).join(' AND\n');
+          sql += '\n';
+        }
+
+        // Order By
+        if (sqlState.sorts.length > 0) {
+          sql += 'ORDER BY\n';
+          sql += sqlState.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
+          sql += '\n';
+        }
+
+        sqlOutput.value = sql;
+      }
+
+      document.getElementById('sql-copy-btn').addEventListener('click', () => {
+        sqlOutput.select();
+        document.execCommand('copy');
+      });
+
     });
+
   </script>
 </body>
 
