@@ -158,11 +158,25 @@
 
         <hr>
 
-        <!-- 5. 生成結果 -->
+        <!-- 5. 取得カラム -->
         <div>
-          <h4>5. 生成結果</h4>
-          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 600px;"></textarea>
+          <h4>5. 取得カラム (SELECT)</h4>
+          <div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #666;">
+            ※テーブルを追加・削除・並べ替えするとリセットされます
+          </div>
+          <textarea id="sql-select-clause"
+            style="height: auto;field-sizing: content;max-height: 90vh; min-height: 100px; font-family: monospace; white-space: pre;"
+            oninput="updateSqlOutput()"></textarea>
+        </div>
+
+        <hr>
+
+        <!-- 6. 生成結果 -->
+        <div>
+          <h4>6. 生成結果</h4>
           <button id="sql-copy-btn">クリップボードにコピー</button>
+          <textarea id="sql-output" placeholder="生成されたSQLがここに表示されます..."
+            style="height: auto;field-sizing: content;max-height: 90vh;"></textarea>
         </div>
       </section>
     </article>
@@ -1497,6 +1511,7 @@ public abstract class BaseRepository<T extends BaseModel> {
       const sqlJoinsContainer = document.getElementById('sql-joins-container');
       const sqlFiltersContainer = document.getElementById('sql-filters-container');
       const sqlSortsContainer = document.getElementById('sql-sorts-container');
+      const sqlSelectClause = document.getElementById('sql-select-clause');
       const sqlOutput = document.getElementById('sql-output');
 
       function initSqlBuilder(tables) {
@@ -1523,6 +1538,7 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlJoins();
         renderSqlFilters();
         renderSqlSorts();
+        // renderSqlTables now calls updateSelectColumns, which is needed before updateSqlOutput
         updateSqlOutput();
       }
 
@@ -1558,6 +1574,22 @@ public abstract class BaseRepository<T extends BaseModel> {
           `;
           sqlSelectedTables.appendChild(tr);
         });
+        updateSelectColumns();
+      }
+
+      function updateSelectColumns() {
+        const selects = [];
+        sqlState.selectedTables.forEach(t => {
+          const def = parsedTables.find(table => table.tableName === t.tableName);
+          if (def) {
+            def.columns.forEach(col => {
+              selects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
+            });
+          } else {
+            selects.push(`${t.alias}.*`);
+          }
+        });
+        sqlSelectClause.value = selects.join(',\n');
       }
 
       window.removeSqlTable = (index) => {
@@ -1666,13 +1698,13 @@ public abstract class BaseRepository<T extends BaseModel> {
 
           div.innerHTML = `
             <div style="display:flex; gap:5px; align-items:flex-start;">
-              <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" style="width:80px;">${leftOptions}</select>
-              <select onchange="updateSqlJoin(${index}, 'type', this.value)" style="width:120px;">
+              <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" style="width:80px; margin: 0px; padding: 0.25rem; padding-right: 2rem;">${leftOptions}</select>
+              <select onchange="updateSqlJoin(${index}, 'type', this.value)" style="width:120px; padding: 0.25rem; padding-right: 2rem;">
                 <option value="INNER JOIN" ${join.type === 'INNER JOIN' ? 'selected' : ''}>INNER JOIN</option>
                 <option value="LEFT JOIN" ${join.type === 'LEFT JOIN' ? 'selected' : ''}>LEFT JOIN</option>
               </select>
-              <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width:80px;">${rightOptions}</select>
-              <span style="padding-top: 10px;">ON</span>
+              <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width:80px; padding: 0.25rem; padding-right: 2rem;">${rightOptions}</select>
+              <span style="padding-top: 6px;">ON</span>
               <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;">${join.condition}</textarea>
               <button class="outline secondary" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↑</button>
               <button class="outline secondary" onclick="moveSqlJoin(${index}, 1)" ${index === sqlState.joins.length - 1 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↓</button>
@@ -1769,15 +1801,17 @@ public abstract class BaseRepository<T extends BaseModel> {
           }
 
           div.innerHTML = `
-            <select onchange="updateSqlSort(${index}, 'alias', this.value)" style="width:80px;">${aliasOptions}</select>
-            <select onchange="updateSqlSort(${index}, 'column', this.value)">${colOptions}</select>
-            <select onchange="updateSqlSort(${index}, 'direction', this.value)" style="width:100px;">
+            <div style="display:flex; gap:5px; align-items:flex-start;">
+            <select onchange="updateSqlSort(${index}, 'alias', this.value)" style="width:80px; margin: 0; padding: 0.25rem; padding-right: 2rem;">${aliasOptions}</select>
+            <select onchange="updateSqlSort(${index}, 'column', this.value)" style="margin: 0; padding: 0.25rem; padding-right: 2rem;">${colOptions}</select>
+            <select onchange="updateSqlSort(${index}, 'direction', this.value)" style="width:100px; margin: 0; padding: 0.25rem; padding-right: 2rem;">
                 <option value="ASC" ${sort.direction === 'ASC' ? 'selected' : ''}>ASC</option>
                 <option value="DESC" ${sort.direction === 'DESC' ? 'selected' : ''}>DESC</option>
             </select>
-            <button class="outline secondary" onclick="moveSqlSort(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto;">↑</button>
-            <button class="outline secondary" onclick="moveSqlSort(${index}, 1)" ${index === sqlState.sorts.length - 1 ? 'disabled' : ''} style="width:auto;">↓</button>
-            <button class="outline contrast" onclick="removeSqlSort(${index})" style="width:auto;" title="削除">x</button>
+            <button class="outline secondary" onclick="moveSqlSort(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↑</button>
+            <button class="outline secondary" onclick="moveSqlSort(${index}, 1)" ${index === sqlState.sorts.length - 1 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↓</button>
+            <button class="outline contrast" onclick="removeSqlSort(${index})" style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;" title="削除">x</button>
+            </div>
           `;
           sqlSortsContainer.appendChild(div);
         });
@@ -1812,7 +1846,7 @@ public abstract class BaseRepository<T extends BaseModel> {
       };
 
       // 5. Generation
-      function updateSqlOutput() {
+      window.updateSqlOutput = function () {
         if (sqlState.selectedTables.length === 0) {
           sqlOutput.value = '';
           return;
@@ -1820,21 +1854,8 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         let sql = 'SELECT\n';
 
-        // Select logic (simplified: select *)
-        // sql += sqlState.selectedTables.map(t => `    ${t.alias}.*`).join(',\n');
-        // Let's make it slightly nicer: t0.*, t1.*
-        const selects = [];
-        sqlState.selectedTables.forEach(t => {
-          const def = parsedTables.find(table => table.tableName === t.tableName);
-          if (def) {
-            def.columns.forEach(col => {
-              selects.push(`    ${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
-            });
-          } else {
-            selects.push(`    ${t.alias}.*`);
-          }
-        });
-        sql += selects.join(',\n');
+        // Select logic
+        sql += sqlSelectClause.value || '*'; // Fallback if empty
 
         sql += '\nFROM\n';
 
@@ -1863,6 +1884,8 @@ public abstract class BaseRepository<T extends BaseModel> {
           sql += sqlState.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
           sql += '\n';
         }
+
+        sql += ';';
 
         try {
           if (window.sqlFormatter) {
