@@ -1,645 +1,656 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>テーブル定義変換ツール</title>
-    <link rel="stylesheet" href="css/pico.min.css">
-    <style>
-        body {
-            padding: 2rem;
-        }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        textarea {
-            height: 300px;
-            font-family: monospace;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テーブル定義変換ツール</title>
+  <link rel="stylesheet" href="css/pico.min.css">
+  <style>
+    body {
+      padding: 2rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    textarea {
+      height: 300px;
+      font-family: monospace;
+    }
+  </style>
 </head>
+
 <body>
-    <header class="container">
-        <h1>テーブル定義変換ツール</h1>
-    </header>
+  <header class="container">
+    <h1>テーブル定義変換ツール</h1>
+  </header>
 
-    <main class="container">
-        <article>
-            <section>
-                <h2>1. 入力</h2>
-                <nav role="tab-control" class="tabs">
-                  <ul>
-                    <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
-                    <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
-                  </ul>
-                </nav>
-                <div id="file-input" class="tab-content active">
-                    <input type="file" id="fileInput">
-                    <small>TSVまたはCSVファイルを選択してください。</small>
-                </div>
-                <div id="text-input" class="tab-content">
-                    <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
-                </div>
-            </section>
+  <main class="container">
+    <article>
+      <section>
+        <h2>1. 入力</h2>
+        <nav role="tab-control" class="tabs">
+          <ul>
+            <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
+            <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
+          </ul>
+        </nav>
+        <div id="file-input" class="tab-content active">
+          <input type="file" id="fileInput">
+          <small>TSVまたはCSVファイルを選択してください。</small>
+        </div>
+        <div id="text-input" class="tab-content">
+          <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
+        </div>
+      </section>
 
-            <section>
-                <h2>2. 変換オプション</h2>
-                <fieldset>
-                    <legend>変換先フォーマット</legend>
-                    <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
-                    <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript type</label>
-                    <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
-                    <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from Zod</label>
-                    <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean) model</label>
-                    <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java repository</label>
-                    <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java service</label>
-                    <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java controller</label>
-                </fieldset>
-                <fieldset>
-                    <legend>Java RLS (Row-Level Security) オプション</legend>
-                    <label>
-                        <input type="checkbox" id="rlsEnabled" name="rls">
-                        RLSを有効にする
-                    </label>
-                    <div id="rlsOptions" style="display: none;">
-                        <label for="tenantIdColumn">
-                            テナントIDカラム名
-                            <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
-                        </label>
-                        <label for="adminFlagColumn">
-                            管理者フラグカラム名
-                            <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
-                        </label>
-                    </div>
-                </fieldset>
-            </section>
+      <section>
+        <h2>2. 変換オプション</h2>
+        <fieldset>
+          <legend>変換先フォーマット</legend>
+          <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
+          <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript
+            type</label>
+          <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
+          <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from
+            Zod</label>
+          <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean)
+            model</label>
+          <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java repository</label>
+          <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java
+            service</label>
+          <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java
+            controller</label>
+        </fieldset>
+        <fieldset>
+          <legend>Java RLS (Row-Level Security) オプション</legend>
+          <label>
+            <input type="checkbox" id="rlsEnabled" name="rls">
+            RLSを有効にする
+          </label>
+          <div id="rlsOptions" style="display: none;">
+            <label for="tenantIdColumn">
+              テナントIDカラム名
+              <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
+            </label>
+            <label for="adminFlagColumn">
+              管理者フラグカラム名
+              <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
+            </label>
+          </div>
+        </fieldset>
+      </section>
 
-            <section>
-                <h2>3. 実行</h2>
-                <button id="convertBtn">変換実行</button>
-            </section>
+      <section>
+        <h2>3. 実行</h2>
+        <button id="convertBtn">変換実行</button>
+      </section>
 
-            <section>
-                <h2>4. 結果</h2>
-                <nav role="tab-control" class="tabs">
-                    <ul id="result-tabs">
-                        <!-- 結果タブがここに追加されます -->
-                    </ul>
-                </nav>
-                <div id="result-contents">
-                    <!-- 結果コンテンツがここに追加されます -->
-                </div>
-                <button id="downloadAllBtn" style="display: none;">すべてダウンロード (ZIP)</button>
-            </section>
-        </article>
-    </main>
+      <section>
+        <h2>4. 結果</h2>
+        <nav role="tab-control" class="tabs">
+          <ul id="result-tabs">
+            <!-- 結果タブがここに追加されます -->
+          </ul>
+        </nav>
+        <div id="result-contents">
+          <!-- 結果コンテンツがここに追加されます -->
+        </div>
+        <button id="downloadAllBtn" style="display: none;">すべてダウンロード (ZIP)</button>
+      </section>
+    </article>
+  </main>
 
-    <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
-    <script src="js/papaparse.min.js"></script>
-    <script src="js/jszip.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fileInput = document.getElementById('fileInput');
-            const textInput = document.getElementById('textInput');
-            const convertBtn = document.getElementById('convertBtn');
-            const resultTabs = document.getElementById('result-tabs');
-            const resultContents = document.getElementById('result-contents');
-            const downloadAllBtn = document.getElementById('downloadAllBtn');
-            const rlsEnabled = document.getElementById('rlsEnabled');
-            const rlsOptions = document.getElementById('rlsOptions');
+  <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
+  <script src="js/papaparse.min.js"></script>
+  <script src="js/jszip.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const fileInput = document.getElementById('fileInput');
+      const textInput = document.getElementById('textInput');
+      const convertBtn = document.getElementById('convertBtn');
+      const resultTabs = document.getElementById('result-tabs');
+      const resultContents = document.getElementById('result-contents');
+      const downloadAllBtn = document.getElementById('downloadAllBtn');
+      const rlsEnabled = document.getElementById('rlsEnabled');
+      const rlsOptions = document.getElementById('rlsOptions');
 
-            rlsEnabled.addEventListener('change', () => {
-                rlsOptions.style.display = rlsEnabled.checked ? 'block' : 'none';
+      rlsEnabled.addEventListener('change', () => {
+        rlsOptions.style.display = rlsEnabled.checked ? 'block' : 'none';
+      });
+
+      // --- Tab UI ---
+      document.querySelectorAll('.tab-link').forEach(tab => {
+        tab.addEventListener('click', e => {
+          e.preventDefault();
+          const targetId = e.target.dataset.tab;
+
+          // Handle input tabs
+          if (e.target.closest('.tabs').nextElementSibling.id.includes('input')) {
+            document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => {
+              if (content.id === targetId) {
+                content.classList.add('active');
+              } else {
+                content.classList.remove('active');
+              }
             });
-
-            // --- Tab UI ---
-            document.querySelectorAll('.tab-link').forEach(tab => {
-                tab.addEventListener('click', e => {
-                    e.preventDefault();
-                    const targetId = e.target.dataset.tab;
-                    
-                    // Handle input tabs
-                    if (e.target.closest('.tabs').nextElementSibling.id.includes('input')) {
-                        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
-                        e.target.classList.add('active');
-                        document.querySelectorAll('.tab-content').forEach(content => {
-                            if (content.id === targetId) {
-                                content.classList.add('active');
-                            } else {
-                                content.classList.remove('active');
-                            }
-                        });
-                    }
-                    // Handle result tabs
-                    else {
-                         document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
-                         e.target.classList.add('active');
-                         document.querySelectorAll('#result-contents .tab-content').forEach(content => {
-                            if (content.id === `result-${targetId}`) {
-                                content.classList.add('active');
-                            } else {
-                                content.classList.remove('active');
-                            }
-                        });
-                    }
-                });
+          }
+          // Handle result tabs
+          else {
+            document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.querySelectorAll('#result-contents .tab-content').forEach(content => {
+              if (content.id === `result-${targetId}`) {
+                content.classList.add('active');
+              } else {
+                content.classList.remove('active');
+              }
             });
+          }
+        });
+      });
 
-            // --- Main Logic ---
-            convertBtn.addEventListener('click', () => {
-                const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
-                if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        parseAndConvert(e.target.result);
-                    };
-                    reader.readAsText(file);
-                } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
-                    parseAndConvert(textInput.value);
-                } else {
-                    alert('入力データがありません。');
+      // --- Main Logic ---
+      convertBtn.addEventListener('click', () => {
+        const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+        if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            parseAndConvert(e.target.result);
+          };
+          reader.readAsText(file);
+        } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
+          parseAndConvert(textInput.value);
+        } else {
+          alert('入力データがありません。');
+        }
+      });
+
+      function parseAndConvert(tsvData) {
+        Papa.parse(tsvData, {
+          header: true,
+          skipEmptyLines: true,
+          delimiter: '\t',
+          complete: (results) => {
+            if (results.errors.length > 0) {
+              console.error("CSV Parse Errors:", results.errors);
+              alert('CSV/TSVのパースに失敗しました。フォーマットを確認してください。');
+              return;
+            }
+            const intermediateData = transformToIntermediate(results.data);
+            const rlsOptions = {
+              enabled: document.getElementById('rlsEnabled').checked,
+              tenantIdColumn: document.getElementById('tenantIdColumn').value,
+              adminFlagColumn: document.getElementById('adminFlagColumn').value
+            };
+            generateOutputs(intermediateData, rlsOptions);
+          }
+        });
+      }
+
+      function transformToIntermediate(data) {
+        const tables = {};
+        data.forEach(row => {
+          const tableName = row.TableName;
+          if (!tableName) return;
+
+          if (!tables[tableName]) {
+            tables[tableName] = {
+              tableNo: row.TableNo,
+              tableNameJP: row.TableName_JP,
+              tableName: row.TableName,
+              description: row.Description,
+              columns: [],
+              indexes: {}
+            };
+          }
+
+          tables[tableName].columns.push({
+            colNo: row.ColNo,
+            colNameJP: row.ColName_JP,
+            colName: row.ColName,
+            pkfk: row['PK/FK'],
+            type: row.Type,
+            length: row.Length,
+            constraint: row.Constraint,
+            default: row.Default,
+            description: row.Description // Description is often on the first row, let's assume it's the same for all columns for now
+          });
+
+          // Collect indexes
+          for (let i = 1; i <= 5; i++) {
+            const idxKey = `Idx${i}`;
+            if (row[idxKey]) {
+              if (!tables[tableName].indexes[idxKey]) {
+                tables[tableName].indexes[idxKey] = [];
+              }
+              tables[tableName].indexes[idxKey].push({
+                order: parseInt(row[idxKey], 10),
+                colName: row.ColName
+              });
+            }
+          }
+        });
+
+        // Sort index columns by order
+        Object.values(tables).forEach(table => {
+          Object.keys(table.indexes).forEach(idxKey => {
+            table.indexes[idxKey].sort((a, b) => a.order - b.order);
+          });
+        });
+
+        return Object.values(tables);
+      }
+
+      function generateOutputs(tables, rlsOptions) {
+        resultTabs.innerHTML = '';
+        resultContents.innerHTML = '';
+        downloadAllBtn.style.display = 'block';
+
+        const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
+        let firstTab = true;
+
+        formats.forEach(format => {
+          const tab = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = '#';
+          link.dataset.tab = format;
+          link.className = 'tab-link' + (firstTab ? ' active' : '');
+          link.textContent = format.toUpperCase();
+          tab.appendChild(link);
+          resultTabs.appendChild(tab);
+
+          const content = document.createElement('div');
+          content.id = `result-${format}`;
+          content.className = 'tab-content' + (firstTab ? ' active' : '');
+
+          const textArea = document.createElement('textarea');
+          textArea.readOnly = true;
+
+          const downloadBtn = document.createElement('button');
+          downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
+          downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
+
+          // Generate content using stub functions
+          let output = '';
+          switch (format) {
+            case 'ddl': output = generateDDL(tables); break;
+            case 'typescript': output = generateTypeScript(tables); break;
+            case 'zod-schema': output = generateZodSchema(tables); break;
+            case 'zod-type': output = generateZodType(tables); break;
+            case 'java-model': output = generateJavaModel(tables, rlsOptions); break;
+            case 'java-repo': output = generateJavaRepo(tables, rlsOptions); break;
+            case 'java-service': output = generateJavaService(tables, rlsOptions); break;
+            case 'java-controller': output = generateJavaController(tables, rlsOptions); break;
+          }
+          textArea.value = output;
+
+          content.appendChild(downloadBtn);
+          content.appendChild(textArea);
+          resultContents.appendChild(content);
+
+          firstTab = false;
+        });
+
+        // Re-add tab click listeners for result tabs
+        document.querySelectorAll('#result-tabs .tab-link').forEach(tab => {
+          tab.addEventListener('click', e => {
+            e.preventDefault();
+            const targetId = e.target.dataset.tab;
+            document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            document.querySelectorAll('#result-contents .tab-content').forEach(c => {
+              c.classList.toggle('active', c.id === `result-${targetId}`);
+            });
+          });
+        });
+      }
+
+      downloadAllBtn.addEventListener('click', () => {
+        const zip = new JSZip();
+        const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
+
+        const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+        let tsvData = '';
+        if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
+          // This is async, so we need to handle it inside the reader's onload
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            proceedWithZipping(e.target.result);
+          };
+          reader.readAsText(fileInput.files[0]);
+          return; // Exit here, proceedWithZipping will be called by reader
+        } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
+          tsvData = textInput.value;
+        } else {
+          alert('入力データがありません。');
+          return;
+        }
+        proceedWithZipping(tsvData);
+
+        function proceedWithZipping(data) {
+          Papa.parse(data, {
+            header: true,
+            skipEmptyLines: true,
+            delimiter: '\t',
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                alert('CSV/TSVのパースに失敗しました。');
+                return;
+              }
+              const tables = transformToIntermediate(results.data);
+              const rlsOptions = {
+                enabled: document.getElementById('rlsEnabled')?.checked,
+                tenantIdColumn: document.getElementById('tenantIdColumn')?.value,
+                adminFlagColumn: document.getElementById('adminFlagColumn')?.value
+              };
+
+              formats.forEach(format => {
+                let output = '';
+                switch (format) {
+                  case 'ddl':
+                    output = generateDDL(tables);
+                    zip.file('schema.sql', output);
+                    break;
+                  case 'typescript':
+                    output = generateTypeScript(tables);
+                    zip.file('entities.ts', output);
+                    break;
+                  case 'zod-schema':
+                    output = generateZodSchema(tables);
+                    zip.file('schemas.ts', output);
+                    break;
+                  case 'zod-type':
+                    output = generateZodType(tables);
+                    zip.file('zod-types.ts', output);
+                    break;
+                  case 'java-model':
+                  case 'java-repo':
+                  case 'java-service':
+                  case 'java-controller':
+                    output = format === 'java-model' ? generateJavaModel(tables, rlsOptions) :
+                      format === 'java-repo' ? generateJavaRepo(tables, rlsOptions) :
+                        format === 'java-controller' ? generateJavaController(tables, rlsOptions) :
+                          generateJavaService(tables, rlsOptions);
+
+                    const files = output.split('// --- FileName: ');
+                    console.log(rlsOptions)
+                    console.log(files)
+                    files.forEach(fileContent => {
+                      if (fileContent.trim() === '') return;
+                      const firstLineEnd = fileContent.indexOf(' ---\n');
+                      const fileName = fileContent.substring(0, firstLineEnd).trim();
+                      const content = fileContent.substring(firstLineEnd + 5);
+
+                      let path = '';
+                      if (format === 'java-model') path = 'models/';
+                      else if (format === 'java-repo') path = 'repository/';
+                      else if (format === 'java-service') path = 'services/';
+                      else if (format === 'java-controller') path = 'controllers/api/';
+                      console.log(format, fileName, path)
+
+                      zip.file(path + fileName, content.trim());
+                    });
+                    break;
                 }
-            });
+              });
 
-            function parseAndConvert(tsvData) {
-                Papa.parse(tsvData, {
-                    header: true,
-                    skipEmptyLines: true,
-                    delimiter: '\t',
-                    complete: (results) => {
-                        if (results.errors.length > 0) {
-                            console.error("CSV Parse Errors:", results.errors);
-                            alert('CSV/TSVのパースに失敗しました。フォーマットを確認してください。');
-                            return;
-                        }
-                        const intermediateData = transformToIntermediate(results.data);
-                        const rlsOptions = {
-                            enabled: document.getElementById('rlsEnabled').checked,
-                            tenantIdColumn: document.getElementById('tenantIdColumn').value,
-                            adminFlagColumn: document.getElementById('adminFlagColumn').value
-                        };
-                        generateOutputs(intermediateData, rlsOptions);
-                    }
+              zip.generateAsync({ type: "blob" })
+                .then(function (content) {
+                  const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
+                  downloadFile(content, `table-definitions-${now}.zip`);
                 });
             }
+          });
+        }
+      });
 
-            function transformToIntermediate(data) {
-                const tables = {};
-                data.forEach(row => {
-                    const tableName = row.TableName;
-                    if (!tableName) return;
+      function downloadFile(content, fileName) {
+        const blob = (content instanceof Blob) ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
 
-                    if (!tables[tableName]) {
-                        tables[tableName] = {
-                            tableNo: row.TableNo,
-                            tableNameJP: row.TableName_JP,
-                            tableName: row.TableName,
-                            description: row.Description,
-                            columns: [],
-                            indexes: {}
-                        };
-                    }
+      // --- Conversion Stubs ---
+      function generateDDL(tables) {
+        let ddl = '';
+        tables.forEach(table => {
+          const tableName = table.tableName;
+          const pkColumns = table.columns.filter(c => c.pkfk === 'PK').map(c => c.colName);
+          const akColumns = table.columns.filter(c => c.pkfk === 'AK').map(c => c.colName);
 
-                    tables[tableName].columns.push({
-                        colNo: row.ColNo,
-                        colNameJP: row.ColName_JP,
-                        colName: row.ColName,
-                        pkfk: row['PK/FK'],
-                        type: row.Type,
-                        length: row.Length,
-                        constraint: row.Constraint,
-                        default: row.Default,
-                        description: row.Description // Description is often on the first row, let's assume it's the same for all columns for now
-                    });
-                    
-                    // Collect indexes
-                    for (let i = 1; i <= 5; i++) {
-                        const idxKey = `Idx${i}`;
-                        if (row[idxKey]) {
-                            if (!tables[tableName].indexes[idxKey]) {
-                                tables[tableName].indexes[idxKey] = [];
-                            }
-                            tables[tableName].indexes[idxKey].push({
-                                order: parseInt(row[idxKey], 10),
-                                colName: row.ColName
-                            });
-                        }
-                    }
-                });
-                
-                // Sort index columns by order
-                Object.values(tables).forEach(table => {
-                    Object.keys(table.indexes).forEach(idxKey => {
-                        table.indexes[idxKey].sort((a, b) => a.order - b.order);
-                    });
-                });
+          // DROP TABLE
+          ddl += `DROP TABLE IF EXISTS ${tableName};\n\n`;
 
-                return Object.values(tables);
+          // CREATE TABLE
+          ddl += `CREATE TABLE ${tableName} (\n`;
+          const columnDefs = table.columns.map(col => {
+            let def = `    ${col.colName}`;
+            // Type and Length
+            if (col.type === 'varchar' && col.length) {
+              def += ` VARCHAR(${col.length})`;
+            } else if (col.type === 'char' && col.length) {
+              def += ` CHAR(${col.length})`;
+            } else {
+              def += ` ${col.type.toUpperCase()}`;
             }
-
-            function generateOutputs(tables, rlsOptions) {
-                resultTabs.innerHTML = '';
-                resultContents.innerHTML = '';
-                downloadAllBtn.style.display = 'block';
-
-                const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
-                let firstTab = true;
-
-                formats.forEach(format => {
-                    const tab = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = '#';
-                    link.dataset.tab = format;
-                    link.className = 'tab-link' + (firstTab ? ' active' : '');
-                    link.textContent = format.toUpperCase();
-                    tab.appendChild(link);
-                    resultTabs.appendChild(tab);
-
-                    const content = document.createElement('div');
-                    content.id = `result-${format}`;
-                    content.className = 'tab-content' + (firstTab ? ' active' : '');
-                    
-                    const textArea = document.createElement('textarea');
-                    textArea.readOnly = true;
-                    
-                    const downloadBtn = document.createElement('button');
-                    downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
-                    downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
-
-                    // Generate content using stub functions
-                    let output = '';
-                    switch (format) {
-                        case 'ddl': output = generateDDL(tables); break;
-                        case 'typescript': output = generateTypeScript(tables); break;
-                        case 'zod-schema': output = generateZodSchema(tables); break;
-                        case 'zod-type': output = generateZodType(tables); break;
-                        case 'java-model': output = generateJavaModel(tables, rlsOptions); break;
-                        case 'java-repo': output = generateJavaRepo(tables, rlsOptions); break;
-                        case 'java-service': output = generateJavaService(tables, rlsOptions); break;
-                        case 'java-controller': output = generateJavaController(tables, rlsOptions); break;
-                    }
-                    textArea.value = output;
-
-                    content.appendChild(downloadBtn);
-                    content.appendChild(textArea);
-                    resultContents.appendChild(content);
-
-                    firstTab = false;
-                });
-                
-                // Re-add tab click listeners for result tabs
-                document.querySelectorAll('#result-tabs .tab-link').forEach(tab => {
-                    tab.addEventListener('click', e => {
-                        e.preventDefault();
-                        const targetId = e.target.dataset.tab;
-                        document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
-                        e.target.classList.add('active');
-                        document.querySelectorAll('#result-contents .tab-content').forEach(c => {
-                            c.classList.toggle('active', c.id === `result-${targetId}`);
-                        });
-                    });
-                });
+            // Constraints
+            if (col.constraint) {
+              if (col.constraint.includes('NN')) {
+                def += ' NOT NULL';
+              }
+              if (col.constraint.includes('U')) {
+                def += ' UNIQUE';
+              }
             }
-            
-            downloadAllBtn.addEventListener('click', () => {
-                const zip = new JSZip();
-                const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
-                
-                const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
-                let tsvData = '';
-                 if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
-                    // This is async, so we need to handle it inside the reader's onload
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        proceedWithZipping(e.target.result);
-                    };
-                    reader.readAsText(fileInput.files[0]);
-                    return; // Exit here, proceedWithZipping will be called by reader
-                } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
-                    tsvData = textInput.value;
-                } else {
-                    alert('入力データがありません。');
-                    return;
-                }
-                proceedWithZipping(tsvData);
-
-                function proceedWithZipping(data) {
-                    Papa.parse(data, {
-                        header: true,
-                        skipEmptyLines: true,
-                        delimiter: '\t',
-                        complete: (results) => {
-                            if (results.errors.length > 0) {
-                                alert('CSV/TSVのパースに失敗しました。');
-                                return;
-                            }
-                            const tables = transformToIntermediate(results.data);
-                            const rlsOptions = {
-                                enabled: document.getElementById('rlsEnabled')?.checked,
-                                tenantIdColumn: document.getElementById('tenantIdColumn')?.value,
-                                adminFlagColumn: document.getElementById('adminFlagColumn')?.value
-                            };
-                            
-                            formats.forEach(format => {
-                                let output = '';
-                                switch (format) {
-                                    case 'ddl':
-                                        output = generateDDL(tables);
-                                        zip.file('schema.sql', output);
-                                        break;
-                                    case 'typescript':
-                                        output = generateTypeScript(tables);
-                                        zip.file('entities.ts', output);
-                                        break;
-                                    case 'zod-schema':
-                                        output = generateZodSchema(tables);
-                                        zip.file('schemas.ts', output);
-                                        break;
-                                    case 'zod-type':
-                                        output = generateZodType(tables);
-                                        zip.file('zod-types.ts', output);
-                                        break;
-                                    case 'java-model':
-                                    case 'java-repo':
-                                    case 'java-service':
-                                    case 'java-controller':
-                                        output = format === 'java-model' ? generateJavaModel(tables, rlsOptions) :
-                                                 format === 'java-repo'  ? generateJavaRepo(tables, rlsOptions)  :
-                                                 format === 'java-controller' ? generateJavaController(tables, rlsOptions) :
-                                                                            generateJavaService(tables, rlsOptions);
-                                        
-                                        const files = output.split('// --- FileName: ');
-                                        console.log(rlsOptions)
-                                        console.log(files)
-                                        files.forEach(fileContent => {
-                                            if (fileContent.trim() === '') return;
-                                            const firstLineEnd = fileContent.indexOf(' ---\n');
-                                            const fileName = fileContent.substring(0, firstLineEnd).trim();
-                                            const content = fileContent.substring(firstLineEnd + 5);
-                                            
-                                            let path = '';
-                                            if (format === 'java-model') path = 'models/';
-                                            else if (format === 'java-repo') path = 'repository/';
-                                            else if (format === 'java-service') path = 'services/';
-                                            else if (format === 'java-controller') path = 'controllers/api/';
-                                            console.log(format,fileName,path)
-                                            
-                                            zip.file(path + fileName, content.trim());
-                                        });
-                                        break;
-                                }
-                            });
-
-                            zip.generateAsync({ type: "blob" })
-                                .then(function(content) {
-                                    downloadFile(content, 'table-definitions.zip');
-                                });
-                        }
-                    });
-                }
-            });
-            
-            function downloadFile(content, fileName) {
-                const blob = (content instanceof Blob) ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+            // Default
+            if (col.default) {
+              def += ` DEFAULT ${col.default}`;
             }
+            return def;
+          });
 
-            // --- Conversion Stubs ---
-            function generateDDL(tables) {
-                let ddl = '';
-                tables.forEach(table => {
-                    const tableName = table.tableName;
-                    const pkColumns = table.columns.filter(c => c.pkfk === 'PK').map(c => c.colName);
-                    const akColumns = table.columns.filter(c => c.pkfk === 'AK').map(c => c.colName);
+          ddl += columnDefs.join(',\n');
 
-                    // DROP TABLE
-                    ddl += `DROP TABLE IF EXISTS ${tableName};\n\n`;
+          // Primary Key
+          if (pkColumns.length > 0) {
+            ddl += `,\n    PRIMARY KEY (${pkColumns.join(', ')})`;
+          }
 
-                    // CREATE TABLE
-                    ddl += `CREATE TABLE ${tableName} (\n`;
-                    const columnDefs = table.columns.map(col => {
-                        let def = `    ${col.colName}`;
-                        // Type and Length
-                        if (col.type === 'varchar' && col.length) {
-                            def += ` VARCHAR(${col.length})`;
-                        } else if (col.type === 'char' && col.length) {
-                            def += ` CHAR(${col.length})`;
-                        } else {
-                            def += ` ${col.type.toUpperCase()}`;
-                        }
-                        // Constraints
-                        if (col.constraint) {
-                            if (col.constraint.includes('NN')) {
-                                def += ' NOT NULL';
-                            }
-                            if (col.constraint.includes('U')) {
-                                def += ' UNIQUE';
-                            }
-                        }
-                        // Default
-                        if (col.default) {
-                            def += ` DEFAULT ${col.default}`;
-                        }
-                        return def;
-                    });
-                    
-                    ddl += columnDefs.join(',\n');
-                    
-                    // Primary Key
-                    if (pkColumns.length > 0) {
-                        ddl += `,\n    PRIMARY KEY (${pkColumns.join(', ')})`;
-                    }
-                    
-                    // Alternate Key (Unique Constraint)
-                    if (akColumns.length > 0) {
-                        ddl += `,\n    CONSTRAINT ${tableName}_ak UNIQUE (${akColumns.join(', ')})`;
-                    }
+          // Alternate Key (Unique Constraint)
+          if (akColumns.length > 0) {
+            ddl += `,\n    CONSTRAINT ${tableName}_ak UNIQUE (${akColumns.join(', ')})`;
+          }
 
-                    ddl += '\n);\n\n';
+          ddl += '\n);\n\n';
 
-                    // Comments
-                    ddl += `COMMENT ON TABLE ${tableName} IS '${table.tableNameJP}';\n`;
-                    table.columns.forEach(col => {
-                        ddl += `COMMENT ON COLUMN ${tableName}.${col.colName} IS '${col.colNameJP}';\n`;
-                    });
-                    ddl += '\n';
+          // Comments
+          ddl += `COMMENT ON TABLE ${tableName} IS '${table.tableNameJP}';\n`;
+          table.columns.forEach(col => {
+            ddl += `COMMENT ON COLUMN ${tableName}.${col.colName} IS '${col.colNameJP}';\n`;
+          });
+          ddl += '\n';
 
-                    // Indexes
-                    Object.keys(table.indexes).forEach(idxKey => {
-                        const index = table.indexes[idxKey];
-                        const indexName = `${tableName}_${idxKey.toLowerCase()}`;
-                        const indexColumns = index.map(i => i.colName).join(', ');
-                        ddl += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
-                    });
-                    ddl += '\n-- --------------------------------------------------\n\n';
-                });
-                return ddl;
+          // Indexes
+          Object.keys(table.indexes).forEach(idxKey => {
+            const index = table.indexes[idxKey];
+            const indexName = `${tableName}_${idxKey.toLowerCase()}`;
+            const indexColumns = index.map(i => i.colName).join(', ');
+            ddl += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
+          });
+          ddl += '\n-- --------------------------------------------------\n\n';
+        });
+        return ddl;
+      }
+      function generateTypeScript(tables) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
+
+        const mapPostgresToTsType = (pgType) => {
+          pgType = pgType.toLowerCase();
+          if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
+            return 'number';
+          }
+          if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
+            return 'string';
+          }
+          if (['boolean'].includes(pgType)) {
+            return 'boolean';
+          }
+          if (['date', 'time', 'timestamp'].includes(pgType)) {
+            return 'string'; // Or Date, but string is often safer for serialization
+          }
+          return 'any';
+        };
+
+        let tsString = '';
+        tables.forEach(table => {
+          const typeName = toPascalCase(table.tableName);
+          tsString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
+          tsString += `export type ${typeName} = {\n`;
+
+          table.columns.forEach(col => {
+            const propName = toCamelCase(col.colName);
+            const tsType = mapPostgresToTsType(col.type);
+            tsString += `  /** ${col.colNameJP} */\n`;
+            // All properties are optional for flexibility
+            tsString += `  ${propName}?: ${tsType};\n`;
+          });
+
+          tsString += '};\n\n';
+        });
+
+        return tsString;
+      }
+      function generateZodSchema(tables) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
+
+        const mapPostgresToZod = (col) => {
+          const pgType = col.type.toLowerCase();
+          let zodType;
+
+          if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
+            zodType = 'z.number()';
+          } else if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
+            zodType = 'z.string()';
+            const isNotNull = col.constraint && col.constraint.includes('NN');
+            const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+
+            if (isNotNull && !excludeMinLength) {
+              zodType += '.min(1)';
             }
-            function generateTypeScript(tables) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
-
-                const mapPostgresToTsType = (pgType) => {
-                    pgType = pgType.toLowerCase();
-                    if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
-                        return 'number';
-                    }
-                    if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
-                        return 'string';
-                    }
-                    if (['boolean'].includes(pgType)) {
-                        return 'boolean';
-                    }
-                    if (['date', 'time', 'timestamp'].includes(pgType)) {
-                        return 'string'; // Or Date, but string is often safer for serialization
-                    }
-                    return 'any';
-                };
-
-                let tsString = '';
-                tables.forEach(table => {
-                    const typeName = toPascalCase(table.tableName);
-                    tsString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
-                    tsString += `export type ${typeName} = {\n`;
-
-                    table.columns.forEach(col => {
-                        const propName = toCamelCase(col.colName);
-                        const tsType = mapPostgresToTsType(col.type);
-                        tsString += `  /** ${col.colNameJP} */\n`;
-                        // All properties are optional for flexibility
-                        tsString += `  ${propName}?: ${tsType};\n`;
-                    });
-
-                    tsString += '};\n\n';
-                });
-
-                return tsString;
+            if (col.length) {
+              zodType += `.max(${col.length})`;
             }
-            function generateZodSchema(tables) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
+          } else if (['boolean'].includes(pgType)) {
+            zodType = 'z.boolean()';
+          } else if (['date', 'time', 'timestamp'].includes(pgType)) {
+            zodType = 'z.iso.datetime()'; // Or z.date()
+          } else {
+            zodType = 'z.any()';
+          }
 
-                const mapPostgresToZod = (col) => {
-                    const pgType = col.type.toLowerCase();
-                    let zodType;
-
-                    if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
-                        zodType = 'z.number()';
-                    } else if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
-                        zodType = 'z.string()';
-                        const isNotNull = col.constraint && col.constraint.includes('NN');
-                        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
-
-                        if (isNotNull && !excludeMinLength) {
-                            zodType += '.min(1)';
-                        }
-                        if (col.length) {
-                            zodType += `.max(${col.length})`;
-                        }
-                    } else if (['boolean'].includes(pgType)) {
-                        zodType = 'z.boolean()';
-                    } else if (['date', 'time', 'timestamp'].includes(pgType)) {
-                        zodType = 'z.iso.datetime()'; // Or z.date()
-                    } else {
-                        zodType = 'z.any()';
-                    }
-                    
-                    if (col.constraint && !col.constraint.includes('NN')) {
-                        zodType += '.optional()';
-                    }
-                     if (col.default) {
-                        // This is a simplification, default values in Zod need to match the type
-                        // For now, we just add a comment.
-                        // zodType += `.default(${col.default})`;
-                    }
-                    if (col.colNameJP) {
-                         zodType += `.describe('${col.colNameJP}')`;
-                    }
+          if (col.constraint && !col.constraint.includes('NN')) {
+            zodType += '.optional()';
+          }
+          if (col.default) {
+            // This is a simplification, default values in Zod need to match the type
+            // For now, we just add a comment.
+            // zodType += `.default(${col.default})`;
+          }
+          if (col.colNameJP) {
+            zodType += `.describe('${col.colNameJP}')`;
+          }
 
 
-                    return zodType;
-                };
+          return zodType;
+        };
 
-                let zodString = `import { z } from 'zod';\n\n`;
-                tables.forEach(table => {
-                    const schemaName = `${toPascalCase(table.tableName)}Schema`;
-                    zodString += `/**\n * ${table.tableNameJP}\n */\n`;
-                    zodString += `export const ${schemaName} = z.object({\n`;
+        let zodString = `import { z } from 'zod';\n\n`;
+        tables.forEach(table => {
+          const schemaName = `${toPascalCase(table.tableName)}Schema`;
+          zodString += `/**\n * ${table.tableNameJP}\n */\n`;
+          zodString += `export const ${schemaName} = z.object({\n`;
 
-                    table.columns.forEach(col => {
-                        const propName = toCamelCase(col.colName);
-                        const zodType = mapPostgresToZod(col);
-                        zodString += `  ${propName}: ${zodType},\n`;
-                    });
+          table.columns.forEach(col => {
+            const propName = toCamelCase(col.colName);
+            const zodType = mapPostgresToZod(col);
+            zodString += `  ${propName}: ${zodType},\n`;
+          });
 
-                    zodString += '});\n\n';
-                });
+          zodString += '});\n\n';
+        });
 
-                return zodString;
-            }
+        return zodString;
+      }
 
-            function generateZodType(tables) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                let typeString = `import { z } from 'zod';\n`;
-                typeString += `import { `;
-                
-                const schemaNames = tables.map(table => `${toPascalCase(table.tableName)}Schema`);
-                typeString += schemaNames.join(', ');
-                
-                typeString += ` } from './schemas'; // Assuming schemas are in a file named schemas.ts\n\n`;
+      function generateZodType(tables) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        let typeString = `import { z } from 'zod';\n`;
+        typeString += `import { `;
 
-                tables.forEach(table => {
-                    const typeName = toPascalCase(table.tableName);
-                    const schemaName = `${typeName}Schema`;
-                    typeString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
-                    typeString += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n\n`;
-                });
+        const schemaNames = tables.map(table => `${toPascalCase(table.tableName)}Schema`);
+        typeString += schemaNames.join(', ');
 
-                return typeString;
-            }
-            function generateJavaModel(tables, rlsOptions) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
+        typeString += ` } from './schemas'; // Assuming schemas are in a file named schemas.ts\n\n`;
 
-                const mapPostgresToJavaType = (pgType) => {
-                    pgType = pgType.toLowerCase();
-                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
-                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
-                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
-                    if (['boolean'].includes(pgType)) return 'Boolean';
-                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
-                    if (['bytea'].includes(pgType)) return 'byte[]';
-                    return 'Object';
-                };
-                
-                const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+        tables.forEach(table => {
+          const typeName = toPascalCase(table.tableName);
+          const schemaName = `${typeName}Schema`;
+          typeString += `/**\n * @type ${typeName} ${table.tableNameJP}\n */\n`;
+          typeString += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n\n`;
+        });
 
-                let javaString = '';
+        return typeString;
+      }
+      function generateJavaModel(tables, rlsOptions) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
 
-                if (rlsOptions && rlsOptions.enabled) {
-                    const sessionInfoContent = `
+        const mapPostgresToJavaType = (pgType) => {
+          pgType = pgType.toLowerCase();
+          if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+          if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+          if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+          if (['boolean'].includes(pgType)) return 'Boolean';
+          if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+          if (['bytea'].includes(pgType)) return 'byte[]';
+          return 'Object';
+        };
+
+        const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+
+        let javaString = '';
+
+        if (rlsOptions && rlsOptions.enabled) {
+          const sessionInfoContent = `
 // --- FileName: SessionInfo.java ---
 package models;
 
@@ -660,7 +671,7 @@ public class SessionInfo {
     private String tenantId;
 }
 `;
-                    const rlsAwareContent = `
+          const rlsAwareContent = `
 // --- FileName: RlsAware.java ---
 package models;
 
@@ -671,12 +682,12 @@ public interface RlsAware {
     String getTenantId();
 }
 `;
-                    javaString += sessionInfoContent.trim() + '\n\n';
-                    javaString += rlsAwareContent.trim() + '\n\n';
-                }
+          javaString += sessionInfoContent.trim() + '\n\n';
+          javaString += rlsAwareContent.trim() + '\n\n';
+        }
 
 
-                const baseModelContent = `
+        const baseModelContent = `
 // --- FileName: BaseModel.java ---
 package models;
 
@@ -727,114 +738,114 @@ public class BaseModel extends Model {
     public String updatedBy;
 }
 `;
-                javaString += baseModelContent.trim() + '\n\n';
+        javaString += baseModelContent.trim() + '\n\n';
 
-                tables.forEach(table => {
-                    const className = toPascalCase(table.tableName);
-                    const imports = new Set([
-                        'import io.ebean.Finder;',
-                        'import jakarta.persistence.Entity;',
-                        'import jakarta.persistence.Table;',
-                        'import lombok.Getter;',
-                        'import lombok.Setter;'
-                    ]);
+        tables.forEach(table => {
+          const className = toPascalCase(table.tableName);
+          const imports = new Set([
+            'import io.ebean.Finder;',
+            'import jakarta.persistence.Entity;',
+            'import jakarta.persistence.Table;',
+            'import lombok.Getter;',
+            'import lombok.Setter;'
+          ]);
 
-                    let fieldsContent = '';
-                    let implementsRls = false;
-                    let tenantIdGetter = '';
+          let fieldsContent = '';
+          let implementsRls = false;
+          let tenantIdGetter = '';
 
-                    table.columns.forEach(col => {
-                        if (baseModelCols.has(col.colName)) {
-                            return; // Skip columns defined in BaseModel
-                        }
-                        const fieldName = toCamelCase(col.colName);
-                        const javaType = mapPostgresToJavaType(col.type);
-                        
-                        if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
-                            implementsRls = true;
-                            tenantIdGetter = `
+          table.columns.forEach(col => {
+            if (baseModelCols.has(col.colName)) {
+              return; // Skip columns defined in BaseModel
+            }
+            const fieldName = toCamelCase(col.colName);
+            const javaType = mapPostgresToJavaType(col.type);
+
+            if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
+              implementsRls = true;
+              tenantIdGetter = `
     @Override
     public String getTenantId() {
         return this.${fieldName};
     }
 `;
-                        }
-
-                        let annotations = [];
-                        const isNotNull = col.constraint && col.constraint.includes('NN');
-                        
-                        if (isNotNull) {
-                            annotations.push('@NotNull');
-                            imports.add('import javax.validation.constraints.NotNull;');
-                        }
-
-                        const sizeAttributes = [];
-                        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
-                        if (javaType === 'String' && isNotNull && !excludeMinLength) {
-                            sizeAttributes.push('min = 1');
-                        }
-                        if (col.length) {
-                            sizeAttributes.push(`max = ${col.length}`);
-                        }
-                        if (sizeAttributes.length > 0) {
-                            annotations.push(`@Size(${sizeAttributes.join(', ')})`);
-                            imports.add('import javax.validation.constraints.Size;');
-                        }
-
-                        fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
-                        if (annotations.length > 0) {
-                            fieldsContent += `    ${annotations.join('\n    ')}\n`;
-                        }
-                        fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
-                    });
-
-                    let classContent = `// --- FileName: ${className}.java ---\n`;
-                    classContent += `package models;\n\n`;
-                    classContent += `${[...imports].sort().join('\n')}\n\n`;
-                    classContent += `/**\n * ${table.tableNameJP}\n */\n`;
-                    classContent += `@Entity\n@Getter\n@Setter\n`;
-                    classContent += `@Table(name = "${table.tableName}")\n`;
-                    
-                    let extendsPart = 'extends BaseModel';
-                    if (implementsRls) {
-                        extendsPart += ' implements RlsAware';
-                    }
-                    classContent += `public class ${className} ${extendsPart} {\n\n`;
-                    
-                    classContent += fieldsContent;
-                    
-                    if (implementsRls) {
-                        classContent += tenantIdGetter;
-                    }
-
-                    classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
-                    classContent += `}\n`;
-                    javaString += classContent + '\n';
-                });
-
-                return javaString;
             }
-            function generateJavaRepo(tables, rlsOptions) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
-                 const mapPostgresToJavaType = (pgType) => {
-                    pgType = pgType.toLowerCase();
-                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
-                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
-                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
-                    if (['boolean'].includes(pgType)) return 'Boolean';
-                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
-                    if (['bytea'].includes(pgType)) return 'byte[]';
-                    return 'Object';
-                };
-                const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
 
-                let javaString = '';
+            let annotations = [];
+            const isNotNull = col.constraint && col.constraint.includes('NN');
 
-                const exceptionContent = `
+            if (isNotNull) {
+              annotations.push('@NotNull');
+              imports.add('import javax.validation.constraints.NotNull;');
+            }
+
+            const sizeAttributes = [];
+            const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+            if (javaType === 'String' && isNotNull && !excludeMinLength) {
+              sizeAttributes.push('min = 1');
+            }
+            if (col.length) {
+              sizeAttributes.push(`max = ${col.length}`);
+            }
+            if (sizeAttributes.length > 0) {
+              annotations.push(`@Size(${sizeAttributes.join(', ')})`);
+              imports.add('import javax.validation.constraints.Size;');
+            }
+
+            fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
+            if (annotations.length > 0) {
+              fieldsContent += `    ${annotations.join('\n    ')}\n`;
+            }
+            fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
+          });
+
+          let classContent = `// --- FileName: ${className}.java ---\n`;
+          classContent += `package models;\n\n`;
+          classContent += `${[...imports].sort().join('\n')}\n\n`;
+          classContent += `/**\n * ${table.tableNameJP}\n */\n`;
+          classContent += `@Entity\n@Getter\n@Setter\n`;
+          classContent += `@Table(name = "${table.tableName}")\n`;
+
+          let extendsPart = 'extends BaseModel';
+          if (implementsRls) {
+            extendsPart += ' implements RlsAware';
+          }
+          classContent += `public class ${className} ${extendsPart} {\n\n`;
+
+          classContent += fieldsContent;
+
+          if (implementsRls) {
+            classContent += tenantIdGetter;
+          }
+
+          classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
+          classContent += `}\n`;
+          javaString += classContent + '\n';
+        });
+
+        return javaString;
+      }
+      function generateJavaRepo(tables, rlsOptions) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
+        const mapPostgresToJavaType = (pgType) => {
+          pgType = pgType.toLowerCase();
+          if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+          if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+          if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+          if (['boolean'].includes(pgType)) return 'Boolean';
+          if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+          if (['bytea'].includes(pgType)) return 'byte[]';
+          return 'Object';
+        };
+        const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+
+        let javaString = '';
+
+        const exceptionContent = `
 // --- FileName: OptimisticLockingFailureException.java ---
 package repository;
 
@@ -847,13 +858,13 @@ public class OptimisticLockingFailureException extends RuntimeException {
     }
 }
 `;
-                javaString += exceptionContent.trim() + '\n\n';
+        javaString += exceptionContent.trim() + '\n\n';
 
-                console.log(`rlsOptions:${rlsOptions},rlsOptions.enabled:${rlsOptions.enabled}`)
-                console.log(rlsOptions)
-                if (rlsOptions && rlsOptions.enabled) {
-                  console.log('--- yes ---');
-                    const baseRepoContent = `
+        console.log(`rlsOptions:${rlsOptions},rlsOptions.enabled:${rlsOptions.enabled}`)
+        console.log(rlsOptions)
+        if (rlsOptions && rlsOptions.enabled) {
+          console.log('--- yes ---');
+          const baseRepoContent = `
 // --- FileName: BaseRepository.java ---
 package repository;
 
@@ -895,520 +906,522 @@ public abstract class BaseRepository<T extends BaseModel> {
     }
 }
 `;
-                    javaString += baseRepoContent.trim() + '\n\n';
-                }
+          javaString += baseRepoContent.trim() + '\n\n';
+        }
 
 
-                tables.forEach(table => {
-                    const modelName = toPascalCase(table.tableName);
-                    const repoName = `${modelName}Repository`;
-                    const modelVar = toCamelCase(modelName);
-                    const akColumns = table.columns.filter(c => c.pkfk === 'AK');
-                    const hasTenantId = table.columns.some(c => c.colName === (rlsOptions && rlsOptions.tenantIdColumn));
-                    const extendsBaseRepo = rlsOptions && rlsOptions.enabled;
+        tables.forEach(table => {
+          const modelName = toPascalCase(table.tableName);
+          const repoName = `${modelName}Repository`;
+          const modelVar = toCamelCase(modelName);
+          const akColumns = table.columns.filter(c => c.pkfk === 'AK');
+          const hasTenantId = table.columns.some(c => c.colName === (rlsOptions && rlsOptions.tenantIdColumn));
+          const extendsBaseRepo = rlsOptions && rlsOptions.enabled;
 
 
-                    let classContent = `// --- FileName: ${repoName}.java ---\n`;
-                    classContent += `package repository;\n\n`;
-                    classContent += `import io.ebean.DB;\n`;
-                    classContent += `import io.ebean.ExpressionList;\n`;
-                    classContent += `import models.${modelName};\n`;
-                    if (extendsBaseRepo) {
-                       classContent += `import models.SessionInfo;\n`;
-                    }
-                    classContent += `import jakarta.persistence.EntityNotFoundException;\n`;
-                    classContent += `import javax.inject.Inject;\n`;
-                    classContent += `import java.time.Instant;\n`;
-                    classContent += `import java.util.List;\n`;
-                    classContent += `import java.util.Optional;\n`;
-                    classContent += `import java.util.concurrent.CompletionStage;\n\n`;
-                    classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
+          let classContent = `// --- FileName: ${repoName}.java ---\n`;
+          classContent += `package repository;\n\n`;
+          classContent += `import io.ebean.DB;\n`;
+          classContent += `import io.ebean.ExpressionList;\n`;
+          classContent += `import models.${modelName};\n`;
+          if (extendsBaseRepo) {
+            classContent += `import models.SessionInfo;\n`;
+          }
+          classContent += `import jakarta.persistence.EntityNotFoundException;\n`;
+          classContent += `import javax.inject.Inject;\n`;
+          classContent += `import java.time.Instant;\n`;
+          classContent += `import java.util.List;\n`;
+          classContent += `import java.util.Optional;\n`;
+          classContent += `import java.util.concurrent.CompletionStage;\n\n`;
+          classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
 
-                    classContent += `/**\n * ${table.tableNameJP} のリポジトリ\n */\n`;
-                    classContent += `public class ${repoName} ${extendsBaseRepo ? `extends BaseRepository<${modelName}>` : ''}{\n`;
-                    
-                    if (!extendsBaseRepo) {
-                        classContent += `    private final DatabaseExecutionContext executionContext;\n\n`;
-                    }
+          classContent += `/**\n * ${table.tableNameJP} のリポジトリ\n */\n`;
+          classContent += `public class ${repoName} ${extendsBaseRepo ? `extends BaseRepository<${modelName}>` : ''}{\n`;
 
-                    classContent += `    @Inject\n`;
-                    if (extendsBaseRepo) {
-                        classContent += `    public ${repoName}(DatabaseExecutionContext executionContext, SessionInfo sessionInfo) {\n`;
-                        classContent += `        super(executionContext, sessionInfo, ${modelName}.class);\n`;
-                    } else {
-                        classContent += `    public ${repoName}(DatabaseExecutionContext executionContext) {\n`;
-                        classContent += `        this.executionContext = executionContext;\n`;
-                    }
-                    classContent += `    }\n\n`;
+          if (!extendsBaseRepo) {
+            classContent += `    private final DatabaseExecutionContext executionContext;\n\n`;
+          }
 
-                    // findById
-                    classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
-                    classContent += `            return query.eq("id", id)\n`;
-                    classContent += `                .eq("isDeleted", false)\n`;
-                    classContent += `                .findOneOrEmpty();\n`;
-                    classContent += `        }, executionContext);\n`;
-                    classContent += `    }\n\n`;
-                    
-                    // findByAK
-                    akColumns.forEach(col => {
-                        const colCamel = toCamelCase(col.colName);
-                        const colPascal = toPascalCase(col.colName);
-                        const colType = mapPostgresToJavaType(col.type);
-                        classContent += `    /**\n     * ${col.colNameJP} で ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param ${colCamel} ${col.colNameJP}\n     * @return 検索結果\n     */\n`;
-                        classContent += `    public CompletionStage<Optional<${modelName}>> findBy${colPascal}(${colType} ${colCamel}) {\n`;
-                        classContent += `        return supplyAsync(() -> {\n`;
-                        classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
-                        classContent += `            return query.eq("${colCamel}", ${colCamel})\n`;
-                        classContent += `                .eq("isDeleted", false)\n`;
-                        classContent += `                .findOneOrEmpty();\n`;
-                        classContent += `        }, executionContext);\n`;
-                        classContent += `    }\n\n`;
-                    });
+          classContent += `    @Inject\n`;
+          if (extendsBaseRepo) {
+            classContent += `    public ${repoName}(DatabaseExecutionContext executionContext, SessionInfo sessionInfo) {\n`;
+            classContent += `        super(executionContext, sessionInfo, ${modelName}.class);\n`;
+          } else {
+            classContent += `    public ${repoName}(DatabaseExecutionContext executionContext) {\n`;
+            classContent += `        this.executionContext = executionContext;\n`;
+          }
+          classContent += `    }\n\n`;
 
-                    // findAll
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
-                    classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
-                    classContent += `        return findAll(0, Integer.MAX_VALUE);\n`;
-                    classContent += `    }\n\n`;
+          // findById
+          classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
+          classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
+          classContent += `            return query.eq("id", id)\n`;
+          classContent += `                .eq("isDeleted", false)\n`;
+          classContent += `                .findOneOrEmpty();\n`;
+          classContent += `        }, executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    // findAll
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
-                    classContent += `    public CompletionStage<List<${modelName}>> findAll(int offset, int limit) {\n`;
-                    classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
-                    classContent += `                .eq("isDeleted", false)\n`;
-                    classContent += `                .setFirstRow(offset)\n`;
-                    classContent += `                .setMaxRows(limit)\n`;
-                    classContent += `                .findList()\n`;
-                    classContent += `        , executionContext);\n`;
-                    classContent += `    }\n\n`;
+          // findByAK
+          akColumns.forEach(col => {
+            const colCamel = toCamelCase(col.colName);
+            const colPascal = toPascalCase(col.colName);
+            const colType = mapPostgresToJavaType(col.type);
+            classContent += `    /**\n     * ${col.colNameJP} で ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param ${colCamel} ${col.colNameJP}\n     * @return 検索結果\n     */\n`;
+            classContent += `    public CompletionStage<Optional<${modelName}>> findBy${colPascal}(${colType} ${colCamel}) {\n`;
+            classContent += `        return supplyAsync(() -> {\n`;
+            classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
+            classContent += `            return query.eq("${colCamel}", ${colCamel})\n`;
+            classContent += `                .eq("isDeleted", false)\n`;
+            classContent += `                .findOneOrEmpty();\n`;
+            classContent += `        }, executionContext);\n`;
+            classContent += `    }\n\n`;
+          });
 
-                    classContent += `    /**\n     * 全ての ${table.tableNameJP} の件数を取得します（論理削除済みは除く）。\n     * @return 件数\n     */\n`;
-                    classContent += `    public CompletionStage<Integer> countAll() {\n`;
-                    classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
-                    classContent += `                .eq("isDeleted", false)\n`;
-                    classContent += `                .findCount()\n`;
-                    classContent += `        , executionContext);\n`;
-                    classContent += `    }\n\n`;
+          // findAll
+          classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+          classContent += `    public CompletionStage<List<${modelName}>> findAll() {\n`;
+          classContent += `        return findAll(0, Integer.MAX_VALUE);\n`;
+          classContent += `    }\n\n`;
 
-                    // find (with filter)
-                    classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
-                    classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter) {\n`;
-                    classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
-                    classContent += `    }\n\n`;
+          // findAll
+          classContent += `    /**\n     * 全ての ${table.tableNameJP} を取得します（論理削除済みは除く）。\n     * @return 全件リスト\n     */\n`;
+          classContent += `    public CompletionStage<List<${modelName}>> findAll(int offset, int limit) {\n`;
+          classContent += `        return supplyAsync(() ->\n`;
+          classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
+          classContent += `                .eq("isDeleted", false)\n`;
+          classContent += `                .setFirstRow(offset)\n`;
+          classContent += `                .setMaxRows(limit)\n`;
+          classContent += `                .findList()\n`;
+          classContent += `        , executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    // find (with filter)
-                    classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
-                    classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter, int offset, int limit) {\n`;
-                    classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            createQueryWithFilter(filter)\n`;
-                    classContent += `                .setFirstRow(offset)\n`;
-                    classContent += `                .setMaxRows(limit)\n`;
-                    classContent += `                .findList()\n`;
-                    classContent += `        , executionContext);\n`;
-                    classContent += `    }\n\n`;
+          classContent += `    /**\n     * 全ての ${table.tableNameJP} の件数を取得します（論理削除済みは除く）。\n     * @return 件数\n     */\n`;
+          classContent += `    public CompletionStage<Integer> countAll() {\n`;
+          classContent += `        return supplyAsync(() ->\n`;
+          classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
+          classContent += `                .eq("isDeleted", false)\n`;
+          classContent += `                .findCount()\n`;
+          classContent += `        , executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    classContent += `    /**\n     * ${table.tableNameJP} の件数を検索条件に基づいて取得します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 件数\n     */\n`;
-                    classContent += `    public CompletionStage<Integer> count(${modelName} filter) {\n`;
-                    classContent += `        return supplyAsync(() ->\n`;
-                    classContent += `            createQueryWithFilter(filter).findCount()\n`;
-                    classContent += `        , executionContext);\n`;
-                    classContent += `    }\n\n`;
+          // find (with filter)
+          classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
+          classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter) {\n`;
+          classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
+          classContent += `    }\n\n`;
 
-                    classContent += `    /**\n     * 検索条件に基づいてクエリを構築します。\n     * @param filter 検索条件\n     * @return 構築されたクエリ\n     */\n`;
-                    classContent += `    private io.ebean.ExpressionList<${modelName}> createQueryWithFilter(${modelName} filter) {\n`;
-                    classContent += `        io.ebean.ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}.eq("isDeleted", false);\n\n`;
-                    table.columns.forEach(col => {
-                        if (!baseModelCols.has(col.colName)) {
-                            const colCamel = toCamelCase(col.colName);
-                            const colPascal = toPascalCase(col.colName);
-                            const javaType = mapPostgresToJavaType(col.type);
-                            classContent += `        if (filter.get${colPascal}() != null) {\n`;
-                            if (javaType === 'String') {
-                                classContent += `            query.contains("${colCamel}", filter.get${colPascal}());\n`;
-                            } else {
-                                classContent += `            query.eq("${colCamel}", filter.get${colPascal}());\n`;
-                            }
-                            classContent += `        }\n`;
-                        }
-                    });
-                    classContent += `\n        return query;\n`;
-                    classContent += `    }\n\n`;
+          // find (with filter)
+          classContent += `    /**\n     * ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 検索結果リスト\n     */\n`;
+          classContent += `    public CompletionStage<List<${modelName}>> find(${modelName} filter, int offset, int limit) {\n`;
+          classContent += `        return supplyAsync(() ->\n`;
+          classContent += `            createQueryWithFilter(filter)\n`;
+          classContent += `                .setFirstRow(offset)\n`;
+          classContent += `                .setMaxRows(limit)\n`;
+          classContent += `                .findList()\n`;
+          classContent += `        , executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    // insert
-                    classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
-                    classContent += `    public CompletionStage<${modelName}> insert(${modelName} ${modelVar}) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            DB.insert(${modelVar});\n`;
-                    classContent += `            return ${modelVar};\n`;
-                    classContent += `        }, executionContext);\n`;
-                    classContent += `    }\n\n`;
-                    
-                    // batchInsert
-                    classContent += `    /**\n     * ${table.tableNameJP} を一括で新規登録します。\n     * @param ${modelVar}s 登録データリスト\n     * @return 登録件数\n     */\n`;
-                    classContent += `    public CompletionStage<Integer> batchInsert(List<${modelName}> ${modelVar}s) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            DB.saveAll(${modelVar}s);\n`;
-                    classContent += `            return ${modelVar}s.size();\n`;
-                    classContent += `        }, executionContext);\n`;
-                    classContent += `    }\n\n`;
+          classContent += `    /**\n     * ${table.tableNameJP} の件数を検索条件に基づいて取得します（論理削除済みは除く）。\n     * @param filter 検索条件\n     * @return 件数\n     */\n`;
+          classContent += `    public CompletionStage<Integer> count(${modelName} filter) {\n`;
+          classContent += `        return supplyAsync(() ->\n`;
+          classContent += `            createQueryWithFilter(filter).findCount()\n`;
+          classContent += `        , executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    // update
-                    classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param newData 更新データ\n     * @param updatedAt タイムスタンプ\n     * @return 更新後のデータ\n     */\n`;
-                    classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} newData, Instant updatedAt) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            newData.setId(id);\n`;
-                    classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
-                    classContent += `                .set("updatedAt", Instant.now())\n`;
-                    table.columns.forEach(col => {
-                        if (!baseModelCols.has(col.colName)) {
-                            const colCamel = toCamelCase(col.colName);
-                            const colPascal = toPascalCase(col.colName);
-                            classContent += `                .set("${colCamel}", newData.get${colPascal}())\n`;
-                        }
-                    });
-                    classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
-                    classContent += `                .update();\n\n`;
-                    classContent += `            if (updatedRows == 0) {\n`;
-                    classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;
-                    classContent += `            }\n`;
-                    classContent += `            return newData;\n`;
-                    classContent += `        }, executionContext);\n`;
-                    classContent += `    }\n\n`;
-
-                    // delete (logical)
-                    classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @param updatedAt タイムスタンプ\n     */\n`;
-                    classContent += `    public CompletionStage<Void> delete(Long id, Instant updatedAt) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
-                    classContent += `                .set("isDeleted", true)\n`;
-                    classContent += `                .set("updatedAt", Instant.now())\n`;
-                    classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
-                    classContent += `                .update();\n\n`;
-                    classContent += `            if (updatedRows == 0) {\n`;
-                    classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;
-                    classContent += `            }\n`;
-                    classContent += `            return null;\n`;
-                    classContent += `        }, executionContext);\n`;
-                    classContent += `    }\n`;
-
-                    classContent += `}\n`;
-                    javaString += classContent + '\n';
-                });
-
-                return javaString;
+          classContent += `    /**\n     * 検索条件に基づいてクエリを構築します。\n     * @param filter 検索条件\n     * @return 構築されたクエリ\n     */\n`;
+          classContent += `    private io.ebean.ExpressionList<${modelName}> createQueryWithFilter(${modelName} filter) {\n`;
+          classContent += `        io.ebean.ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}.eq("isDeleted", false);\n\n`;
+          table.columns.forEach(col => {
+            if (!baseModelCols.has(col.colName)) {
+              const colCamel = toCamelCase(col.colName);
+              const colPascal = toPascalCase(col.colName);
+              const javaType = mapPostgresToJavaType(col.type);
+              classContent += `        if (filter.get${colPascal}() != null) {\n`;
+              if (javaType === 'String') {
+                classContent += `            query.contains("${colCamel}", filter.get${colPascal}());\n`;
+              } else {
+                classContent += `            query.eq("${colCamel}", filter.get${colPascal}());\n`;
+              }
+              classContent += `        }\n`;
             }
-            function generateJavaService(tables, rlsOptions) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
+          });
+          classContent += `\n        return query;\n`;
+          classContent += `    }\n\n`;
 
-                const mapPostgresToJavaType = (pgType) => {
-                    pgType = pgType.toLowerCase();
-                    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
-                    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
-                    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
-                    if (['boolean'].includes(pgType)) return 'Boolean';
-                    if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
-                    if (['bytea'].includes(pgType)) return 'byte[]';
-                    return 'Object';
-                };
+          // insert
+          classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
+          classContent += `    public CompletionStage<${modelName}> insert(${modelName} ${modelVar}) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            DB.insert(${modelVar});\n`;
+          classContent += `            return ${modelVar};\n`;
+          classContent += `        }, executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                let javaString = '';
-                tables.forEach(table => {
-                    const modelName = toPascalCase(table.tableName);
-                    const serviceName = `${modelName}Service`;
-                    const repoName = `${modelName}Repository`;
-                    const repoVar = toCamelCase(repoName);
-                    const modelVar = toCamelCase(modelName);
+          // batchInsert
+          classContent += `    /**\n     * ${table.tableNameJP} を一括で新規登録します。\n     * @param ${modelVar}s 登録データリスト\n     * @return 登録件数\n     */\n`;
+          classContent += `    public CompletionStage<Integer> batchInsert(List<${modelName}> ${modelVar}s) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            DB.saveAll(${modelVar}s);\n`;
+          classContent += `            return ${modelVar}s.size();\n`;
+          classContent += `        }, executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                    let classContent = `// --- FileName: ${serviceName}.java ---\n`;
-                    classContent += `package services;\n\n`;
-                    classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
-                    classContent += `import models.${modelName};\n`;
-                    classContent += `import play.libs.Json;\n`;
-                    classContent += `import repository.${repoName};\n`;
-                    classContent += `import libraries.CsvHelper;\n`;
-                    classContent += `import java.io.File;\n`;
-                    classContent += `import java.io.IOException;\n`;
-                    classContent += `import java.io.PrintWriter;\n`;
-                    classContent += `import java.nio.charset.StandardCharsets;\n`;
-                    classContent += `import java.nio.file.Files;\n`;
-                    classContent += `import java.nio.file.StandardOpenOption;\n`;
-                    classContent += `import java.time.Instant;\n`;
-                    classContent += `import java.util.concurrent.CompletionStage;\n`;
-                    classContent += `import java.util.List;\n`;
-                    classContent += `import java.util.Optional;\n`;
-                    classContent += `import java.util.stream.Collectors;\n`;
-                    classContent += `import javax.inject.Inject;\n`;
-                    classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
-
-
-                    classContent += `/**\n * ${table.tableNameJP} のサービス\n */\n`;
-                    classContent += `public class ${serviceName} {\n`;
-                    classContent += `    private final ${repoName} ${repoVar};\n\n`;
-
-                    classContent += `    @Inject\n`;
-                    classContent += `    public ${serviceName}(${repoName} ${repoVar}) {\n`;
-                    classContent += `        this.${repoVar} = ${repoVar};\n`;
-                    classContent += `    }\n\n`;
-
-                    classContent += `    public CompletionStage<ObjectNode> find() {\n`;
-                    classContent += `        return find(0, Integer.MAX_VALUE);\n`;
-                    classContent += `    }\n\n`;
-                    
-                    // find (as JSON)
-                    classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<ObjectNode> find(int offset, int limit) {\n`;
-                    classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.countAll();\n`;
-                    classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.findAll(offset, limit);\n`;
-                    classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
-                    classContent += `            ObjectNode result = Json.newObject();\n`;
-                    classContent += `            result.put("total", total);\n`;
-                    classContent += `            result.set("data", Json.toJson(data));\n`;
-                    classContent += `            return result;\n`;
-                    classContent += `        });\n`;
-                    classContent += `    }\n\n`;
-
-                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter) {\n`;
-                    classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
-                    classContent += `    }\n\n`;
-                    
-                    // find (with filter)
-                    classContent += `    /**\n     * ${table.tableNameJP} を検索し、リストをJSONで取得します。\n     * @param filter 検索条件\n     * @return JSON形式の検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter, int offset, int limit) {\n`;
-                    classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.count(filter);\n`;
-                    classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.find(filter, offset, limit);\n`;
-                    classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
-                    classContent += `            ObjectNode result = Json.newObject();\n`;
-                    classContent += `            result.put("total", total);\n`;
-                    classContent += `            result.set("data", Json.toJson(data));\n`;
-                    classContent += `            return result;\n`;
-                    classContent += `        });\n`;
-                    classContent += `    }\n\n`;
-
-                    // findById
-                    classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
-                    classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
-                    classContent += `        return ${repoVar}.findById(id);\n`;
-                    classContent += `    }\n\n`;
-
-                    // create
-                    classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
-                    classContent += `    public CompletionStage<${modelName}> create(${modelName} ${modelVar}) {\n`;
-                    classContent += `        return ${repoVar}.insert(${modelVar});\n`;
-                    classContent += `    }\n\n`;
-
-                    // update
-                    classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param ${modelVar} 更新データ\n     * @return 更新後のデータ\n     */\n`;
-                    classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} ${modelVar}) {\n`;
-                    classContent += `        return ${repoVar}.update(id, ${modelVar}, ${modelVar}.getUpdatedAt());\n`;
-                    classContent += `    }\n\n`;
-
-                    // delete
-                    classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @param updatedAt タイムスタンプ\n     */\n`;
-                    classContent += `    public CompletionStage<Void> delete(Long id, Instant updatedAt) {\n`;
-                    classContent += `        return ${repoVar}.delete(id, updatedAt);\n`;
-                    classContent += `    }\n\n`;
-                    
-                    const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
-                    const csvHeader = nonKeyColumns.map(c => `\"${c.colNameJP}\"`).join("\n                        ,");
-                    const csvPlaceHolder = `("\\"%s\\",").repeat(${nonKeyColumns.length}) + "\\"%s\\"\\n"` // nonKeyColumns.map(c => `\\"%s\\"`).join(",") + "\\n";
-                    const csvRow = nonKeyColumns.map(c => `CsvHelper.processCsvField(String.valueOf(m.get${toPascalCase(c.colName)}()))`).join('\n                            ,');
-
-                    classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @param filter 検索条件\n     * @return 生成されたCSVファイル\n     */\n`;
-                    classContent += `    public CompletionStage<File> exportCsv(${modelName} filter) {\n`;
-                    classContent += `        return ${repoVar}.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {\n`;
-                    classContent += `            try {\n`;
-                    classContent += `                File file = Files.createTempFile("${table.tableName}_", ".csv").toFile();\n`;
-                    classContent += `                byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};\n`;
-                    classContent += `                Files.write(file.toPath(), bom, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);\n`;
-                    classContent += `                try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8, StandardOpenOption.APPEND))) {\n`;
-                    classContent += `                    writer.printf(\n`;
-                    classContent += `                        ${csvPlaceHolder}\n`;
-                    classContent += `                        ,${csvHeader}\n`;
-                    classContent += `                    );\n`;
-                    classContent += `                    for (${modelName} m : list) {\n`;
-                    classContent += `                        writer.printf(\n`;
-                    classContent += `                            ${csvPlaceHolder}\n`;
-                    classContent += `                            ,${csvRow}\n`;
-                    classContent += `                        );\n`;
-                    classContent += `                    }\n`;
-                    classContent += `                }\n`;
-                    classContent += `                return file;\n`;
-                    classContent += `            } catch (IOException e) {\n`;
-                    classContent += `                throw new RuntimeException(e);\n`;
-                    classContent += `            }\n`;
-                    classContent += `        });\n`;
-                    classContent += `    }\n\n`;
-                    
-                    const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
-                    
-                    classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
-                    classContent += `    public CompletionStage<Integer> importCsv(File csvFile) {\n`;
-                    classContent += `        return supplyAsync(() -> {\n`;
-                    classContent += `            try {\n`;
-                    classContent += `                List<${modelName}> models = Files.lines(csvFile.toPath())\n`;
-                    classContent += `                    .skip(1) // ヘッダーをスキップ\n`;
-                    classContent += `                    .map(line -> line.split(","))\n`;
-                    classContent += `                    .map(values -> {\n`;
-                    classContent += `                        ${modelName} model = new ${modelName}();\n`;
-                    nonKeyColumnsForImport.forEach((col, i) => {
-                        const setter = `set${toPascalCase(col.colName)}`;
-                        const javaType = mapPostgresToJavaType(col.type);
-                        let parseLogic = `values[${i}]`;
-                        if (javaType === 'Long') parseLogic = `Long.parseLong(values[${i}])`;
-                        else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;
-                        else if (javaType === 'Boolean') parseLogic = `Boolean.parseBoolean(values[${i}])`;
-                        else if (javaType === 'java.time.Instant') parseLogic = `Instant.parse(values[${i}])`;
-                        
-                        classContent += `                        if (values.length > ${i} && !values[${i}].isEmpty()) model.${setter}(${parseLogic});\n`;
-                    });
-                    classContent += `                        return model;\n`;
-                    classContent += `                    })\n`;
-                    classContent += `                    .collect(Collectors.toList());\n`;
-                    classContent += `\n`;
-                    classContent += `                return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
-                    classContent += `            } catch (IOException e) {\n`;
-                    classContent += `                throw new RuntimeException(e);\n`;
-                    classContent += `            }\n`;
-                    classContent += `        });\n`;
-                    classContent += `    }\n`;
-
-                    classContent += `}\n`;
-                    javaString += classContent + '\n';
-                });
-
-                return javaString;
+          // update
+          classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param newData 更新データ\n     * @param updatedAt タイムスタンプ\n     * @return 更新後のデータ\n     */\n`;
+          classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} newData, Instant updatedAt) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            newData.setId(id);\n`;
+          classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
+          classContent += `                .set("updatedAt", Instant.now())\n`;
+          table.columns.forEach(col => {
+            if (!baseModelCols.has(col.colName)) {
+              const colCamel = toCamelCase(col.colName);
+              const colPascal = toPascalCase(col.colName);
+              classContent += `                .set("${colCamel}", newData.get${colPascal}())\n`;
             }
-            function generateJavaController(tables) {
-                const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                const toCamelCase = (s) => {
-                    const pascal = toPascalCase(s);
-                    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-                };
+          });
+          classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
+          classContent += `                .update();\n\n`;
+          classContent += `            if (updatedRows == 0) {\n`;
+          classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;
+          classContent += `            }\n`;
+          classContent += `            return newData;\n`;
+          classContent += `        }, executionContext);\n`;
+          classContent += `    }\n\n`;
 
-                let javaString = '';
-                tables.forEach(table => {
-                    const modelName = toPascalCase(table.tableName);
-                    const serviceName = `${modelName}Service`;
-                    const controllerName = `${modelName}Controller`;
-                    const serviceVar = toCamelCase(serviceName);
-                    const modelVar = toCamelCase(modelName);
-                    const pkColumn = table.columns.find(c => c.pkfk === 'PK') || { colName: 'id', type: 'bigint' };
-                    const pkName = toCamelCase(pkColumn.colName);
-                    const pkType = pkColumn.type.toLowerCase().includes('big') ? 'Long' : 'Integer';
+          // delete (logical)
+          classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @param updatedAt タイムスタンプ\n     */\n`;
+          classContent += `    public CompletionStage<Void> delete(Long id, Instant updatedAt) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
+          classContent += `                .set("isDeleted", true)\n`;
+          classContent += `                .set("updatedAt", Instant.now())\n`;
+          classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
+          classContent += `                .update();\n\n`;
+          classContent += `            if (updatedRows == 0) {\n`;
+          classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;
+          classContent += `            }\n`;
+          classContent += `            return null;\n`;
+          classContent += `        }, executionContext);\n`;
+          classContent += `    }\n`;
 
-
-                    let classContent = `// --- FileName: ${controllerName}.java ---\n`;
-                    classContent += `package controllers.api;\n\n`;
-                    classContent += `import com.fasterxml.jackson.databind.JsonNode;\n`;
-                    classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
-                    classContent += `import controllers.actions.Authenticated;\n`;
-                    classContent += `import libraries.CsvImportHandler;\n`;
-                    classContent += `import models.${modelName};\n`;
-                    classContent += `import play.libs.Json;\n`;
-                    classContent += `import play.mvc.Controller;\n`;
-                    classContent += `import play.mvc.Http;\n`;
-                    classContent += `import play.mvc.Result;\n`;
-                    classContent += `import services.${serviceName};\n`;
-                    classContent += `import libraries.CsvResult;\n`;
-                    classContent += `import com.fasterxml.jackson.databind.ObjectMapper;\n`;
-                    classContent += `import java.util.Map;\n`;
-                    classContent += `import java.util.stream.Collectors;\n`;
-                    classContent += `import java.util.concurrent.CompletionStage;\n`;
-                    classContent += `import javax.inject.Inject;\n`;
-                    classContent += `import java.time.Instant;\n\n`;
-
-                    classContent += `/**\n * ${table.tableNameJP} のコントローラー\n */\n`;
-                    classContent += `@Authenticated\n`;
-                    classContent += `public class ${controllerName} extends Controller {\n\n`;
-                    classContent += `    private final ${serviceName} ${serviceVar};\n\n`;
-                    classContent += `    @Inject\n`;
-                    classContent += `    public ${controllerName}(${serviceName} ${serviceVar}) {\n`;
-                    classContent += `        this.${serviceVar} = ${serviceVar};\n`;
-                    classContent += `    }\n\n`;
-
-                    // find
-                    classContent += `    public CompletionStage<Result> find(Http.Request request) {\n`;
-                    classContent += `        int offset = request.queryString("offset").map(Integer::parseInt).orElse(0);\n`;
-                    classContent += `        int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);\n`;
-                    classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
-                    classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
-                    classContent += `        params.remove("offset");\n`;
-                    classContent += `        params.remove("limit");\n`;
-                    classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
-                    classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
-                    classContent += `        return ${serviceVar}.find(filter, offset, limit).thenApply(result -> ok(result));\n`;
-                    classContent += `    }\n\n`;
-
-                    // findById
-                    classContent += `    public CompletionStage<Result> findById(Http.Request request, ${pkType} ${pkName}) {\n`;
-                    classContent += `        return ${serviceVar}.findById(${pkName}).thenApply(${modelVar}Opt ->\n`;
-                    classContent += `            ${modelVar}Opt.map(m -> ok(Json.toJson(m)))\n`;
-                    classContent += `                .orElse(notFound())\n`;
-                    classContent += `        );\n`;
-                    classContent += `    }\n\n`;
-
-                    // create
-                    classContent += `    public CompletionStage<Result> create(Http.Request request) {\n`;
-                    classContent += `        JsonNode json = request.body().asJson();\n`;
-                    classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
-                    classContent += `        return ${serviceVar}.create(${modelVar}).thenApply(inserted ->\n`;
-                    classContent += `            created(Json.toJson(inserted))\n`;
-                    classContent += `        );\n`;
-                    classContent += `    }\n\n`;
-
-                    // update
-                    classContent += `    public CompletionStage<Result> update(Http.Request request, ${pkType} ${pkName}) {\n`;
-                    classContent += `        JsonNode json = request.body().asJson();\n`;
-                    classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
-                    classContent += `        return ${serviceVar}.update(${pkName}, ${modelVar}).thenApply(updated ->\n`;
-                    classContent += `            ok(Json.toJson(updated))\n`;
-                    classContent += `        );\n`;
-                    classContent += `    }\n\n`;
-
-                    // delete
-                    classContent += `    public CompletionStage<Result> delete(Http.Request request, ${pkType} ${pkName}, String updatedAt) {\n`;
-                    classContent += `        return ${serviceVar}.delete(${pkName}, Instant.parse(updatedAt)).thenApply(result -> ok());\n`;
-                    classContent += `    }\n\n`;
-                    
-                    // exportCsv
-                    classContent += `    public CompletionStage<Result> exportCsv(Http.Request request) {\n`;
-                    classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
-                    classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
-                    classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
-                    classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
-                    classContent += `        return ${serviceVar}.exportCsv(filter).thenApply(csv ->\n`;
-                    classContent += `            CsvResult.ok(csv, "${table.tableName}.csv")\n`;
-                    classContent += `        );\n`;
-                    classContent += `    }\n\n`;
-
-                    // importCsv
-                    classContent += `    public CompletionStage<Result> importCsv(Http.Request request) {\n`;
-                    classContent += `        return CsvImportHandler.handle(request, file ->\n`;
-                    classContent += `            ${serviceVar}.importCsv(file).thenApply(result -> {\n`;
-                    classContent += `                ObjectNode successJson = Json.newObject();\n`;
-                    classContent += `                successJson.put("message", "CSV imported successfully.");\n`;
-                    classContent += `                successJson.put("imported_count", result);\n`;
-                    classContent += `                return ok(successJson);\n`;
-                    classContent += `            }\n`;
-                    classContent += `        ));\n`;
-                    classContent += `    }\n`;
-
-                    classContent += `}\n`;
-                    javaString += classContent + '\n';
-                });
-
-                return javaString;
-            }
+          classContent += `}\n`;
+          javaString += classContent + '\n';
         });
-    </script>
+
+        return javaString;
+      }
+      function generateJavaService(tables, rlsOptions) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
+
+        const mapPostgresToJavaType = (pgType) => {
+          pgType = pgType.toLowerCase();
+          if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+          if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+          if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+          if (['boolean'].includes(pgType)) return 'Boolean';
+          if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+          if (['bytea'].includes(pgType)) return 'byte[]';
+          return 'Object';
+        };
+
+        let javaString = '';
+        tables.forEach(table => {
+          const modelName = toPascalCase(table.tableName);
+          const serviceName = `${modelName}Service`;
+          const repoName = `${modelName}Repository`;
+          const repoVar = toCamelCase(repoName);
+          const modelVar = toCamelCase(modelName);
+
+          let classContent = `// --- FileName: ${serviceName}.java ---\n`;
+          classContent += `package services;\n\n`;
+          classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
+          classContent += `import models.${modelName};\n`;
+          classContent += `import play.libs.Json;\n`;
+          classContent += `import repository.${repoName};\n`;
+          classContent += `import libraries.CsvHelper;\n`;
+          classContent += `import java.io.File;\n`;
+          classContent += `import java.io.IOException;\n`;
+          classContent += `import java.io.PrintWriter;\n`;
+          classContent += `import java.nio.charset.StandardCharsets;\n`;
+          classContent += `import java.nio.file.Files;\n`;
+          classContent += `import java.nio.file.StandardOpenOption;\n`;
+          classContent += `import java.time.Instant;\n`;
+          classContent += `import java.util.concurrent.CompletionStage;\n`;
+          classContent += `import java.util.List;\n`;
+          classContent += `import java.util.Optional;\n`;
+          classContent += `import java.util.stream.Collectors;\n`;
+          classContent += `import javax.inject.Inject;\n`;
+          classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
+
+
+          classContent += `/**\n * ${table.tableNameJP} のサービス\n */\n`;
+          classContent += `public class ${serviceName} {\n`;
+          classContent += `    private final ${repoName} ${repoVar};\n\n`;
+
+          classContent += `    @Inject\n`;
+          classContent += `    public ${serviceName}(${repoName} ${repoVar}) {\n`;
+          classContent += `        this.${repoVar} = ${repoVar};\n`;
+          classContent += `    }\n\n`;
+
+          classContent += `    public CompletionStage<ObjectNode> find() {\n`;
+          classContent += `        return find(0, Integer.MAX_VALUE);\n`;
+          classContent += `    }\n\n`;
+
+          // find (as JSON)
+          classContent += `    /**\n     * ${table.tableNameJP} のリストをJSONで取得します。\n     * @return JSON形式の検索結果\n     */\n`;
+          classContent += `    public CompletionStage<ObjectNode> find(int offset, int limit) {\n`;
+          classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.countAll();\n`;
+          classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.findAll(offset, limit);\n`;
+          classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
+          classContent += `            ObjectNode result = Json.newObject();\n`;
+          classContent += `            result.put("total", total);\n`;
+          classContent += `            result.set("data", Json.toJson(data));\n`;
+          classContent += `            return result;\n`;
+          classContent += `        });\n`;
+          classContent += `    }\n\n`;
+
+          classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter) {\n`;
+          classContent += `        return find(filter, 0, Integer.MAX_VALUE);\n`;
+          classContent += `    }\n\n`;
+
+          // find (with filter)
+          classContent += `    /**\n     * ${table.tableNameJP} を検索し、リストをJSONで取得します。\n     * @param filter 検索条件\n     * @return JSON形式の検索結果\n     */\n`;
+          classContent += `    public CompletionStage<ObjectNode> find(${modelName} filter, int offset, int limit) {\n`;
+          classContent += `        CompletionStage<Integer> totalFuture = ${repoVar}.count(filter);\n`;
+          classContent += `        CompletionStage<List<${modelName}>> dataFuture = ${repoVar}.find(filter, offset, limit);\n`;
+          classContent += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
+          classContent += `            ObjectNode result = Json.newObject();\n`;
+          classContent += `            result.put("total", total);\n`;
+          classContent += `            result.set("data", Json.toJson(data));\n`;
+          classContent += `            return result;\n`;
+          classContent += `        });\n`;
+          classContent += `    }\n\n`;
+
+          // findById
+          classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します。\n     * @param id 主キー\n     * @return 検索結果\n     */\n`;
+          classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
+          classContent += `        return ${repoVar}.findById(id);\n`;
+          classContent += `    }\n\n`;
+
+          // create
+          classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
+          classContent += `    public CompletionStage<${modelName}> create(${modelName} ${modelVar}) {\n`;
+          classContent += `        return ${repoVar}.insert(${modelVar});\n`;
+          classContent += `    }\n\n`;
+
+          // update
+          classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param ${modelVar} 更新データ\n     * @return 更新後のデータ\n     */\n`;
+          classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} ${modelVar}) {\n`;
+          classContent += `        return ${repoVar}.update(id, ${modelVar}, ${modelVar}.getUpdatedAt());\n`;
+          classContent += `    }\n\n`;
+
+          // delete
+          classContent += `    /**\n     * ${table.tableNameJP} を論理削除します。\n     * @param id 主キー\n     * @param updatedAt タイムスタンプ\n     */\n`;
+          classContent += `    public CompletionStage<Void> delete(Long id, Instant updatedAt) {\n`;
+          classContent += `        return ${repoVar}.delete(id, updatedAt);\n`;
+          classContent += `    }\n\n`;
+
+          const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+          const csvHeader = nonKeyColumns.map(c => `\"${c.colNameJP}\"`).join("\n                        ,");
+          const csvPlaceHolder = `("\\"%s\\",").repeat(${nonKeyColumns.length}) + "\\"%s\\"\\n"` // nonKeyColumns.map(c => `\\"%s\\"`).join(",") + "\\n";
+          const csvRow = nonKeyColumns.map(c => `CsvHelper.processCsvField(String.valueOf(m.get${toPascalCase(c.colName)}()))`).join('\n                            ,');
+
+          classContent += `    /**\n     * ${table.tableNameJP} のデータをCSVファイルとしてエクスポートします。\n     * @param filter 検索条件\n     * @return 生成されたCSVファイル\n     */\n`;
+          classContent += `    public CompletionStage<File> exportCsv(${modelName} filter) {\n`;
+          classContent += `        return ${repoVar}.find(filter, 0, Integer.MAX_VALUE).thenApply(list -> {\n`;
+          classContent += `            try {\n`;
+          classContent += `                File file = Files.createTempFile("${table.tableName}_", ".csv").toFile();\n`;
+          classContent += `                byte[] bom = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};\n`;
+          classContent += `                Files.write(file.toPath(), bom, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);\n`;
+          classContent += `                try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8, StandardOpenOption.APPEND))) {\n`;
+          classContent += `                    writer.printf(\n`;
+          classContent += `                        ${csvPlaceHolder}\n`;
+          classContent += `                        ,${csvHeader}\n`;
+          classContent += `                    );\n`;
+          classContent += `                    for (${modelName} m : list) {\n`;
+          classContent += `                        writer.printf(\n`;
+          classContent += `                            ${csvPlaceHolder}\n`;
+          classContent += `                            ,${csvRow}\n`;
+          classContent += `                        );\n`;
+          classContent += `                    }\n`;
+          classContent += `                }\n`;
+          classContent += `                return file;\n`;
+          classContent += `            } catch (IOException e) {\n`;
+          classContent += `                throw new RuntimeException(e);\n`;
+          classContent += `            }\n`;
+          classContent += `        });\n`;
+          classContent += `    }\n\n`;
+
+          const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+
+          classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
+          classContent += `    public CompletionStage<Integer> importCsv(File csvFile) {\n`;
+          classContent += `        return supplyAsync(() -> {\n`;
+          classContent += `            try {\n`;
+          classContent += `                List<${modelName}> models = Files.lines(csvFile.toPath())\n`;
+          classContent += `                    .skip(1) // ヘッダーをスキップ\n`;
+          classContent += `                    .map(line -> line.split(","))\n`;
+          classContent += `                    .map(values -> {\n`;
+          classContent += `                        ${modelName} model = new ${modelName}();\n`;
+          nonKeyColumnsForImport.forEach((col, i) => {
+            const setter = `set${toPascalCase(col.colName)}`;
+            const javaType = mapPostgresToJavaType(col.type);
+            let parseLogic = `values[${i}]`;
+            if (javaType === 'Long') parseLogic = `Long.parseLong(values[${i}])`;
+            else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;
+            else if (javaType === 'Boolean') parseLogic = `Boolean.parseBoolean(values[${i}])`;
+            else if (javaType === 'java.time.Instant') parseLogic = `Instant.parse(values[${i}])`;
+            else if (javaType === 'byte[]') parseLogic = `new java.math.BigInteger(values[${i}], 16).toByteArray()`;
+
+            classContent += `                        if (values.length > ${i} && !values[${i}].isEmpty()) model.${setter}(${parseLogic});\n`;
+          });
+          classContent += `                        return model;\n`;
+          classContent += `                    })\n`;
+          classContent += `                    .collect(Collectors.toList());\n`;
+          classContent += `\n`;
+          classContent += `                return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
+          classContent += `            } catch (IOException e) {\n`;
+          classContent += `                throw new RuntimeException(e);\n`;
+          classContent += `            }\n`;
+          classContent += `        });\n`;
+          classContent += `    }\n`;
+
+          classContent += `}\n`;
+          javaString += classContent + '\n';
+        });
+
+        return javaString;
+      }
+      function generateJavaController(tables) {
+        const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const toCamelCase = (s) => {
+          const pascal = toPascalCase(s);
+          return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        };
+
+        let javaString = '';
+        tables.forEach(table => {
+          const modelName = toPascalCase(table.tableName);
+          const serviceName = `${modelName}Service`;
+          const controllerName = `${modelName}Controller`;
+          const serviceVar = toCamelCase(serviceName);
+          const modelVar = toCamelCase(modelName);
+          const pkColumn = table.columns.find(c => c.pkfk === 'PK') || { colName: 'id', type: 'bigint' };
+          const pkName = toCamelCase(pkColumn.colName);
+          const pkType = pkColumn.type.toLowerCase().includes('big') ? 'Long' : 'Integer';
+
+
+          let classContent = `// --- FileName: ${controllerName}.java ---\n`;
+          classContent += `package controllers.api;\n\n`;
+          classContent += `import com.fasterxml.jackson.databind.JsonNode;\n`;
+          classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
+          classContent += `import controllers.actions.Authenticated;\n`;
+          classContent += `import libraries.CsvImportHandler;\n`;
+          classContent += `import models.${modelName};\n`;
+          classContent += `import play.libs.Json;\n`;
+          classContent += `import play.mvc.Controller;\n`;
+          classContent += `import play.mvc.Http;\n`;
+          classContent += `import play.mvc.Result;\n`;
+          classContent += `import services.${serviceName};\n`;
+          classContent += `import libraries.CsvResult;\n`;
+          classContent += `import com.fasterxml.jackson.databind.ObjectMapper;\n`;
+          classContent += `import java.util.Map;\n`;
+          classContent += `import java.util.stream.Collectors;\n`;
+          classContent += `import java.util.concurrent.CompletionStage;\n`;
+          classContent += `import javax.inject.Inject;\n`;
+          classContent += `import java.time.Instant;\n\n`;
+
+          classContent += `/**\n * ${table.tableNameJP} のコントローラー\n */\n`;
+          classContent += `@Authenticated\n`;
+          classContent += `public class ${controllerName} extends Controller {\n\n`;
+          classContent += `    private final ${serviceName} ${serviceVar};\n\n`;
+          classContent += `    @Inject\n`;
+          classContent += `    public ${controllerName}(${serviceName} ${serviceVar}) {\n`;
+          classContent += `        this.${serviceVar} = ${serviceVar};\n`;
+          classContent += `    }\n\n`;
+
+          // find
+          classContent += `    public CompletionStage<Result> find(Http.Request request) {\n`;
+          classContent += `        int offset = request.queryString("offset").map(Integer::parseInt).orElse(0);\n`;
+          classContent += `        int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);\n`;
+          classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
+          classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+          classContent += `        params.remove("offset");\n`;
+          classContent += `        params.remove("limit");\n`;
+          classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
+          classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
+          classContent += `        return ${serviceVar}.find(filter, offset, limit).thenApply(result -> ok(result));\n`;
+          classContent += `    }\n\n`;
+
+          // findById
+          classContent += `    public CompletionStage<Result> findById(Http.Request request, ${pkType} ${pkName}) {\n`;
+          classContent += `        return ${serviceVar}.findById(${pkName}).thenApply(${modelVar}Opt ->\n`;
+          classContent += `            ${modelVar}Opt.map(m -> ok(Json.toJson(m)))\n`;
+          classContent += `                .orElse(notFound())\n`;
+          classContent += `        );\n`;
+          classContent += `    }\n\n`;
+
+          // create
+          classContent += `    public CompletionStage<Result> create(Http.Request request) {\n`;
+          classContent += `        JsonNode json = request.body().asJson();\n`;
+          classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
+          classContent += `        return ${serviceVar}.create(${modelVar}).thenApply(inserted ->\n`;
+          classContent += `            created(Json.toJson(inserted))\n`;
+          classContent += `        );\n`;
+          classContent += `    }\n\n`;
+
+          // update
+          classContent += `    public CompletionStage<Result> update(Http.Request request, ${pkType} ${pkName}) {\n`;
+          classContent += `        JsonNode json = request.body().asJson();\n`;
+          classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
+          classContent += `        return ${serviceVar}.update(${pkName}, ${modelVar}).thenApply(updated ->\n`;
+          classContent += `            ok(Json.toJson(updated))\n`;
+          classContent += `        );\n`;
+          classContent += `    }\n\n`;
+
+          // delete
+          classContent += `    public CompletionStage<Result> delete(Http.Request request, ${pkType} ${pkName}, String updatedAt) {\n`;
+          classContent += `        return ${serviceVar}.delete(${pkName}, Instant.parse(updatedAt)).thenApply(result -> ok());\n`;
+          classContent += `    }\n\n`;
+
+          // exportCsv
+          classContent += `    public CompletionStage<Result> exportCsv(Http.Request request) {\n`;
+          classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
+          classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
+          classContent += `        ObjectMapper mapper = new ObjectMapper();\n`;
+          classContent += `        ${modelName} filter = mapper.convertValue(params, ${modelName}.class);\n`;
+          classContent += `        return ${serviceVar}.exportCsv(filter).thenApply(csv ->\n`;
+          classContent += `            CsvResult.ok(csv, "${table.tableName}.csv")\n`;
+          classContent += `        );\n`;
+          classContent += `    }\n\n`;
+
+          // importCsv
+          classContent += `    public CompletionStage<Result> importCsv(Http.Request request) {\n`;
+          classContent += `        return CsvImportHandler.handle(request, file ->\n`;
+          classContent += `            ${serviceVar}.importCsv(file).thenApply(result -> {\n`;
+          classContent += `                ObjectNode successJson = Json.newObject();\n`;
+          classContent += `                successJson.put("message", "CSV imported successfully.");\n`;
+          classContent += `                successJson.put("imported_count", result);\n`;
+          classContent += `                return ok(successJson);\n`;
+          classContent += `            }\n`;
+          classContent += `        ));\n`;
+          classContent += `    }\n`;
+
+          classContent += `}\n`;
+          javaString += classContent + '\n';
+        });
+
+        return javaString;
+      }
+    });
+  </script>
 </body>
+
 </html>
