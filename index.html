@@ -39,7 +39,6 @@
           <ul>
             <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
             <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
-            <li><a href="#" data-tab="sql-builder" class="tab-link">SQL構築</a></li>
           </ul>
         </nav>
         <div id="file-input" class="tab-content active">
@@ -48,64 +47,6 @@
         </div>
         <div id="text-input" class="tab-content">
           <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
-        </div>
-
-        <div id="sql-builder" class="tab-content">
-          <h3>SQL構築</h3>
-          <div class="grid">
-            <div>
-              <h4>1. テーブル選択</h4>
-              <div class="grid">
-                <select id="sql-table-select">
-                  <option value="">テーブルを追加...</option>
-                </select>
-                <button id="sql-add-table-btn">追加</button>
-              </div>
-              <table role="grid">
-                <thead>
-                  <tr>
-                    <th>Alias</th>
-                    <th>Table Name</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody id="sql-selected-tables">
-                  <!-- Selected tables will go here -->
-                </tbody>
-              </table>
-            </div>
-
-            <div>
-              <h4>2. 結合条件</h4>
-              <button id="sql-add-join-btn" class="secondary outline">結合条件を追加</button>
-              <div id="sql-joins-container">
-                <!-- Join conditions will go here -->
-              </div>
-            </div>
-          </div>
-
-          <div class="grid">
-            <div>
-              <h4>3. 絞り込み条件 (WHERE)</h4>
-              <button id="sql-add-filter-btn" class="secondary outline">条件を追加</button>
-              <div id="sql-filters-container">
-                <!-- Filter inputs -->
-              </div>
-            </div>
-            <div>
-              <h4>4. ソート順 (ORDER BY)</h4>
-              <button id="sql-add-sort-btn" class="secondary outline">ソートを追加</button>
-              <div id="sql-sorts-container">
-                <!-- Sort inputs -->
-              </div>
-            </div>
-          </div>
-
-          <hr>
-
-          <h4>5. 生成結果</h4>
-          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 200px;"></textarea>
-          <button id="sql-copy-btn">クリップボードにコピー</button>
         </div>
       </section>
 
@@ -162,6 +103,67 @@
           <!-- 結果コンテンツがここに追加されます -->
         </div>
         <button id="downloadAllBtn" style="display: none;">すべてダウンロード (ZIP)</button>
+      </section>
+      <section id="sql-builder-section" style="display: none;">
+        <h2>5. SQL構築</h2>
+
+        <!-- 1. テーブル選択 -->
+        <div>
+          <h4>1. テーブル選択</h4>
+          <div class="grid">
+            <select id="sql-table-select">
+              <option value="">テーブルを追加...</option>
+            </select>
+            <button id="sql-add-table-btn" style="width: auto;">追加</button>
+          </div>
+          <table role="grid">
+            <thead>
+              <tr>
+                <th>Alias</th>
+                <th>Table Name</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="sql-selected-tables">
+            </tbody>
+          </table>
+        </div>
+
+        <hr>
+
+        <!-- 2. 結合条件 -->
+        <div>
+          <h4>2. 結合条件</h4>
+          <button id="sql-add-join-btn" class="secondary outline" style="margin-bottom: 0.5rem;">結合条件を追加</button>
+          <div id="sql-joins-container"></div>
+        </div>
+
+        <hr>
+
+        <!-- 3. 絞り込み条件 -->
+        <div>
+          <h4>3. 絞り込み条件 (WHERE)</h4>
+          <button id="sql-add-filter-btn" class="secondary outline" style="margin-bottom: 0.5rem;">条件を追加</button>
+          <div id="sql-filters-container"></div>
+        </div>
+
+        <hr>
+
+        <!-- 4. ソート順 -->
+        <div>
+          <h4>4. ソート順 (ORDER BY)</h4>
+          <button id="sql-add-sort-btn" class="secondary outline" style="margin-bottom: 0.5rem;">ソートを追加</button>
+          <div id="sql-sorts-container"></div>
+        </div>
+
+        <hr>
+
+        <!-- 5. 生成結果 -->
+        <div>
+          <h4>5. 生成結果</h4>
+          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 200px;"></textarea>
+          <button id="sql-copy-btn">クリップボードにコピー</button>
+        </div>
       </section>
     </article>
   </main>
@@ -1511,6 +1513,7 @@ public abstract class BaseRepository<T extends BaseModel> {
           sqlTableSelect.appendChild(option);
         });
 
+        document.getElementById('sql-builder-section').style.display = 'block';
         renderSqlBuilderUI();
       }
 
@@ -1537,14 +1540,19 @@ public abstract class BaseRepository<T extends BaseModel> {
           // Re-assign aliases based on order to ensure t0, t1, ...
           item.alias = `t${index}`;
 
+          const def = parsedTables.find(t => t.tableName === item.tableName);
+          const tableNameJP = def ? def.tableNameJP : '';
+
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${item.alias}</td>
-            <td>${item.tableName}</td>
+            <td style="width: 100%;">${item.tableName} (${tableNameJP})</td>
             <td>
-              <button class="outline secondary" onclick="moveSqlTable(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
-              <button class="outline secondary" onclick="moveSqlTable(${index}, 1)" ${index === sqlState.selectedTables.length - 1 ? 'disabled' : ''}>↓</button>
-              <button class="outline contrast" onclick="removeSqlTable(${index})">削除</button>
+              <div style="display: flex; gap: 5px;">
+                <button class="outline secondary" onclick="moveSqlTable(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width: auto; margin-bottom: 0; padding: 0.25rem 0.5rem;">↑</button>
+                <button class="outline secondary" onclick="moveSqlTable(${index}, 1)" ${index === sqlState.selectedTables.length - 1 ? 'disabled' : ''} style="width: auto; margin-bottom: 0; padding: 0.25rem 0.5rem;">↓</button>
+                <button class="outline contrast" onclick="removeSqlTable(${index})" style="width: auto; margin-bottom: 0; padding: 0.25rem 0.5rem;" title="削除">x</button>
+              </div>
             </td>
           `;
           sqlSelectedTables.appendChild(tr);
@@ -1656,18 +1664,18 @@ public abstract class BaseRepository<T extends BaseModel> {
           const rightOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.rightAlias ? 'selected' : ''}>${t.alias}</option>`).join('');
 
           div.innerHTML = `
-            <div style="display:flex; gap:5px; align-items:center;">
+            <div style="display:flex; gap:5px; align-items:flex-start;">
               <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" style="width:80px;">${leftOptions}</select>
               <select onchange="updateSqlJoin(${index}, 'type', this.value)" style="width:120px;">
                 <option value="INNER JOIN" ${join.type === 'INNER JOIN' ? 'selected' : ''}>INNER JOIN</option>
                 <option value="LEFT JOIN" ${join.type === 'LEFT JOIN' ? 'selected' : ''}>LEFT JOIN</option>
               </select>
               <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width:80px;">${rightOptions}</select>
-              <span>ON</span>
-              <input type="text" value="${join.condition}" onchange="updateSqlJoin(${index}, 'condition', this.value)" style="flex-grow:1;">
-              <button class="outline secondary" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto;">↑</button>
-              <button class="outline secondary" onclick="moveSqlJoin(${index}, 1)" ${index === sqlState.joins.length - 1 ? 'disabled' : ''} style="width:auto;">↓</button>
-              <button class="outline contrast" onclick="removeSqlJoin(${index})" style="width:auto;">x</button>
+              <span style="padding-top: 10px;">ON</span>
+              <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;">${join.condition}</textarea>
+              <button class="outline secondary" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↑</button>
+              <button class="outline secondary" onclick="moveSqlJoin(${index}, 1)" ${index === sqlState.joins.length - 1 ? 'disabled' : ''} style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;">↓</button>
+              <button class="outline contrast" onclick="removeSqlJoin(${index})" style="width:auto; height: 2rem; padding: 0 0.5rem; margin-bottom: 0;" title="削除">x</button>
             </div>
           `;
           sqlJoinsContainer.appendChild(div);
@@ -1706,8 +1714,8 @@ public abstract class BaseRepository<T extends BaseModel> {
           div.style.gap = '5px';
           div.style.marginBottom = '5px';
           div.innerHTML = `
-             <input type="text" value="${filter}" onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100">
-             <button class="outline contrast" onclick="removeSqlFilter(${index})" style="width:auto;">x</button>
+             <textarea type="text" value="${filter}" onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;"></textarea>
+             <button class="outline contrast" onclick="removeSqlFilter(${index})" style="width:auto;" title="削除">x</button>
           `;
           sqlFiltersContainer.appendChild(div);
         });
@@ -1768,7 +1776,7 @@ public abstract class BaseRepository<T extends BaseModel> {
             </select>
             <button class="outline secondary" onclick="moveSqlSort(${index}, -1)" ${index === 0 ? 'disabled' : ''} style="width:auto;">↑</button>
             <button class="outline secondary" onclick="moveSqlSort(${index}, 1)" ${index === sqlState.sorts.length - 1 ? 'disabled' : ''} style="width:auto;">↓</button>
-            <button class="outline contrast" onclick="removeSqlSort(${index})" style="width:auto;">x</button>
+            <button class="outline contrast" onclick="removeSqlSort(${index})" style="width:auto;" title="削除">x</button>
           `;
           sqlSortsContainer.appendChild(div);
         });
