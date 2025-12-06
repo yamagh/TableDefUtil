@@ -253,6 +253,10 @@
         }
       });
 
+      /**
+       * TSV/CSVデータをパースして初期化
+       * @param {string} tsvData 入力されたTSV/CSV文字列
+       */
       function parseAndConvert(tsvData) {
         Papa.parse(tsvData, {
           header: true,
@@ -276,6 +280,9 @@
         });
       }
 
+      /**
+       * パース結果を中間データ構造へ変換
+       */
       function transformToIntermediate(data) {
         const tables = {};
         data.forEach(row => {
@@ -302,10 +309,10 @@
             length: row.Length,
             constraint: row.Constraint,
             default: row.Default,
-            description: row.Description // Description is often on the first row, let's assume it's the same for all columns for now
+            description: row.Description // Descriptionは最初の行にあることが多いので、とりあえず全てのカラムで同じと仮定する
           });
 
-          // Collect indexes
+          // インデックスの収集
           for (let i = 1; i <= 5; i++) {
             const idxKey = `Idx${i}`;
             if (row[idxKey]) {
@@ -320,7 +327,7 @@
           }
         });
 
-        // Sort index columns by order
+        // インデックスカラムを順序でソート
         Object.values(tables).forEach(table => {
           Object.keys(table.indexes).forEach(idxKey => {
             table.indexes[idxKey].sort((a, b) => a.order - b.order);
@@ -330,6 +337,9 @@
         return Object.values(tables);
       }
 
+      /**
+       * 各フォーマットのコード生成
+       */
       function generateOutputs(tables, rlsOptions) {
         resultTabs.innerHTML = '';
         resultContents.innerHTML = '';
@@ -359,7 +369,7 @@
           downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
           downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
 
-          // Generate content using stub functions
+          // スタブ関数を使用してコンテンツを生成
           let output = '';
           switch (format) {
             case 'ddl': output = generateDDL(tables); break;
@@ -380,7 +390,7 @@
           firstTab = false;
         });
 
-        // Re-add tab click listeners for result tabs
+        // 結果タブのクリックリスナーを再追加
         document.querySelectorAll('#result-tabs .tab-link').forEach(tab => {
           tab.addEventListener('click', e => {
             e.preventDefault();
@@ -401,13 +411,13 @@
         const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
         let tsvData = '';
         if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
-          // This is async, so we need to handle it inside the reader's onload
+          // 非同期処理のため、readerのonload内で処理する必要がある
           const reader = new FileReader();
           reader.onload = (e) => {
             proceedWithZipping(e.target.result);
           };
           reader.readAsText(fileInput.files[0]);
-          return; // Exit here, proceedWithZipping will be called by reader
+          return; // ここで終了し、readerによってproceedWithZippingが呼び出される
         } else if (activeInputTab === 'text-input' && textInput.value.trim() !== '') {
           tsvData = textInput.value;
         } else {
@@ -493,6 +503,9 @@
         }
       });
 
+      /**
+       * ファイルダウンロード処理
+       */
       function downloadFile(content, fileName) {
         const blob = (content instanceof Blob) ? content : new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -506,6 +519,9 @@
       }
 
       // --- Conversion Stubs ---
+      /**
+       * DDL (PostgreSQL) 生成
+       */
       function generateDDL(tables) {
         let ddl = '';
         tables.forEach(table => {
@@ -513,14 +529,14 @@
           const pkColumns = table.columns.filter(c => c.pkfk === 'PK').map(c => c.colName);
           const akColumns = table.columns.filter(c => c.pkfk === 'AK').map(c => c.colName);
 
-          // DROP TABLE
+          // テーブル削除
           ddl += `DROP TABLE IF EXISTS ${tableName};\n\n`;
 
-          // CREATE TABLE
+          // テーブル作成
           ddl += `CREATE TABLE ${tableName} (\n`;
           const columnDefs = table.columns.map(col => {
             let def = `    ${col.colName}`;
-            // Type and Length
+
             if (col.type === 'varchar' && col.length) {
               def += ` VARCHAR(${col.length})`;
             } else if (col.type === 'char' && col.length) {
@@ -528,7 +544,7 @@
             } else {
               def += ` ${col.type.toUpperCase()}`;
             }
-            // Constraints
+
             if (col.constraint) {
               if (col.constraint.includes('NN')) {
                 def += ' NOT NULL';
@@ -537,7 +553,7 @@
                 def += ' UNIQUE';
               }
             }
-            // Default
+
             if (col.default) {
               def += ` DEFAULT ${col.default}`;
             }
@@ -546,26 +562,26 @@
 
           ddl += columnDefs.join(',\n');
 
-          // Primary Key
+          // 主キー
           if (pkColumns.length > 0) {
             ddl += `,\n    PRIMARY KEY (${pkColumns.join(', ')})`;
           }
 
-          // Alternate Key (Unique Constraint)
+          // 代替キー（ユニーク制約）
           if (akColumns.length > 0) {
             ddl += `,\n    CONSTRAINT ${tableName}_ak UNIQUE (${akColumns.join(', ')})`;
           }
 
           ddl += '\n);\n\n';
 
-          // Comments
+          // コメント
           ddl += `COMMENT ON TABLE ${tableName} IS '${table.tableNameJP}';\n`;
           table.columns.forEach(col => {
             ddl += `COMMENT ON COLUMN ${tableName}.${col.colName} IS '${col.colNameJP}';\n`;
           });
           ddl += '\n';
 
-          // Indexes
+          // インデックス
           Object.keys(table.indexes).forEach(idxKey => {
             const index = table.indexes[idxKey];
             const indexName = `${tableName}_${idxKey.toLowerCase()}`;
@@ -576,6 +592,9 @@
         });
         return ddl;
       }
+      /**
+       * TypeScript型定義生成
+       */
       function generateTypeScript(tables) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -595,7 +614,7 @@
             return 'boolean';
           }
           if (['date', 'time', 'timestamp'].includes(pgType)) {
-            return 'string'; // Or Date, but string is often safer for serialization
+            return 'string';
           }
           return 'any';
         };
@@ -610,7 +629,7 @@
             const propName = toCamelCase(col.colName);
             const tsType = mapPostgresToTsType(col.type);
             tsString += `  /** ${col.colNameJP} */\n`;
-            // All properties are optional for flexibility
+            // 柔軟性のため、すべてのプロパティをオプショナルにする
             tsString += `  ${propName}?: ${tsType};\n`;
           });
 
@@ -619,6 +638,9 @@
 
         return tsString;
       }
+      /**
+       * Zodスキーマ生成
+       */
       function generateZodSchema(tables) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -646,7 +668,7 @@
           } else if (['boolean'].includes(pgType)) {
             zodType = 'z.boolean()';
           } else if (['date', 'time', 'timestamp'].includes(pgType)) {
-            zodType = 'z.iso.datetime()'; // Or z.date()
+            zodType = 'z.iso.datetime()';
           } else {
             zodType = 'z.any()';
           }
@@ -655,8 +677,8 @@
             zodType += '.optional()';
           }
           if (col.default) {
-            // This is a simplification, default values in Zod need to match the type
-            // For now, we just add a comment.
+            // 簡略化のため。Zodのデフォルト値は型と一致する必要がある
+            // 現時点ではコメントを追加するのみ
             // zodType += `.default(${col.default})`;
           }
           if (col.colNameJP) {
@@ -685,6 +707,9 @@
         return zodString;
       }
 
+      /**
+       * Zod型定義生成
+       */
       function generateZodType(tables) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         let typeString = `import { z } from 'zod';\n`;
@@ -693,7 +718,7 @@
         const schemaNames = tables.map(table => `${toPascalCase(table.tableName)}Schema`);
         typeString += schemaNames.join(', ');
 
-        typeString += ` } from './schemas'; // Assuming schemas are in a file named schemas.ts\n\n`;
+        typeString += ` } from './schemas'; // schemasがschemas.tsというファイルにあると仮定\n\n`;
 
         tables.forEach(table => {
           const typeName = toPascalCase(table.tableName);
@@ -704,6 +729,9 @@
 
         return typeString;
       }
+      /**
+       * Javaモデルクラス生成
+       */
       function generateJavaModel(tables, rlsOptions) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -902,6 +930,9 @@ public class BaseModel extends Model {
 
         return javaString;
       }
+      /**
+       * Javaリポジトリクラス生成
+       */
       function generateJavaRepo(tables, rlsOptions) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -1190,6 +1221,9 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         return javaString;
       }
+      /**
+       * Javaサービスクラス生成
+       */
       function generateJavaService(tables, rlsOptions) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -1376,6 +1410,9 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         return javaString;
       }
+      /**
+       * Javaコントローラークラス生成
+       */
       function generateJavaController(tables) {
         const toPascalCase = (s) => s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
         const toCamelCase = (s) => {
@@ -1497,7 +1534,7 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         return javaString;
       }
-      // --- SQL Builder Logic ---
+      // --- SQL構築ロジック ---
       let parsedTables = [];
       const sqlState = {
         selectedTables: [],
@@ -1514,6 +1551,10 @@ public abstract class BaseRepository<T extends BaseModel> {
       const sqlSelectClause = document.getElementById('sql-select-clause');
       const sqlOutput = document.getElementById('sql-output');
 
+      /**
+       * SQL構築機能の初期化
+       * @param {Array} tables パース済みのテーブル定義
+       */
       function initSqlBuilder(tables) {
         parsedTables = tables;
         sqlState.selectedTables = [];
@@ -1533,6 +1574,9 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       }
 
+      /**
+       * SQL構築UI全体の再描画
+       */
       function renderSqlBuilderUI() {
         renderSqlTables();
         renderSqlJoins();
@@ -1542,7 +1586,7 @@ public abstract class BaseRepository<T extends BaseModel> {
         updateSqlOutput();
       }
 
-      // 1. Table Selection
+      // 1. テーブル選択
       document.getElementById('sql-add-table-btn').addEventListener('click', () => {
         const tableName = sqlTableSelect.value;
         if (!tableName) return;
@@ -1551,10 +1595,13 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       });
 
+      /**
+       * 選択されたテーブル一覧の描画
+       */
       function renderSqlTables() {
         sqlSelectedTables.innerHTML = '';
         sqlState.selectedTables.forEach((item, index) => {
-          // Re-assign aliases based on order to ensure t0, t1, ...
+          // 順序に基づいてエイリアス(t0, t1...)を再割り当て
           item.alias = `t${index}`;
 
           const def = parsedTables.find(t => t.tableName === item.tableName);
@@ -1577,6 +1624,9 @@ public abstract class BaseRepository<T extends BaseModel> {
         updateSelectColumns();
       }
 
+      /**
+       * SELECT句のカラム一覧を更新
+       */
       function updateSelectColumns() {
         const selects = [];
         sqlState.selectedTables.forEach(t => {
@@ -1592,11 +1642,17 @@ public abstract class BaseRepository<T extends BaseModel> {
         sqlSelectClause.value = selects.join(',\n');
       }
 
+      /**
+       * 選択されたテーブルの削除
+       */
       window.removeSqlTable = (index) => {
         sqlState.selectedTables.splice(index, 1);
         renderSqlBuilderUI();
       };
 
+      /**
+       * 選択されたテーブルの順序変更
+       */
       window.moveSqlTable = (index, direction) => {
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= sqlState.selectedTables.length) return;
@@ -1605,14 +1661,13 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       };
 
-      // 2. Joins
+      // 2. 結合条件
       document.getElementById('sql-add-join-btn').addEventListener('click', () => {
         if (sqlState.selectedTables.length < 2) {
           alert('結合するには少なくとも2つのテーブルを選択してください。');
           return;
         }
-        // Default join: last table with second to last table? Or just basics.
-        // Let's default to t(last-1) and t(last)
+
         const rightIdx = sqlState.selectedTables.length - 1;
         const leftIdx = Math.max(0, rightIdx - 1);
 
@@ -1625,28 +1680,14 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       });
 
+      /**
+       * デフォルトの結合条件を生成
+       */
       function generateDefaultJoinCondition(leftTableState, rightTableState) {
         const leftDef = parsedTables.find(t => t.tableName === leftTableState.tableName);
         const rightDef = parsedTables.find(t => t.tableName === rightTableState.tableName);
 
         let condition = '';
-        // Look for matching _id columns
-        // Simple heuristic: if right table has left_table_id
-        const leftIdCol = `${leftDef.tableName}_id`; // simplistic
-        // Better: iterate columns
-
-        // Requirement: "_id を含むカラム選択した２つのテーブル両方に存在する場合"
-        // Interpreted as: if both have "xxx_id", or if one has "other_id" that matches "id" of other?
-        // Let's try to match: left.id = right.left_id OR left.right_id = right.id
-
-        let joinColMatch = false;
-
-        // Check if Right has Left_ID
-        // Actually, let's look for common column names that end in _id? 
-        // Or if one is "id" and other is "{table}_id"
-        // The prompt says: "_id を含むカラム選択した２つのテーブル両方に存在する場合、該当のカラムで結合する（t0.foo_id = t1.foo_id）"
-        // This suggests joining on SAME column name that contains "_id".
-
         const leftCols = leftDef.columns.map(c => c.colName);
         const rightCols = rightDef.columns.map(c => c.colName);
 
@@ -1655,9 +1696,7 @@ public abstract class BaseRepository<T extends BaseModel> {
         if (commonIdCols.length > 0) {
           condition = `${leftTableState.alias}.${commonIdCols[0]} = ${rightTableState.alias}.${commonIdCols[0]}`;
         } else {
-          // Fallback (not specified but useful): ID matching
-          // t0.id = t1.user_id
-          // check if left has right_id
+          // フォールバック: IDマッチング (例: t0.id = t1.user_id)
           if (leftCols.includes(`${rightTableState.tableName}_id`)) {
             condition = `${leftTableState.alias}.${rightTableState.tableName}_id = ${rightTableState.alias}.id`;
           } else if (rightCols.includes(`${leftTableState.tableName}_id`)) {
@@ -1665,9 +1704,7 @@ public abstract class BaseRepository<T extends BaseModel> {
           }
         }
 
-        // Add delete flag check
-        // "削除フラグを除外する条件（t0.is_deleted = false and t1.is_deleted = false）"
-        // Check if columns exist
+        // 論理削除フラグのチェックを追加
         if (leftCols.includes('is_deleted')) {
           condition += ` AND ${leftTableState.alias}.is_deleted = false`;
         }
@@ -1675,7 +1712,7 @@ public abstract class BaseRepository<T extends BaseModel> {
           condition += ` AND ${rightTableState.alias}.is_deleted = false`;
         }
 
-        // Clean up leading AND if condition was empty
+        // 条件が空だった場合の先頭のANDを削除
         if (condition.startsWith(' AND ')) condition = condition.substring(5);
 
         condition = condition.length > 0 ? condition : '/* 結合条件を設定してください */';
@@ -1683,6 +1720,9 @@ public abstract class BaseRepository<T extends BaseModel> {
         return condition;
       }
 
+      /**
+       * 結合条件一覧の描画
+       */
       function renderSqlJoins() {
         sqlJoinsContainer.innerHTML = '';
         sqlState.joins.forEach((join, index) => {
@@ -1690,7 +1730,7 @@ public abstract class BaseRepository<T extends BaseModel> {
           div.className = 'grid';
           div.style.marginBottom = '10px';
 
-          // Options for Alias dropdowns
+          // エイリアス選択肢の生成
           const options = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.leftAlias || t.alias === join.rightAlias ? 'selected' : ''}>${t.alias} (${t.tableName})</option>`).join(''); // Note: simplistic matching for selected, improves below
 
           const leftOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.leftAlias ? 'selected' : ''}>${t.alias}</option>`).join('');
@@ -1715,16 +1755,25 @@ public abstract class BaseRepository<T extends BaseModel> {
         });
       }
 
+      /**
+       * 結合条件の更新
+       */
       window.updateSqlJoin = (index, key, value) => {
         sqlState.joins[index][key] = value;
         updateSqlOutput();
       };
 
+      /**
+       * 結合条件の削除
+       */
       window.removeSqlJoin = (index) => {
         sqlState.joins.splice(index, 1);
         renderSqlBuilderUI();
       };
 
+      /**
+       * 結合条件の順序変更
+       */
       window.moveSqlJoin = (index, direction) => {
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= sqlState.joins.length) return;
@@ -1733,12 +1782,15 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       };
 
-      // 3. Filters
+      // 3. 絞り込み条件
       document.getElementById('sql-add-filter-btn').addEventListener('click', () => {
         sqlState.filters.push('');
         renderSqlBuilderUI();
       });
 
+      /**
+       * 絞り込み条件一覧の描画
+       */
       function renderSqlFilters() {
         sqlFiltersContainer.innerHTML = '';
         sqlState.filters.forEach((filter, index) => {
@@ -1747,28 +1799,34 @@ public abstract class BaseRepository<T extends BaseModel> {
           div.style.gap = '5px';
           div.style.marginBottom = '5px';
           div.innerHTML = `
-             <textarea type="text" value="${filter}" onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;"></textarea>
+             <textarea onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;">${filter}</textarea>
              <button class="outline contrast" onclick="removeSqlFilter(${index})" style="width:auto;" title="削除">x</button>
           `;
           sqlFiltersContainer.appendChild(div);
         });
       }
 
+      /**
+       * 絞り込み条件の更新
+       */
       window.updateSqlFilter = (index, value) => {
         sqlState.filters[index] = value;
         updateSqlOutput();
       };
 
+      /**
+       * 絞り込み条件の削除
+       */
       window.removeSqlFilter = (index) => {
         sqlState.filters.splice(index, 1);
         renderSqlBuilderUI();
       };
 
-      // 4. Sorts
+      // 4. ソート順
       document.getElementById('sql-add-sort-btn').addEventListener('click', () => {
         if (sqlState.selectedTables.length === 0) return;
 
-        // Default to first table, first column
+        // 最初のテーブルの最初のカラムをデフォルトにする
         const firstTbl = sqlState.selectedTables[0];
         const firstDef = parsedTables.find(t => t.tableName === firstTbl.tableName);
 
@@ -1780,6 +1838,9 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       });
 
+      /**
+       * ソート順一覧の描画
+       */
       function renderSqlSorts() {
         sqlSortsContainer.innerHTML = '';
         sqlState.sorts.forEach((sort, index) => {
@@ -1790,7 +1851,7 @@ public abstract class BaseRepository<T extends BaseModel> {
 
           const aliasOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === sort.alias ? 'selected' : ''}>${t.alias}</option>`).join('');
 
-          // Column options depend on selected alias
+          // 選択されたエイリアスに基づいてカラムの選択肢を変更
           const tblState = sqlState.selectedTables.find(t => t.alias === sort.alias);
           let colOptions = '';
           if (tblState) {
@@ -1817,9 +1878,12 @@ public abstract class BaseRepository<T extends BaseModel> {
         });
       }
 
+      /**
+       * ソート順の更新
+       */
       window.updateSqlSort = (index, key, value) => {
         sqlState.sorts[index][key] = value;
-        // If alias changed, reset column to first available
+        // エイリアスが変更された場合、カラムをリセット
         if (key === 'alias') {
           const tblState = sqlState.selectedTables.find(t => t.alias === value);
           const def = parsedTables.find(t => t.tableName === tblState.tableName);
@@ -1832,11 +1896,17 @@ public abstract class BaseRepository<T extends BaseModel> {
         }
       };
 
+      /**
+       * ソート順の削除
+       */
       window.removeSqlSort = (index) => {
         sqlState.sorts.splice(index, 1);
         renderSqlBuilderUI();
       };
 
+      /**
+       * ソート順の順序変更
+       */
       window.moveSqlSort = (index, direction) => {
         const newIndex = index + direction;
         if (newIndex < 0 || newIndex >= sqlState.sorts.length) return;
@@ -1845,7 +1915,10 @@ public abstract class BaseRepository<T extends BaseModel> {
         renderSqlBuilderUI();
       };
 
-      // 5. Generation
+      // 5. SQL生成
+      /**
+       * SQL生成と表示
+       */
       window.updateSqlOutput = function () {
         if (sqlState.selectedTables.length === 0) {
           sqlOutput.value = '';
@@ -1854,23 +1927,19 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         let sql = 'SELECT\n';
 
-        // Select logic
-        sql += sqlSelectClause.value || '*'; // Fallback if empty
+        sql += sqlSelectClause.value || '*'; // 空の場合はフォールバック
 
         sql += '\nFROM\n';
 
-        // From first table
         const first = sqlState.selectedTables[0];
         sql += `    ${first.tableName} AS ${first.alias}\n`;
 
-        // Joins
         sqlState.joins.forEach(join => {
           const rightTbl = sqlState.selectedTables.find(t => t.alias === join.rightAlias);
           const rightName = rightTbl ? rightTbl.tableName : '???';
           sql += `${join.type} ${rightName} AS ${join.rightAlias} ON ${join.condition}\n`;
         });
 
-        // Where
         const validFilters = sqlState.filters.filter(f => f.trim() !== '');
         if (validFilters.length > 0) {
           sql += 'WHERE\n';
@@ -1878,7 +1947,6 @@ public abstract class BaseRepository<T extends BaseModel> {
           sql += '\n';
         }
 
-        // Order By
         if (sqlState.sorts.length > 0) {
           sql += 'ORDER BY\n';
           sql += sqlState.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
