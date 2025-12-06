@@ -161,7 +161,7 @@
         <!-- 5. 生成結果 -->
         <div>
           <h4>5. 生成結果</h4>
-          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 200px;"></textarea>
+          <textarea id="sql-output" readonly placeholder="生成されたSQLがここに表示されます..." style="height: 600px;"></textarea>
           <button id="sql-copy-btn">クリップボードにコピー</button>
         </div>
       </section>
@@ -173,6 +173,7 @@
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
   <script src="js/papaparse.min.js"></script>
   <script src="js/jszip.min.js"></script>
+  <script src="js/sql-formatter.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const fileInput = document.getElementById('fileInput');
@@ -1629,8 +1630,6 @@ public abstract class BaseRepository<T extends BaseModel> {
             condition = `${leftTableState.alias}.${rightTableState.tableName}_id = ${rightTableState.alias}.id`;
           } else if (rightCols.includes(`${leftTableState.tableName}_id`)) {
             condition = `${leftTableState.alias}.id = ${rightTableState.alias}.${leftTableState.tableName}_id`;
-          } else {
-            condition = '/* 結合条件を設定してください */';
           }
         }
 
@@ -1646,6 +1645,8 @@ public abstract class BaseRepository<T extends BaseModel> {
 
         // Clean up leading AND if condition was empty
         if (condition.startsWith(' AND ')) condition = condition.substring(5);
+
+        condition = condition.length > 0 ? condition : '/* 結合条件を設定してください */';
 
         return condition;
       }
@@ -1824,7 +1825,14 @@ public abstract class BaseRepository<T extends BaseModel> {
         // Let's make it slightly nicer: t0.*, t1.*
         const selects = [];
         sqlState.selectedTables.forEach(t => {
-          selects.push(`    ${t.alias}.*`);
+          const def = parsedTables.find(table => table.tableName === t.tableName);
+          if (def) {
+            def.columns.forEach(col => {
+              selects.push(`    ${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
+            });
+          } else {
+            selects.push(`    ${t.alias}.*`);
+          }
         });
         sql += selects.join(',\n');
 
@@ -1854,6 +1862,14 @@ public abstract class BaseRepository<T extends BaseModel> {
           sql += 'ORDER BY\n';
           sql += sqlState.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
           sql += '\n';
+        }
+
+        try {
+          if (window.sqlFormatter) {
+            sql = sqlFormatter.format(sql, { language: 'postgresql' });
+          }
+        } catch (e) {
+          console.warn('SQL Formatting failed:', e);
         }
 
         sqlOutput.value = sql;
