@@ -39,18 +39,31 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
     content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs)
   });
 
+  // Extract parameters from all potential SQL parts to pass to Service/Controller
+  // Note: generateSqlRepository calculates parameters internally, but we need them here too to pass down
+  // or we can recalculate them. For simplicity, let's recalculate or use a helper that does it on state.
+  // Actually, let's look at how generateSqlRepository generates SQL. 
+  // It calls buildSqlForModel or buildSqlForDto. We can do that here to parse params.
+  let fullSqlForParams = "";
+  if (returnType.isModel) {
+    fullSqlForParams = buildSqlForModel(sqlState);
+  } else {
+    fullSqlForParams = buildSqlForDto(sqlState, selectClause);
+  }
+  const parameters = extractParameters(fullSqlForParams);
+
   // 6. Service生成
   const serviceName = `${baseName}SqlService`;
   result.push({
     path: `services/${serviceName}.java`,
-    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel)
+    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel, parameters)
   });
 
   // 7. Controller生成
   const controllerName = `${baseName}SqlController`;
   result.push({
     path: `controllers/${controllerName}.java`,
-    content: generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel)
+    content: generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel, parameters)
   });
 
   return result;
@@ -139,12 +152,20 @@ function determineBaseName(sqlState, returnType) {
 }
 
 /**
+ * SQLからパラメータ変数（:variableName）を抽出する
+ */
+function extractParameters(sql) {
+  const matches = sql.match(/:([a-zA-Z0-9_]+)/g);
+  if (!matches) return [];
+  // 重複を除去して名前だけ返す
+  return [...new Set(matches.map(m => m.substring(1)))];
+}
+
+/**
  * DTOクラスの生成
  */
 function generateDto(className, columnDefs) {
-  let content = `// --- FileName: ${className}.java ---\n`; // Note: leaving comment for now but cleaner not to?
-  // Removing filename comment to be clean
-  content = `package models.dto;\n\n`;
+  let content = `package models.dto;\n\n`;
   content += `import lombok.Data;\n`;
   content += `import java.time.Instant;\n`;
   content += `import io.ebean.annotation.Sql;\n\n`;
@@ -170,6 +191,18 @@ function generateDto(className, columnDefs) {
 function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, selectClause, columnDefs) {
   const packageImport = isModel ? `models.${modelDtoType}` : `models.dto.${modelDtoType}`;
 
+  // SQL構築とパラメータ抽出
+  let sql = "";
+  if (isModel) {
+    sql = buildSqlForModel(sqlState);
+  } else {
+    sql = buildSqlForDto(sqlState, selectClause);
+  }
+  const parameters = extractParameters(sql);
+
+  // パラメータ引数文字列の作成 (e.g., "String foo, String bar")
+  const methodArgs = parameters.map(p => `String ${p}`).join(', ');
+
   let content = `package repository;\n\n`;
   content += `import io.ebean.DB;\n`;
   if (!isModel) {
@@ -193,22 +226,23 @@ function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, select
   content += `     * ${repoName} の検索結果を取得します。\n`;
   content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
   content += `     */\n`;
-  content += `    public CompletionStage<List<${modelDtoType}>> search() {\n`;
+  content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
   content += `        return supplyAsync(() -> {\n`;
 
+  content += `            String sql = """\n${sql}\n            """;\n\n`;
+
   if (isModel) {
-    // Modelの場合は、DB.findNative(Model.class, sql) を使用する
-    // デフォルトのSELECT句 (alias付き) はModelマッピングに適さないため、
-    // ここでは t0.* を使用してクエリを再構築する
-    let sql = buildSqlForModel(sqlState);
-    content += `            String sql = """\n${sql}\n            """;\n\n`;
-    content += `            return DB.findNative(${modelDtoType}.class, sql).findList();\n`;
+    content += `            return DB.findNative(${modelDtoType}.class, sql)\n`;
   } else {
-    // DTOの場合は元のロジック
-    let sql = buildSqlForDto(sqlState, selectClause);
-    content += `            String sql = """\n${sql}\n            """;\n\n`;
-    content += `            return DB.findDto(${modelDtoType}.class, sql).findList();\n`;
+    content += `            return DB.findDto(${modelDtoType}.class, sql)\n`;
   }
+
+  // パラメータ設定
+  parameters.forEach(p => {
+    content += `                .setParameter("${p}", ${p})\n`;
+  });
+
+  content += `                .findList();\n`;
 
   content += `        }, executionContext);\n`;
   content += `    }\n`;
@@ -287,7 +321,10 @@ function buildSqlForDto(sqlState, selectClause) {
 /**
  * Serviceの生成
  */
-function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel) {
+function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, parameters) {
+  const methodArgs = parameters.map(p => `String ${p}`).join(', ');
+  const callArgs = parameters.join(', ');
+
   let content = `package services;\n\n`;
   if (isModel) {
     content += `import models.${modelDtoType};\n`;
@@ -310,8 +347,8 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
   content += `     * ${serviceName} の検索結果をJSONで取得します。\n`;
   content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
   content += `     */\n`;
-  content += `    public CompletionStage<List<${modelDtoType}>> search() {\n`;
-  content += `        return repository.search();\n`;
+  content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
+  content += `        return repository.search(${callArgs});\n`;
   content += `    }\n`;
   content += `}\n`;
   return content;
@@ -320,7 +357,9 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
 /**
  * Controllerの生成
  */
-function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel) {
+function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel, parameters) {
+  const callArgs = parameters.join(', ');
+
   let content = `package controllers.api;\n\n`;
   content += `import services.${serviceName};\n`;
   content += `import play.mvc.Controller;\n`;
@@ -344,7 +383,15 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
   content += `     * @return JSON形式の検索結果\n`;
   content += `     */\n`;
   content += `    public CompletionStage<Result> search(Http.Request request) {\n`;
-  content += `        return service.search().thenApplyAsync(list -> ok(play.libs.Json.toJson(list)));\n`;
+
+  if (parameters.length > 0) {
+    parameters.forEach(p => {
+      content += `        String ${p} = request.getQueryString("${p}");\n`;
+    });
+    content += `\n`;
+  }
+
+  content += `        return service.search(${callArgs}).thenApplyAsync(list -> ok(play.libs.Json.toJson(list)));\n`;
   content += `    }\n`;
   content += `}\n`;
   return content;
