@@ -3,11 +3,9 @@
  */
 function generateJavaRepo(tables, rlsOptions) {
   const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
-
-  let javaString = '';
+  const files = [];
 
   const exceptionContent = `
-// --- FileName: OptimisticLockingFailureException.java ---
 package repository;
 
 /**
@@ -19,11 +17,10 @@ public class OptimisticLockingFailureException extends RuntimeException {
     }
 }
 `;
-  javaString += exceptionContent.trim() + '\n\n';
+  files.push({ path: 'repository/OptimisticLockingFailureException.java', content: exceptionContent.trim() });
 
   if (rlsOptions && rlsOptions.enabled) {
     const baseRepoContent = `
-// --- FileName: BaseRepository.java ---
 package repository;
 
 import io.ebean.DB;
@@ -64,7 +61,7 @@ public abstract class BaseRepository<T extends BaseModel> {
     }
 }
 `;
-    javaString += baseRepoContent.trim() + '\n\n';
+    files.push({ path: 'repository/BaseRepository.java', content: baseRepoContent.trim() });
   }
 
 
@@ -77,8 +74,7 @@ public abstract class BaseRepository<T extends BaseModel> {
     const extendsBaseRepo = rlsOptions && rlsOptions.enabled;
 
 
-    let classContent = `// --- FileName: ${repoName}.java ---\n`;
-    classContent += `package repository;\n\n`;
+    let classContent = `package repository;\n\n`;
     classContent += `import io.ebean.DB;\n`;
     classContent += `import io.ebean.ExpressionList;\n`;
     classContent += `import models.${modelName};\n`;
@@ -266,8 +262,8 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    }\n`;
 
     classContent += `}\n`;
-    javaString += classContent + '\n';
+    files.push({ path: `repository/${repoName}.java`, content: classContent });
   });
 
-  return javaString;
+  return files;
 }

@@ -2,7 +2,8 @@
  * Javaサービスクラス生成
  */
 function generateJavaService(tables, rlsOptions) {
-  let javaString = '';
+  const files = [];
+
   tables.forEach(table => {
     const modelName = toPascalCase(table.tableName);
     const serviceName = `${modelName}Service`;
@@ -10,8 +11,7 @@ function generateJavaService(tables, rlsOptions) {
     const repoVar = toCamelCase(repoName);
     const modelVar = toCamelCase(modelName);
 
-    let classContent = `// --- FileName: ${serviceName}.java ---\n`;
-    classContent += `package services;\n\n`;
+    let classContent = `package services;\n\n`;
     classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
     classContent += `import models.${modelName};\n`;
     classContent += `import play.libs.Json;\n`;
@@ -165,8 +165,9 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `    }\n`;
 
     classContent += `}\n`;
-    javaString += classContent + '\n';
+
+    files.push({ path: `services/${serviceName}.java`, content: classContent });
   });
 
-  return javaString;
+  return files;
 }

@@ -57,7 +57,7 @@ function generateZodSchema(tables) {
     zodString += '});\n\n';
   });
 
-  return zodString;
+  return [{ path: 'schemas.ts', content: zodString }];
 }
 
 /**
@@ -79,5 +79,5 @@ function generateZodType(tables) {
     typeString += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n\n`;
   });
 
-  return typeString;
+  return [{ path: 'zod-types.ts', content: typeString }];
 }

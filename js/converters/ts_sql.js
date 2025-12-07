@@ -4,10 +4,10 @@
  * @param {Array} parsedTables - パース済みのテーブル定義
  * @param {String} selectClause - SELECT句の文字列
  * @param {Boolean} isSelectEdited - SELECT句が手動編集されているかどうか
- * @returns {Object} 生成されたファイルのマップ { 'path/filename': 'content' }
+ * @returns {Array} 生成されたファイルのリスト [{path, content}]
  */
 function generateTsSql(sqlState, parsedTables, selectClause, isSelectEdited) {
-  const result = {};
+  const result = [];
 
   if (sqlState.selectedTables.length === 0) {
     return result;
@@ -21,7 +21,10 @@ function generateTsSql(sqlState, parsedTables, selectClause, isSelectEdited) {
   const typeName = `${baseName}Dto`;
 
   // 3. 型定義の生成
-  result[`models/ts/${typeName}.ts`] = generateTsInterface(typeName, columnDefs);
+  result.push({
+    path: `models/ts/${typeName}.ts`,
+    content: generateTsInterface(typeName, columnDefs)
+  });
 
   return result;
 }

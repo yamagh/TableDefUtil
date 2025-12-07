@@ -1,31 +1,4 @@
 /**
- * TSV/CSVデータをパースして初期化
- * @param {string} tsvData 入力されたTSV/CSV文字列
- */
-function parseAndConvert(tsvData) {
-  Papa.parse(tsvData, {
-    header: true,
-    skipEmptyLines: true,
-    delimiter: '\t',
-    complete: (results) => {
-      if (results.errors.length > 0) {
-        console.error("CSV Parse Errors:", results.errors);
-        alert('CSV/TSVのパースに失敗しました。フォーマットを確認してください。');
-        return;
-      }
-      const intermediateData = transformToIntermediate(results.data);
-      initSqlBuilder(intermediateData);
-      const rlsOptions = {
-        enabled: document.getElementById('rlsEnabled').checked,
-        tenantIdColumn: document.getElementById('tenantIdColumn').value,
-        adminFlagColumn: document.getElementById('adminFlagColumn').value
-      };
-      generateOutputs(intermediateData, rlsOptions);
-    }
-  });
-}
-
-/**
  * パース結果を中間データ構造へ変換
  */
 function transformToIntermediate(data) {

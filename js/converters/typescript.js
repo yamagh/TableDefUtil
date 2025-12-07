@@ -19,5 +19,5 @@ function generateTypeScript(tables) {
     tsString += '};\n\n';
   });
 
-  return tsString;
+  return [{ path: 'entities.ts', content: tsString }];
 }

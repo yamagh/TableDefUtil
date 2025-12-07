@@ -69,5 +69,6 @@ function generateDDL(tables) {
     });
     ddl += '\n-- --------------------------------------------------\n\n';
   });
-  return ddl;
+
+  return [{ path: 'schema.sql', content: ddl }];
 }

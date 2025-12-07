@@ -2,7 +2,8 @@
  * Javaコントローラークラス生成
  */
 function generateJavaController(tables) {
-  let javaString = '';
+  const files = [];
+
   tables.forEach(table => {
     const modelName = toPascalCase(table.tableName);
     const serviceName = `${modelName}Service`;
@@ -14,8 +15,7 @@ function generateJavaController(tables) {
     const pkType = pkColumn.type.toLowerCase().includes('big') ? 'Long' : 'Integer';
 
 
-    let classContent = `// --- FileName: ${controllerName}.java ---\n`;
-    classContent += `package controllers.api;\n\n`;
+    let classContent = `package controllers.api;\n\n`;
     classContent += `import com.fasterxml.jackson.databind.JsonNode;\n`;
     classContent += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
     classContent += `import controllers.actions.Authenticated;\n`;
@@ -111,8 +111,9 @@ function generateJavaController(tables) {
     classContent += `    }\n`;
 
     classContent += `}\n`;
-    javaString += classContent + '\n';
+
+    files.push({ path: `controllers/api/${controllerName}.java`, content: classContent });
   });
 
-  return javaString;
+  return files;
 }

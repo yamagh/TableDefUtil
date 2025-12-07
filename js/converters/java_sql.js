@@ -4,10 +4,10 @@
  * @param {Array} parsedTables - パース済みのテーブル定義
  * @param {String} selectClause - SELECT句の文字列
  * @param {Boolean} isSelectEdited - SELECT句が手動編集されているかどうか
- * @returns {Object} 生成されたファイルのマップ { 'path/filename': 'content' }
+ * @returns {Array} 生成されたファイルのリスト [{path, content}]
  */
 function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
-  const result = {};
+  const result = [];
 
   if (sqlState.selectedTables.length === 0) {
     return result;
@@ -26,20 +26,32 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
 
   // 4. DTO生成 (必要な場合)
   if (!returnType.isModel) {
-    result[`models/dto/${dtoName}.java`] = generateDto(dtoName, columnDefs);
+    result.push({
+      path: `models/dto/${dtoName}.java`,
+      content: generateDto(dtoName, columnDefs)
+    });
   }
 
   // 5. Repository生成
   const repoName = `${baseName}SqlRepository`;
-  result[`repository/${repoName}.java`] = generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs);
+  result.push({
+    path: `repository/${repoName}.java`,
+    content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs)
+  });
 
   // 6. Service生成
   const serviceName = `${baseName}SqlService`;
-  result[`services/${serviceName}.java`] = generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel);
+  result.push({
+    path: `services/${serviceName}.java`,
+    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel)
+  });
 
   // 7. Controller生成
   const controllerName = `${baseName}SqlController`;
-  result[`controllers/${controllerName}.java`] = generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel);
+  result.push({
+    path: `controllers/${controllerName}.java`,
+    content: generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel)
+  });
 
   return result;
 }
@@ -130,8 +142,9 @@ function determineBaseName(sqlState, returnType) {
  * DTOクラスの生成
  */
 function generateDto(className, columnDefs) {
-  let content = `// --- FileName: ${className}.java ---\n`;
-  content += `package models.dto;\n\n`;
+  let content = `// --- FileName: ${className}.java ---\n`; // Note: leaving comment for now but cleaner not to?
+  // Removing filename comment to be clean
+  content = `package models.dto;\n\n`;
   content += `import lombok.Data;\n`;
   content += `import java.time.Instant;\n`;
   content += `import io.ebean.annotation.Sql;\n\n`;
@@ -157,8 +170,7 @@ function generateDto(className, columnDefs) {
 function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, selectClause, columnDefs) {
   const packageImport = isModel ? `models.${modelDtoType}` : `models.dto.${modelDtoType}`;
 
-  let content = `// --- FileName: ${repoName}.java ---\n`;
-  content += `package repository;\n\n`;
+  let content = `package repository;\n\n`;
   content += `import io.ebean.DB;\n`;
   if (!isModel) {
     content += `import io.ebean.SqlRow;\n`;
@@ -276,8 +288,7 @@ function buildSqlForDto(sqlState, selectClause) {
  * Serviceの生成
  */
 function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel) {
-  let content = `// --- FileName: ${serviceName}.java ---\n`;
-  content += `package services;\n\n`;
+  let content = `package services;\n\n`;
   if (isModel) {
     content += `import models.${modelDtoType};\n`;
   } else {
@@ -310,8 +321,7 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
  * Controllerの生成
  */
 function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel) {
-  let content = `// --- FileName: ${controllerName}.java ---\n`;
-  content += `package controllers.api;\n\n`;
+  let content = `package controllers.api;\n\n`;
   content += `import services.${serviceName};\n`;
   content += `import play.mvc.Controller;\n`;
   content += `import play.mvc.Http;\n`;

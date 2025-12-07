@@ -3,12 +3,10 @@
  */
 function generateJavaModel(tables, rlsOptions) {
   const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
-
-  let javaString = '';
+  const files = [];
 
   if (rlsOptions && rlsOptions.enabled) {
     const sessionInfoContent = `
-// --- FileName: SessionInfo.java ---
 package models;
 
 import lombok.AllArgsConstructor;
@@ -28,8 +26,9 @@ public class SessionInfo {
     private String tenantId;
 }
 `;
+    files.push({ path: 'models/SessionInfo.java', content: sessionInfoContent.trim() });
+
     const rlsAwareContent = `
-// --- FileName: RlsAware.java ---
 package models;
 
 /**
@@ -39,13 +38,11 @@ public interface RlsAware {
     String getTenantId();
 }
 `;
-    javaString += sessionInfoContent.trim() + '\n\n';
-    javaString += rlsAwareContent.trim() + '\n\n';
+    files.push({ path: 'models/RlsAware.java', content: rlsAwareContent.trim() });
   }
 
 
   const baseModelContent = `
-// --- FileName: BaseModel.java ---
 package models;
 
 import io.ebean.Model;
@@ -95,7 +92,7 @@ public class BaseModel extends Model {
     public String updatedBy;
 }
 `;
-  javaString += baseModelContent.trim() + '\n\n';
+  files.push({ path: 'models/BaseModel.java', content: baseModelContent.trim() });
 
   tables.forEach(table => {
     const className = toPascalCase(table.tableName);
@@ -156,8 +153,7 @@ public class BaseModel extends Model {
       fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
     });
 
-    let classContent = `// --- FileName: ${className}.java ---\n`;
-    classContent += `package models;\n\n`;
+    let classContent = `package models;\n\n`;
     classContent += `${[...imports].sort().join('\n')}\n\n`;
     classContent += `/**\n * ${table.tableNameJP}\n */\n`;
     classContent += `@Entity\n@Getter\n@Setter\n`;
@@ -177,8 +173,9 @@ public class BaseModel extends Model {
 
     classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
     classContent += `}\n`;
-    javaString += classContent + '\n';
+
+    files.push({ path: `models/${className}.java`, content: classContent });
   });
 
-  return javaString;
+  return files;
 }
