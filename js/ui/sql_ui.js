@@ -14,7 +14,9 @@ const SqlUi = {
     resultContainer: null,
     resultTabs: null,
     resultContents: null,
-    downloadBtn: null
+    downloadBtn: null,
+    limitInput: null,
+    offsetInput: null
   },
 
   init() {
@@ -30,6 +32,8 @@ const SqlUi = {
     this.elements.resultTabs = document.getElementById('sql-java-tabs');
     this.elements.resultContents = document.getElementById('sql-java-contents');
     this.elements.downloadBtn = document.getElementById('sql-java-download-btn');
+    this.elements.limitInput = document.getElementById('sql-limit');
+    this.elements.offsetInput = document.getElementById('sql-offset');
 
     this.attachListeners();
   },
@@ -90,10 +94,22 @@ const SqlUi = {
     if (this.elements.selectClause) {
       this.elements.selectClause.addEventListener('input', () => this.updateOutput());
     }
+
+    if (this.elements.limitInput) {
+      this.elements.limitInput.addEventListener('input', () => this.updateOutput());
+    }
+    if (this.elements.offsetInput) {
+      this.elements.offsetInput.addEventListener('input', () => this.updateOutput());
+    }
+
+    // Expose updateSqlOutput to window if used by index.html
+    window.updateSqlOutput = () => this.updateOutput();
   },
 
   reset() {
     AppState.resetSqlState();
+    if (this.elements.limitInput) this.elements.limitInput.value = '';
+    if (this.elements.offsetInput) this.elements.offsetInput.value = '';
     this.elements.tableSelect.innerHTML = '<option value="">テーブルを追加...</option>';
     AppState.parsedTables.forEach(table => {
       const option = document.createElement('option');
@@ -242,8 +258,15 @@ const SqlUi = {
   },
 
   updateOutput() {
+    if (this.elements.limitInput) AppState.sql.limit = this.elements.limitInput.value;
+    if (this.elements.offsetInput) AppState.sql.offset = this.elements.offsetInput.value;
     const sql = SqlLogic.generateSql(this.elements.selectClause.value);
-    this.elements.output.value = sql;
+    if (this.elements.output && this.elements.output.tagName === 'DIV') {
+      // if using a div/highlighting
+      this.elements.output.textContent = sql;
+    } else {
+      this.elements.output.value = sql;
+    }
     this.renderAutoCode();
   },
 

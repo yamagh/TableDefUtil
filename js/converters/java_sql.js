@@ -167,6 +167,13 @@ function analyzeParameters(sql) {
     listVariables.add(match[1]);
   }
 
+  // Detect Integer variables (LIMIT/OFFSET)
+  const intVariables = new Set();
+  const limitOffsetRegex = /(?:LIMIT|OFFSET)\s+:([a-zA-Z0-9_]+)/gi;
+  while ((match = limitOffsetRegex.exec(sql)) !== null) {
+    intVariables.add(match[1]);
+  }
+
   const parameters = [];
 
   // まず基本的な変数をリストアップ
@@ -327,6 +334,14 @@ function buildSqlForModel(sqlState) {
     sql += '                    ' + sqlState.sorts.map(s => `${s.alias}.${s.column} ${s.direction}`).join(',\n                    ');
   }
 
+  if (sqlState.limit && sqlState.limit.trim() !== '') {
+    sql += `\n                LIMIT ${sqlState.limit.trim()}`;
+  }
+
+  if (sqlState.offset && sqlState.offset.trim() !== '') {
+    sql += `\n                OFFSET ${sqlState.offset.trim()}`;
+  }
+
   return sql;
 }
 
@@ -357,6 +372,14 @@ function buildSqlForDto(sqlState, selectClause) {
   if (sqlState.sorts.length > 0) {
     sql += '\n                ORDER BY\n';
     sql += '                    ' + sqlState.sorts.map(s => `${s.alias}.${s.column} ${s.direction}`).join(',\n                    ');
+  }
+
+  if (sqlState.limit && sqlState.limit.trim() !== '') {
+    sql += `\n                LIMIT ${sqlState.limit.trim()}`;
+  }
+
+  if (sqlState.offset && sqlState.offset.trim() !== '') {
+    sql += `\n                OFFSET ${sqlState.offset.trim()}`;
   }
 
   return sql;

@@ -8,7 +8,9 @@ const AppState = {
     selectedTables: [],
     joins: [],
     filters: [],
-    sorts: []
+    sorts: [],
+    limit: '',
+    offset: ''
   },
 
   // Helper to reset SQL state
@@ -17,6 +19,8 @@ const AppState = {
     this.sql.joins = [];
     this.sql.filters = [];
     this.sql.sorts = [];
+    this.sql.limit = '';
+    this.sql.offset = '';
   }
 };
 

@@ -189,6 +189,14 @@ const SqlLogic = {
       sql += '\n';
     }
 
+    if (AppState.sql.limit && AppState.sql.limit.trim() !== '') {
+      sql += `LIMIT ${AppState.sql.limit.trim()}\n`;
+    }
+
+    if (AppState.sql.offset && AppState.sql.offset.trim() !== '') {
+      sql += `OFFSET ${AppState.sql.offset.trim()}\n`;
+    }
+
     sql += ';';
 
     try {
