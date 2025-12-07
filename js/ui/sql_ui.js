@@ -323,25 +323,18 @@ const SqlUi = {
     this.elements.downloadBtn = newDownloadBtn;
 
     this.elements.downloadBtn.addEventListener('click', () => {
-      if (typeof Zipper === 'undefined') {
-        // Or instantiate JSZip directly if Zipper is different utility.
-        // We should use Zipper.generateZip if possible, but Zipper expects 'tables' and 'formats'.
-        // Here we have arbitrary files list.
-        // So we use JSZip directly or add helper to Zipper.
-
-        if (typeof JSZip === 'undefined') {
-          console.error('JSZip is not loaded');
-          return;
-        }
-        const zip = new JSZip();
-        files.forEach(f => zip.file(f.path, f.content));
-
-        zip.generateAsync({ type: "blob" })
-          .then(function (content) {
-            const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
-            downloadFile(content, `sql-generated-code-${now}.zip`);
-          });
+      if (typeof JSZip === 'undefined') {
+        console.error('JSZip is not loaded');
+        return;
       }
+      const zip = new JSZip();
+      files.forEach(f => zip.file(f.path, f.content));
+
+      zip.generateAsync({ type: "blob" })
+        .then(function (content) {
+          const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
+          downloadFile(content, `sql-generated-code-${now}.zip`);
+        });
     });
   }
 };
