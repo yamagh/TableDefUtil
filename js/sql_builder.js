@@ -163,10 +163,10 @@ function generateDefaultJoinCondition(leftTableState, rightTableState) {
 
   // 論理削除フラグのチェックを追加
   if (leftCols.includes('is_deleted')) {
-    condition += ` AND ${leftTableState.alias}.is_deleted = false`;
+    condition += `\nAND ${leftTableState.alias}.is_deleted = false`;
   }
   if (rightCols.includes('is_deleted')) {
-    condition += ` AND ${rightTableState.alias}.is_deleted = false`;
+    condition += `\nAND ${rightTableState.alias}.is_deleted = false`;
   }
 
   // 条件が空だった場合の先頭のANDを削除
@@ -427,3 +427,115 @@ document.getElementById('sql-copy-btn').addEventListener('click', () => {
   sqlOutput.select();
   document.execCommand('copy');
 });
+
+// 6. Javaコード生成機能 (Repository/Service/Controller)
+document.getElementById('sql-generate-java-btn').addEventListener('click', () => {
+  if (sqlState.selectedTables.length === 0) {
+    alert('テーブルが選択されていません。');
+    return;
+  }
+
+  // デフォルトのSELECT句を生成して編集有無を判定
+  let defaultSelects = [];
+  sqlState.selectedTables.forEach(t => {
+    const def = parsedTables.find(table => table.tableName === t.tableName);
+    if (def) {
+      def.columns.forEach(col => {
+        defaultSelects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
+      });
+    } else {
+      defaultSelects.push(`${t.alias}.*`);
+    }
+  });
+  const defaultSelectClause = defaultSelects.join(',\n');
+
+  // 空白を削除して比較
+  const isSelectEdited = (sqlSelectClause.value.replace(/\s/g, '') !== defaultSelectClause.replace(/\s/g, ''));
+
+  const javaFiles = generateJavaSql(sqlState, parsedTables, sqlSelectClause.value, isSelectEdited);
+
+  renderSqlJavaResult(javaFiles);
+});
+
+/**
+ * 生成されたJavaコードを表示する
+ */
+function renderSqlJavaResult(javaFiles) {
+  const container = document.getElementById('sql-java-result-container');
+  const tabsContainer = document.getElementById('sql-java-tabs');
+  const contentsContainer = document.getElementById('sql-java-contents');
+
+  container.style.display = 'block';
+  tabsContainer.innerHTML = '';
+  contentsContainer.innerHTML = '';
+
+  let isFirst = true;
+
+  for (const [path, content] of Object.entries(javaFiles)) {
+    // パスからファイル名のみ抽出
+    const fileName = path.split('/').pop();
+    // ID用にパスをセーフな文字列に
+    const tabId = 'sql-java-tab-' + fileName.replace(/[^a-zA-Z0-9]/g, '-');
+
+    // タブ作成
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = '#';
+    a.textContent = fileName;
+    a.className = isFirst ? 'active' : '';
+    a.dataset.target = tabId;
+
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      // タブの切り替え
+      tabsContainer.querySelectorAll('a').forEach(el => el.classList.remove('active'));
+      e.target.classList.add('active');
+
+      contentsContainer.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.getElementById(tabId).style.display = 'block';
+    });
+
+    li.appendChild(a);
+    tabsContainer.appendChild(li);
+
+    // コンテンツ作成
+    const div = document.createElement('div');
+    div.id = tabId;
+    div.className = 'tab-content';
+    div.style.display = isFirst ? 'block' : 'none';
+
+    const textarea = document.createElement('textarea');
+    textarea.value = content;
+    textarea.readOnly = true;
+    textarea.style.height = '300px';
+    textarea.style.fontFamily = 'monospace';
+
+    div.appendChild(textarea);
+    contentsContainer.appendChild(div);
+
+    isFirst = false;
+  }
+
+  // ダウンロードボタンの設定
+  const downloadBtn = document.getElementById('sql-java-download-btn');
+  // リスナーを再生成するためにクローン
+  const newDownloadBtn = downloadBtn.cloneNode(true);
+  downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+
+  newDownloadBtn.addEventListener('click', () => {
+    if (typeof JSZip === 'undefined') {
+      console.error('JSZip is not loaded');
+      return;
+    }
+    const zip = new JSZip();
+    for (const [path, content] of Object.entries(javaFiles)) {
+      zip.file(path, content);
+    }
+
+    zip.generateAsync({ type: "blob" })
+      .then(function (content) {
+        const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
+        downloadFile(content, `sql-generated-java-${now}.zip`);
+      });
+  });
+}
