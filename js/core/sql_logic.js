@@ -229,7 +229,7 @@ const SqlLogic = {
     // We need to merge them into a consistent structure for UI or Zip.
     // Let's stick to returning array of files.
 
-    const allFiles = [...javaFiles, ...tsFiles];
+    const allFiles = [];
 
     // Add SQL file
     const sqlContent = this.generateSql(selectClause);
@@ -244,6 +244,9 @@ const SqlLogic = {
       }
       allFiles.push({ path: `sql/${baseName}.sql`, content: sqlContent });
     }
+
+    // Add Java and TS files after SQL
+    allFiles.push(...javaFiles, ...tsFiles);
 
     return allFiles;
   }
