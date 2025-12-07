@@ -1,0 +1,57 @@
+:root {
+  --pico-color-primary-50: var(--pico-color-azure-50);
+  --pico-color-primary-400: var(--pico-color-azure-400);
+  --pico-color-secondary-50: var(--pico-color-zinc-50);
+  --pico-color-secondary-400: var(--pico-color-zinc-400);
+}
+
+body {
+  padding: 2rem;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+textarea {
+  height: 300px;
+  font-family: monospace;
+}
+
+header {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+}
+
+.btn-danger:hover {
+  color: var(--pico-color-red-50);
+  background-color: var(--pico-color-red-400);
+}
+
+.btn-danger.outline:hover {
+  color: var(--pico-color-red-50);
+  background-color: var(--pico-color-red-400);
+}
+
+button.outline.primary:hover {
+  color: var(--pico-color-primary-50);
+  background-color: var(--pico-color-primary-400);
+}
+
+button.outline.secondary:hover {
+  color: var(--pico-color-secondary-50);
+  background-color: var(--pico-color-secondary-400);
+}
+
+article {
+  margin-bottom: 2rem;
+  border: 1px solid var(--pico-color-zinc-100);
+}

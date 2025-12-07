@@ -5,35 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>テーブル定義変換ツール</title>
-  <link rel="stylesheet" href="css/pico.fluid.classless.min.css">
-  <!-- <link rel="stylesheet" href="css/pico.min.css"> -->
-  <style>
-    body {
-      padding: 2rem;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    textarea {
-      height: 300px;
-      font-family: monospace;
-    }
-
-    header {
-      font-weight: bold;
-      font-size: 1.5rem;
-    }
-
-    .btn-sm {
-      padding: 0.25rem 0.5rem;
-    }
-  </style>
+  <!-- <link rel="stylesheet" href="css/pico.fluid.classless.min.css"> -->
+  <link rel="stylesheet" href="vendor/css/pico.min.css">
+  <link rel="stylesheet" href="vendor/css/pico.colors.min.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 
 <body>
@@ -103,9 +78,9 @@
     </article>
 
     <article>
-      <header>3. 結果</header>
+      <header>3. 変換結果</header>
       <section>
-        <nav role="tab-control" class="tabs">
+        <nav role="tab-control" class="tabs" style="overflow-x: scroll; white-space: nowrap;">
           <ul id="result-tabs">
             <!-- 結果タブがここに追加されます -->
           </ul>
@@ -119,7 +94,7 @@
     </article>
 
     <article>
-      <header>4. SQL構築</header>
+      <header>4. SQL 作成</header>
       <section id="sql-builder-section" style="display: none;">
         <!-- 1. テーブル選択 -->
         <div>
@@ -209,9 +184,9 @@
   <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
-  <script src="js/vendor/papaparse.min.js"></script>
-  <script src="js/vendor/jszip.min.js"></script>
-  <script src="js/vendor/sql-formatter.min.js"></script>
+  <script src="vendor/js/papaparse.min.js"></script>
+  <script src="vendor/js/jszip.min.js"></script>
+  <script src="vendor/js/sql-formatter.min.js"></script>
   <script src="js/globals.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/parser.js"></script>

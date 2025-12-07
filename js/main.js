@@ -200,12 +200,13 @@ function generateOutputs(tables, rlsOptions) {
 
     const downloadBtn = document.createElement('button');
     downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
+    downloadBtn.className = 'secondary';
     downloadBtn.style.width = '100%';
     downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
 
     const downloadAllCloneBtn = document.createElement('button');
     downloadAllCloneBtn.textContent = 'すべてダウンロード (ZIP)';
-    downloadAllCloneBtn.className = 'secondary';
+    downloadAllCloneBtn.className = 'primary';
     downloadAllCloneBtn.style.width = '100%';
     downloadAllCloneBtn.addEventListener('click', () => document.getElementById('downloadAllBtn').click());
 

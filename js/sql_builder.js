@@ -72,7 +72,7 @@ function renderSqlTables() {
         <div role="group" style="width: auto; margin: 0;">
           <button class="outline secondary btn-sm" onclick="moveSqlTable(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
           <button class="outline secondary btn-sm" onclick="moveSqlTable(${index}, 1)" ${index === sqlState.selectedTables.length - 1 ? 'disabled' : ''}>↓</button>
-          <button class="outline contrast btn-sm" onclick="removeSqlTable(${index})" title="削除">x</button>
+          <button class="outline contrast btn-sm btn-danger"" onclick="removeSqlTable(${index})" title="削除">x</button>
         </div>
       </td>
     `;
@@ -186,9 +186,9 @@ function renderSqlJoins() {
     const div = document.createElement('div');
     // シンプルなflexレイアウトで並べる(Pico v2でもgridよりflexの方が柔軟な場合あり)
     div.style.display = 'flex';
-    div.style.alignItems = 'center';
+    div.style.alignItems = 'start';
     div.style.gap = '10px';
-    // div.style.marginBottom = '10px';
+    div.style.marginTop = '0.5rem';
 
     // エイリアス選択肢の生成
     const options = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.leftAlias || t.alias === join.rightAlias ? 'selected' : ''}>${t.alias} (${t.tableName})</option>`).join('');
@@ -203,12 +203,12 @@ function renderSqlJoins() {
         <option value="LEFT JOIN" ${join.type === 'LEFT JOIN' ? 'selected' : ''}>LEFT</option>
       </select>
       <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width: auto;">${rightOptions}</select>
-      <span>ON</span>
-      <input type="text" onchange="updateSqlJoin(${index}, 'condition', this.value)" value="${join.condition.replace(/"/g, '&quot;')}" style="flex-grow:1;">
+      <span style="margin-top: 1rem;">ON</span>
+      <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" placeholder="例: t0.id = t1.user_id" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">${join.condition.replace(/"/g, '&quot;')}</textarea>
       <div role="group" style="width: auto;">
         <button class="outline secondary btn-sm" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
         <button class="outline secondary btn-sm" onclick="moveSqlJoin(${index}, 1)" ${index === sqlState.joins.length - 1 ? 'disabled' : ''}>↓</button>
-        <button class="outline contrast btn-sm" onclick="removeSqlJoin(${index})" title="削除">x</button>
+        <button class="outline contrast btn-sm btn-danger" onclick="removeSqlJoin(${index})" title="削除">x</button>
       </div>
     `;
     sqlJoinsContainer.appendChild(div);
@@ -256,12 +256,12 @@ function renderSqlFilters() {
   sqlState.filters.forEach((filter, index) => {
     const div = document.createElement('div');
     div.style.display = 'flex';
-    div.style.gap = '5px';
+    div.style.gap = '10px';
     div.style.marginBottom = '5px';
     div.style.alignItems = 'center';
     div.innerHTML = `
-       <textarea onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;">${filter}</textarea>
-       <button class="outline contrast btn-sm" onclick="removeSqlFilter(${index})" title="削除">x</button>
+       <textarea onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">${filter}</textarea>
+       <button class="outline contrast btn-sm btn-danger" onclick="removeSqlFilter(${index})" title="削除">x</button>
     `;
     sqlFiltersContainer.appendChild(div);
   });
@@ -307,8 +307,9 @@ function renderSqlSorts() {
   sqlState.sorts.forEach((sort, index) => {
     const div = document.createElement('div');
     div.style.display = 'flex';
-    div.style.gap = '5px';
+    div.style.gap = '10px';
     div.style.marginBottom = '5px';
+    div.style.alignItems = 'center';
 
     const aliasOptions = sqlState.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === sort.alias ? 'selected' : ''}>${t.alias}</option>`).join('');
 
@@ -333,7 +334,7 @@ function renderSqlSorts() {
       <div role="group" style="width: auto;">
         <button class="outline secondary btn-sm" onclick="moveSqlSort(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
         <button class="outline secondary btn-sm" onclick="moveSqlSort(${index}, 1)" ${index === sqlState.sorts.length - 1 ? 'disabled' : ''}>↓</button>
-        <button class="outline contrast btn-sm" onclick="removeSqlSort(${index})" title="削除">x</button>
+        <button class="outline contrast btn-sm btn-danger" onclick="removeSqlSort(${index})" title="削除">x</button>
       </div>
     `;
     sqlSortsContainer.appendChild(div);
