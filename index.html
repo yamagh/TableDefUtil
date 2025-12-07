@@ -5,7 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>テーブル定義変換ツール</title>
-  <link rel="stylesheet" href="css/pico.min.css">
+  <link rel="stylesheet" href="css/pico.fluid.classless.min.css">
+  <!-- <link rel="stylesheet" href="css/pico.min.css"> -->
   <style>
     body {
       padding: 2rem;
@@ -23,6 +24,15 @@
       height: 300px;
       font-family: monospace;
     }
+
+    header {
+      font-weight: bold;
+      font-size: 1.5rem;
+    }
+
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+    }
   </style>
 </head>
 
@@ -33,14 +43,15 @@
 
   <main class="container">
     <article>
+      <header>1. 入力</header>
       <section>
-        <h2>1. 入力</h2>
-        <nav role="tab-control" class="tabs">
-          <ul>
-            <li><a href="#" data-tab="file-input" class="tab-link active">ファイル入力</a></li>
-            <li><a href="#" data-tab="text-input" class="tab-link">テキストエリア入力</a></li>
-          </ul>
-        </nav>
+
+        <div role="group">
+          <a role="button" href="#" data-tab="file-input" class="btn-sm" aria-current="true">ファイル入力</a>
+          <a role="button" href="#" data-tab="text-input" class="btn-sm">テキストエリア入力</a>
+        </div>
+
+
         <div id="file-input" class="tab-content active">
           <input type="file" id="fileInput">
           <small>TSVまたはCSVファイルを選択してください。</small>
@@ -49,9 +60,11 @@
           <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
         </div>
       </section>
+    </article>
 
+    <article>
+      <header>2. 変換オプション</header>
       <section>
-        <h2>2. 変換オプション</h2>
         <fieldset>
           <legend>変換先フォーマット</legend>
           <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
@@ -86,14 +99,12 @@
           </div>
         </fieldset>
       </section>
+      <footer><button id="convertBtn" style="width: 100%;">変換実行</button></footer>
+    </article>
 
+    <article>
+      <header>3. 結果</header>
       <section>
-        <h2>3. 実行</h2>
-        <button id="convertBtn">変換実行</button>
-      </section>
-
-      <section>
-        <h2>4. 結果</h2>
         <nav role="tab-control" class="tabs">
           <ul id="result-tabs">
             <!-- 結果タブがここに追加されます -->
@@ -102,21 +113,24 @@
         <div id="result-contents">
           <!-- 結果コンテンツがここに追加されます -->
         </div>
-        <button id="downloadAllBtn" style="display: none;">すべてダウンロード (ZIP)</button>
       </section>
-      <section id="sql-builder-section" style="display: none;">
-        <h2>5. SQL構築</h2>
+      <footer id="result-footer">
+      </footer>
+    </article>
 
+    <article>
+      <header>4. SQL構築</header>
+      <section id="sql-builder-section" style="display: none;">
         <!-- 1. テーブル選択 -->
         <div>
           <h4>1. テーブル選択</h4>
-          <div class="grid">
+          <fieldset role="group">
             <select id="sql-table-select">
               <option value="">テーブルを追加...</option>
             </select>
-            <button id="sql-add-table-btn" style="width: auto;">追加</button>
-          </div>
-          <table role="grid">
+            <button id="sql-add-table-btn" style="white-space: nowrap;" class="btn-sm">追加</button>
+          </fieldset>
+          <table>
             <thead>
               <tr>
                 <th>Alias</th>
@@ -134,8 +148,9 @@
         <!-- 2. 結合条件 -->
         <div>
           <h4>2. 結合条件</h4>
-          <button id="sql-add-join-btn" class="secondary outline" style="margin-bottom: 0.5rem;">結合条件を追加</button>
           <div id="sql-joins-container"></div>
+          <button id="sql-add-join-btn" class="secondary outline btn-sm"
+            style="margin-top: 0.5rem; width: 100%;">結合条件を追加</button>
         </div>
 
         <hr>
@@ -143,8 +158,9 @@
         <!-- 3. 絞り込み条件 -->
         <div>
           <h4>3. 絞り込み条件 (WHERE)</h4>
-          <button id="sql-add-filter-btn" class="secondary outline" style="margin-bottom: 0.5rem;">条件を追加</button>
           <div id="sql-filters-container"></div>
+          <button id="sql-add-filter-btn" class="secondary outline btn-sm"
+            style="margin-top: 0.5rem; width: 100%;">条件を追加</button>
         </div>
 
         <hr>
@@ -152,8 +168,9 @@
         <!-- 4. ソート順 -->
         <div>
           <h4>4. ソート順 (ORDER BY)</h4>
-          <button id="sql-add-sort-btn" class="secondary outline" style="margin-bottom: 0.5rem;">ソートを追加</button>
           <div id="sql-sorts-container"></div>
+          <button id="sql-add-sort-btn" class="secondary outline btn-sm"
+            style="margin-top: 0.5rem; width: 100%;">ソートを追加</button>
         </div>
 
         <hr>
@@ -174,17 +191,18 @@
         <!-- 6. 生成結果 -->
         <div>
           <h4>6. 生成結果</h4>
-          <button id="sql-copy-btn">クリップボードにコピー</button>
+          <button id="sql-copy-btn" style="width: 100%; margin-bottom: 1rem;">クリップボードにコピー</button>
           <textarea id="sql-output" placeholder="生成されたSQLがここに表示されます..."
             style="height: auto;field-sizing: content;max-height: 90vh;"></textarea>
-          <button id="sql-generate-java-btn" class="secondary">Javaコード生成</button>
+          <button id="sql-generate-java-btn" class="secondary"
+            style="width: 100%; margin-bottom: 1rem;">Javaコード生成</button>
           <div id="sql-java-result-container" style="display: none; margin-top: 1rem;">
             <h5>生成されたJavaコード</h5>
             <nav role="tab-control" class="tabs">
               <ul id="sql-java-tabs"></ul>
             </nav>
             <div id="sql-java-contents"></div>
-            <button id="sql-java-download-btn">生成ファイルをダウンロード (ZIP)</button>
+            <button id="sql-java-download-btn" style="width: 100%; margin-bottom: 1rem;">生成ファイルをダウンロード (ZIP)</button>
           </div>
         </div>
       </section>

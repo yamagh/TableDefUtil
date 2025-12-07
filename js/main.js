@@ -15,40 +15,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Tab UI ---
-  document.querySelectorAll('.tab-link').forEach(tab => {
+  // Input Tabs (Pico v2 style)
+  const inputTabs = document.querySelectorAll('a[data-tab="file-input"], a[data-tab="text-input"]');
+  inputTabs.forEach(tab => {
     tab.addEventListener('click', e => {
       e.preventDefault();
       const targetId = e.target.dataset.tab;
 
-      // Handle input tabs
-      if (e.target.closest('.tabs').nextElementSibling.id.includes('input')) {
-        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(content => {
+      // Toggle aria-current
+      inputTabs.forEach(t => t.removeAttribute('aria-current'));
+      e.target.setAttribute('aria-current', 'true');
+
+      // Toggle content visibility
+      document.querySelectorAll('.tab-content').forEach(content => {
+        // Only toggle input-related contents (id matches file-input or text-input)
+        if (content.id === 'file-input' || content.id === 'text-input') {
           if (content.id === targetId) {
             content.classList.add('active');
           } else {
             content.classList.remove('active');
           }
-        });
-      }
-      // Handle result tabs
-      else {
-        document.querySelectorAll('#result-tabs .tab-link').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        document.querySelectorAll('#result-contents .tab-content').forEach(content => {
-          if (content.id === `result-${targetId}`) {
-            content.classList.add('active');
-          } else {
-            content.classList.remove('active');
-          }
-        });
-      }
+        }
+      });
     });
   });
 
   convertBtn.addEventListener('click', () => {
-    const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+    // Find active input tab
+    const activeTabEl = document.querySelector('a[data-tab="file-input"][aria-current="true"], a[data-tab="text-input"][aria-current="true"]');
+    const activeInputTab = activeTabEl ? activeTabEl.dataset.tab : null;
+
     if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
       const file = fileInput.files[0];
       const reader = new FileReader();
@@ -72,7 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const zip = new JSZip();
     const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
 
-    const activeInputTab = document.querySelector('.tab-link.active').dataset.tab;
+    const activeTabEl = document.querySelector('a[data-tab="file-input"][aria-current="true"], a[data-tab="text-input"][aria-current="true"]');
+    const activeInputTab = activeTabEl ? activeTabEl.dataset.tab : null;
     let tsvData = '';
     if (activeInputTab === 'file-input' && fileInput.files.length > 0) {
       // 非同期処理のため、readerのonload内で処理する必要がある
@@ -176,7 +173,7 @@ function generateOutputs(tables, rlsOptions) {
 
   resultTabs.innerHTML = '';
   resultContents.innerHTML = '';
-  downloadAllBtn.style.display = 'block';
+  // downloadAllBtn.style.display = 'block'; // Hide global button as it's now inside tabs
 
   const formats = Array.from(document.querySelectorAll('input[name="format"]:checked')).map(cb => cb.value);
   let firstTab = true;
@@ -195,12 +192,29 @@ function generateOutputs(tables, rlsOptions) {
     content.id = `result-${format}`;
     content.className = 'tab-content' + (firstTab ? ' active' : '');
 
+    const resultFooter = document.getElementById('result-footer');
+    resultFooter.innerHTML = '';
+
     const textArea = document.createElement('textarea');
     textArea.readOnly = true;
 
     const downloadBtn = document.createElement('button');
     downloadBtn.textContent = `${format.toUpperCase()} をダウンロード`;
+    downloadBtn.style.width = '100%';
     downloadBtn.addEventListener('click', () => downloadFile(textArea.value, `output.${format}`));
+
+    const downloadAllCloneBtn = document.createElement('button');
+    downloadAllCloneBtn.textContent = 'すべてダウンロード (ZIP)';
+    downloadAllCloneBtn.className = 'secondary';
+    downloadAllCloneBtn.style.width = '100%';
+    downloadAllCloneBtn.addEventListener('click', () => document.getElementById('downloadAllBtn').click());
+
+    const buttonGrid = document.createElement('div');
+    buttonGrid.style.display = 'grid';
+    buttonGrid.style.gridTemplateColumns = '1fr 1fr';
+    buttonGrid.style.gap = '1rem';
+    buttonGrid.appendChild(downloadBtn);
+    buttonGrid.appendChild(downloadAllCloneBtn);
 
     // スタブ関数を使用してコンテンツを生成
     let output = '';
@@ -216,9 +230,9 @@ function generateOutputs(tables, rlsOptions) {
     }
     textArea.value = output;
 
-    content.appendChild(downloadBtn);
     content.appendChild(textArea);
     resultContents.appendChild(content);
+    resultFooter.appendChild(buttonGrid);
 
     firstTab = false;
   });
