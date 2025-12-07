@@ -32,25 +32,21 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
     });
   }
 
-  // 5. Repository生成
-  const repoName = `${baseName}SqlRepository`;
-  result.push({
-    path: `repository/${repoName}.java`,
-    content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs)
-  });
-
-  // Extract parameters from all potential SQL parts to pass to Service/Controller
-  // Note: generateSqlRepository calculates parameters internally, but we need them here too to pass down
-  // or we can recalculate them. For simplicity, let's recalculate or use a helper that does it on state.
-  // Actually, let's look at how generateSqlRepository generates SQL. 
-  // It calls buildSqlForModel or buildSqlForDto. We can do that here to parse params.
+  // パラメータ解析
   let fullSqlForParams = "";
   if (returnType.isModel) {
     fullSqlForParams = buildSqlForModel(sqlState);
   } else {
     fullSqlForParams = buildSqlForDto(sqlState, selectClause);
   }
-  const parameters = extractParameters(fullSqlForParams);
+  const parameters = analyzeParameters(fullSqlForParams);
+
+  // 5. Repository生成
+  const repoName = `${baseName}SqlRepository`;
+  result.push({
+    path: `repository/${repoName}.java`,
+    content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs, parameters)
+  });
 
   // 6. Service生成
   const serviceName = `${baseName}SqlService`;
@@ -152,14 +148,56 @@ function determineBaseName(sqlState, returnType) {
 }
 
 /**
- * SQLからパラメータ変数（:variableName）を抽出する
+ * SQLからパラメータ変数を解析する
+ * returns: { name: string, type: string, isDerived: boolean, derivedFrom: string | null }[]
  */
-function extractParameters(sql) {
+function analyzeParameters(sql) {
   const matches = sql.match(/:([a-zA-Z0-9_]+)/g);
   if (!matches) return [];
-  // 重複を除去して名前だけ返す
-  return [...new Set(matches.map(m => m.substring(1)))];
+
+  const rawNames = [...new Set(matches.map(m => m.substring(1)))];
+
+  // 1. IN句で使用されている変数を検出する
+  // 簡易的なRegex: "IN (:foo)" な形式
+  // 注意: 空白文字の扱いや、カッコ内の空白などを考慮
+  const listVariables = new Set();
+  const inClauseRegex = /IN\s*\(\s*:([a-zA-Z0-9_]+)\s*\)/gi;
+  let match;
+  while ((match = inClauseRegex.exec(sql)) !== null) {
+    listVariables.add(match[1]);
+  }
+
+  const parameters = [];
+
+  // まず基本的な変数をリストアップ
+  rawNames.forEach(name => {
+    const isList = listVariables.has(name);
+    parameters.push({
+      name: name,
+      type: isList ? 'List<String>' : 'String',
+      isDerived: false,
+      derivedFrom: null
+    });
+  });
+
+  // Derived (Size) 変数の判定と修正
+  // もし "fooSize" というパラメータがあり、かつ "foo" がList<String>として存在する場合、
+  // "fooSize" は derivedFrom: "foo" とする
+  parameters.forEach(param => {
+    if (param.name.endsWith('Size')) {
+      const contentName = param.name.substring(0, param.name.length - 4); // remove "Size"
+      const parentParam = parameters.find(p => p.name === contentName && p.type === 'List<String>');
+      if (parentParam) {
+        param.isDerived = true;
+        param.derivedFrom = contentName;
+        param.type = 'Integer'; // サイズなのでInteger
+      }
+    }
+  });
+
+  return parameters;
 }
+
 
 /**
  * DTOクラスの生成
@@ -188,20 +226,20 @@ function generateDto(className, columnDefs) {
 /**
  * Repositoryの生成
  */
-function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, selectClause, columnDefs) {
+function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, selectClause, columnDefs, parameters) {
   const packageImport = isModel ? `models.${modelDtoType}` : `models.dto.${modelDtoType}`;
 
-  // SQL構築とパラメータ抽出
+  // SQLの構築
   let sql = "";
   if (isModel) {
     sql = buildSqlForModel(sqlState);
   } else {
     sql = buildSqlForDto(sqlState, selectClause);
   }
-  const parameters = extractParameters(sql);
 
-  // パラメータ引数文字列の作成 (e.g., "String foo, String bar")
-  const methodArgs = parameters.map(p => `String ${p}`).join(', ');
+  // メソッド引数: isDerived=trueのものは除外
+  const signatureParams = parameters.filter(p => !p.isDerived);
+  const methodArgs = signatureParams.map(p => `${p.type} ${p.name}`).join(', ');
 
   let content = `package repository;\n\n`;
   content += `import io.ebean.DB;\n`;
@@ -239,7 +277,13 @@ function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, select
 
   // パラメータ設定
   parameters.forEach(p => {
-    content += `                .setParameter("${p}", ${p})\n`;
+    if (p.isDerived && p.derivedFrom) {
+      // Derived parameter (e.g. fooSize -> foo.size())
+      content += `                .setParameter("${p.name}", ${p.derivedFrom}.size())\n`;
+    } else {
+      // Normal parameter
+      content += `                .setParameter("${p.name}", ${p.name})\n`;
+    }
   });
 
   content += `                .findList();\n`;
@@ -322,8 +366,9 @@ function buildSqlForDto(sqlState, selectClause) {
  * Serviceの生成
  */
 function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, parameters) {
-  const methodArgs = parameters.map(p => `String ${p}`).join(', ');
-  const callArgs = parameters.join(', ');
+  const signatureParams = parameters.filter(p => !p.isDerived);
+  const methodArgs = signatureParams.map(p => `${p.type} ${p.name}`).join(', ');
+  const callArgs = signatureParams.map(p => p.name).join(', ');
 
   let content = `package services;\n\n`;
   if (isModel) {
@@ -358,7 +403,8 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
  * Controllerの生成
  */
 function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel, parameters) {
-  const callArgs = parameters.join(', ');
+  const signatureParams = parameters.filter(p => !p.isDerived);
+  const callArgs = signatureParams.map(p => p.name).join(', ');
 
   let content = `package controllers.api;\n\n`;
   content += `import services.${serviceName};\n`;
@@ -367,7 +413,8 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
   content += `import play.mvc.Result;\n`;
   content += `import javax.inject.Inject;\n`;
   content += `import java.util.concurrent.CompletionStage;\n`;
-  content += `import controllers.actions.Authenticated;\n\n`;
+  content += `import controllers.actions.Authenticated;\n`;
+  content += `import java.util.List;\n\n`;
 
   content += `@Authenticated\n`;
   content += `public class ${controllerName} extends Controller {\n\n`;
@@ -384,9 +431,16 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
   content += `     */\n`;
   content += `    public CompletionStage<Result> search(Http.Request request) {\n`;
 
-  if (parameters.length > 0) {
-    parameters.forEach(p => {
-      content += `        String ${p} = request.getQueryString("${p}");\n`;
+  if (signatureParams.length > 0) {
+    signatureParams.forEach(p => {
+      if (p.type === 'List<String>') {
+        // 配列パラメータの取得 (Play framework: ?foo=1&foo=2 -> Map<String, String[]> get(key))
+        // 注意: request.queryString() returns Map<String, String[]>
+        // getOrDefaultなどで安全に取得する
+        content += `        List<String> ${p.name} = request.queryString().containsKey("${p.name}") ? java.util.Arrays.asList(request.queryString().get("${p.name}")) : java.util.Collections.emptyList();\n`;
+      } else {
+        content += `        String ${p.name} = request.getQueryString("${p.name}");\n`;
+      }
     });
     content += `\n`;
   }
