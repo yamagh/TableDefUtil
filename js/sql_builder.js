@@ -426,17 +426,16 @@ window.updateSqlOutput = function () {
   }
 
   sqlOutput.value = sql;
+
+  // 自動コード生成
+  autoGenerateCode();
 }
 
-document.getElementById('sql-copy-btn').addEventListener('click', () => {
-  sqlOutput.select();
-  document.execCommand('copy');
-});
-
-// 6. Javaコード生成機能 (Repository/Service/Controller)
-document.getElementById('sql-generate-java-btn').addEventListener('click', () => {
+// 6. コード生成機能 (Repository/Service/Controller/DTO) - 自動実行のための関数
+function autoGenerateCode() {
   if (sqlState.selectedTables.length === 0) {
-    alert('テーブルが選択されていません。');
+    // テーブルが選択されていない場合は結果をクリアして非表示
+    document.getElementById('sql-java-result-container').style.display = 'none';
     return;
   }
 
@@ -458,14 +457,31 @@ document.getElementById('sql-generate-java-btn').addEventListener('click', () =>
   const isSelectEdited = (sqlSelectClause.value.replace(/\s/g, '') !== defaultSelectClause.replace(/\s/g, ''));
 
   const javaFiles = generateJavaSql(sqlState, parsedTables, sqlSelectClause.value, isSelectEdited);
+  const tsFiles = generateTsSql(sqlState, parsedTables, sqlSelectClause.value, isSelectEdited);
 
-  renderSqlJavaResult(javaFiles);
-});
+  const allFiles = { ...javaFiles, ...tsFiles };
+
+  // SQLもファイルとして追加
+  if (sqlOutput.value && sqlOutput.value.trim() !== '') {
+    // ファイル名の決定: 単一テーブルならテーブル名、そうでなければCustomQuery
+    let baseName = "CustomQuery";
+    if (sqlState.selectedTables.length === 1) {
+      const t = parsedTables.find(table => table.tableName === sqlState.selectedTables[0].tableName);
+      if (t) baseName = toPascalCase(t.tableName);
+    } else if (sqlState.selectedTables.length > 0) {
+      const t = parsedTables.find(table => table.tableName === sqlState.selectedTables[0].tableName);
+      if (t) baseName = toPascalCase(t.tableName) + "Custom";
+    }
+    allFiles[`sql/${baseName}.sql`] = sqlOutput.value;
+  }
+
+  renderSqlCodeResult(allFiles);
+}
 
 /**
- * 生成されたJavaコードを表示する
+ * 生成されたコードを表示する
  */
-function renderSqlJavaResult(javaFiles) {
+function renderSqlCodeResult(files) {
   const container = document.getElementById('sql-java-result-container');
   const tabsContainer = document.getElementById('sql-java-tabs');
   const contentsContainer = document.getElementById('sql-java-contents');
@@ -476,7 +492,7 @@ function renderSqlJavaResult(javaFiles) {
 
   let isFirst = true;
 
-  for (const [path, content] of Object.entries(javaFiles)) {
+  for (const [path, content] of Object.entries(files)) {
     // パスからファイル名のみ抽出
     const fileName = path.split('/').pop();
 
@@ -485,7 +501,9 @@ function renderSqlJavaResult(javaFiles) {
     if (fileName.endsWith('Repository.java')) label = 'Repository';
     else if (fileName.endsWith('Service.java')) label = 'Service';
     else if (fileName.endsWith('Controller.java')) label = 'Controller';
-    else if (fileName.endsWith('Dto.java')) label = 'DTO';
+    else if (fileName.endsWith('Dto.java')) label = 'Java DTO';
+    else if (fileName.endsWith('.ts')) label = 'TS Type';
+    else if (fileName.endsWith('.sql')) label = 'SQL';
 
     // ID用にパスをセーフな文字列に
     const tabId = 'sql-java-tab-' + fileName.replace(/[^a-zA-Z0-9]/g, '-');
@@ -542,14 +560,14 @@ function renderSqlJavaResult(javaFiles) {
       return;
     }
     const zip = new JSZip();
-    for (const [path, content] of Object.entries(javaFiles)) {
+    for (const [path, content] of Object.entries(files)) {
       zip.file(path, content);
     }
 
     zip.generateAsync({ type: "blob" })
       .then(function (content) {
         const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
-        downloadFile(content, `sql-generated-java-${now}.zip`);
+        downloadFile(content, `sql-generated-code-${now}.zip`);
       });
   });
 }

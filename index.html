@@ -191,13 +191,10 @@
         <!-- 6. 生成結果 -->
         <div>
           <h4>6. 生成結果</h4>
-          <button id="sql-copy-btn" style="width: 100%; margin-bottom: 1rem;">クリップボードにコピー</button>
-          <textarea id="sql-output" placeholder="生成されたSQLがここに表示されます..."
-            style="height: auto;field-sizing: content;max-height: 90vh;"></textarea>
-          <button id="sql-generate-java-btn" class="secondary"
-            style="width: 100%; margin-bottom: 1rem;">Javaコード生成</button>
-          <div id="sql-java-result-container" style="display: none; margin-top: 1rem;">
-            <h5>生成されたJavaコード</h5>
+          <div id="sql-output" style="height: auto;field-sizing: content;max-height: 90vh;"></div>
+          <!-- <textarea id="sql-output" placeholder="生成されたSQLがここに表示されます..."
+            style="height: auto;field-sizing: content;max-height: 90vh;"></textarea> -->
+          <div id="sql-java-result-container" style="display: none;">
             <nav role="tab-control" class="tabs">
               <ul id="sql-java-tabs"></ul>
             </nav>
@@ -225,7 +222,9 @@
   <script src="js/converters/java_repo.js"></script>
   <script src="js/converters/java_service.js"></script>
   <script src="js/converters/java_controller.js"></script>
+  <script src="js/converters/java_controller.js"></script>
   <script src="js/converters/java_sql.js"></script>
+  <script src="js/converters/ts_sql.js"></script>
   <script src="js/sql_builder.js"></script>
   <script src="js/main.js"></script>
 </body>
