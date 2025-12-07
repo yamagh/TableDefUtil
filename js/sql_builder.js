@@ -260,7 +260,7 @@ function renderSqlFilters() {
     div.style.marginBottom = '5px';
     div.style.alignItems = 'center';
     div.innerHTML = `
-       <input type="text" onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" value="${filter.replace(/"/g, '&quot;')}" style="flex-grow:1;">
+       <textarea onchange="updateSqlFilter(${index}, this.value)" placeholder="例: t0.id > 100" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem;">${filter}</textarea>
        <button class="outline contrast btn-sm" onclick="removeSqlFilter(${index})" title="削除">x</button>
     `;
     sqlFiltersContainer.appendChild(div);
@@ -318,7 +318,7 @@ function renderSqlSorts() {
     if (tblState) {
       const def = parsedTables.find(t => t.tableName === tblState.tableName);
       if (def) {
-        colOptions = def.columns.map(c => `<option value="${c.colName}" ${c.colName === sort.column ? 'selected' : ''}>${c.colName}</option>`).join('');
+        colOptions = def.columns.map(c => `<option value="${c.colName}" ${c.colName === sort.column ? 'selected' : ''}>${c.colName} (${c.colNameJP})</option>`).join('');
       }
     }
 
