@@ -474,6 +474,14 @@ function renderSqlJavaResult(javaFiles) {
   for (const [path, content] of Object.entries(javaFiles)) {
     // パスからファイル名のみ抽出
     const fileName = path.split('/').pop();
+
+    // ラベルを決定
+    let label = fileName;
+    if (fileName.endsWith('Repository.java')) label = 'Repository';
+    else if (fileName.endsWith('Service.java')) label = 'Service';
+    else if (fileName.endsWith('Controller.java')) label = 'Controller';
+    else if (fileName.endsWith('Dto.java')) label = 'DTO';
+
     // ID用にパスをセーフな文字列に
     const tabId = 'sql-java-tab-' + fileName.replace(/[^a-zA-Z0-9]/g, '-');
 
@@ -481,7 +489,8 @@ function renderSqlJavaResult(javaFiles) {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = '#';
-    a.textContent = fileName;
+    a.textContent = label;
+    a.title = fileName; // ツールチップで元のファイル名を表示
     a.className = isFirst ? 'active' : '';
     a.dataset.target = tabId;
 
