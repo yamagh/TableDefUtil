@@ -173,7 +173,7 @@ const SqlUi = {
               </select>
               <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width: auto;">${rightOptions}</select>
               <span style="margin-top: 1rem;">ON</span>
-              <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" placeholder="例: t0.id = t1.user_id" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">${join.condition.replace(/"/g, '&quot;')}</textarea>
+              <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" placeholder="例: t0.id = t1.user_id" class="text-sm" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">${join.condition.replace(/"/g, '&quot;')}</textarea>
               <div role="group" style="width: auto;">
                 <button class="outline secondary btn-sm" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
                 <button class="outline secondary btn-sm" onclick="moveSqlJoin(${index}, 1)" ${index === AppState.sql.joins.length - 1 ? 'disabled' : ''}>↓</button>

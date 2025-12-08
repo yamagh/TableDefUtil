@@ -40,39 +40,44 @@
     <article>
       <header>2. 変換オプション</header>
       <section>
-        <fieldset>
-          <legend>変換先フォーマット</legend>
-          <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
-          <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript
-            type</label>
-          <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
-          <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from
-            Zod</label>
-          <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean)
-            model</label>
-          <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java repository</label>
-          <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java
-            service</label>
-          <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java
-            controller</label>
-        </fieldset>
-        <fieldset>
-          <legend>Java RLS (Row-Level Security) オプション</legend>
-          <label>
-            <input type="checkbox" id="rlsEnabled" name="rls">
-            RLSを有効にする
-          </label>
-          <div id="rlsOptions" style="display: none;">
-            <label for="tenantIdColumn">
-              テナントIDカラム名
-              <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
+        <details closed>
+          <summary>変換先フォーマット</summary>
+          <fieldset>
+            <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
+            <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript
+              type</label>
+            <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
+            <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from
+              Zod</label>
+            <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean)
+              model</label>
+            <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java
+              repository</label>
+            <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java
+              service</label>
+            <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java
+              controller</label>
+          </fieldset>
+        </details>
+        <details>
+          <summary>Java RLS (Row-Level Security) オプション</summary>
+          <fieldset>
+            <label>
+              <input type="checkbox" id="rlsEnabled" name="rls">
+              RLSを有効にする
             </label>
-            <label for="adminFlagColumn">
-              管理者フラグカラム名
-              <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
-            </label>
-          </div>
-        </fieldset>
+            <div id="rlsOptions" style="display: none;">
+              <label for="tenantIdColumn">
+                テナントIDカラム名
+                <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
+              </label>
+              <label for="adminFlagColumn">
+                管理者フラグカラム名
+                <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
+              </label>
+            </div>
+          </fieldset>
+        </details>
       </section>
       <footer><button id="convertBtn" style="width: 100%;">変換実行</button></footer>
     </article>
