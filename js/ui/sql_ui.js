@@ -9,7 +9,7 @@ const SqlUi = {
     filtersContainer: null,
     sortsContainer: null,
     selectClause: null,
-    output: null,
+    // output: null, // Removed
     section: null,
     resultContainer: null,
     resultTabs: null,
@@ -26,7 +26,7 @@ const SqlUi = {
     this.elements.filtersContainer = document.getElementById('sql-filters-container');
     this.elements.sortsContainer = document.getElementById('sql-sorts-container');
     this.elements.selectClause = document.getElementById('sql-select-clause');
-    this.elements.output = document.getElementById('sql-output');
+    // this.elements.output = document.getElementById('sql-output'); // Removed
     this.elements.section = document.getElementById('sql-builder-section');
     this.elements.resultContainer = document.getElementById('sql-java-result-container');
     this.elements.resultTabs = document.getElementById('sql-java-tabs');
@@ -260,24 +260,21 @@ const SqlUi = {
   updateOutput() {
     if (this.elements.limitInput) AppState.sql.limit = this.elements.limitInput.value;
     if (this.elements.offsetInput) AppState.sql.offset = this.elements.offsetInput.value;
-    const sql = SqlLogic.generateSql(this.elements.selectClause.value);
-    if (this.elements.output && this.elements.output.tagName === 'DIV') {
-      // if using a div/highlighting
-      this.elements.output.textContent = sql;
-    } else {
-      this.elements.output.value = sql;
-    }
+
+    // Previous logic updated textarea here. Now we just render auto code.
     this.renderAutoCode();
   },
 
   renderAutoCode() {
-    if (!this.elements.output.value) {
+    const selectClause = this.elements.selectClause ? this.elements.selectClause.value : '';
+    // If no tables selected, usually we shouldn't show results
+    if (AppState.sql.selectedTables.length === 0) {
       this.elements.resultContainer.style.display = 'none';
       return;
     }
 
-    const files = SqlLogic.generateAutoCode(this.elements.selectClause.value);
-    if (!files || files.length === 0) {
+    const files = SqlLogic.generateAutoCode(selectClause);
+    if (!files || (Array.isArray(files) && files.length === 0) || Object.keys(files).length === 0) {
       this.elements.resultContainer.style.display = 'none';
       return;
     }
