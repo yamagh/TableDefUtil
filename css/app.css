@@ -63,3 +63,27 @@ nav.tabs[role=tab-control] a {
 nav.tabs[role=tab-control] a.active {
   background-color: var(--pico-color-primary-50);
 }
+
+#sql-select-clause {
+  font-size: 0.8rem;
+}
+
+@media (min-width: 1536px) {
+  .sql-builder-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Make the right column stick or just take height */
+  .sql-builder-col-right {
+    height: 100%;
+  }
+
+  /* Ensure the textarea in the right column expands to fill height if needed or stays manageable */
+  .sql-builder-col-right textarea {
+    min-height: 400px;
+    height: 100%;
+  }
+}
