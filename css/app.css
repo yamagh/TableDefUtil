@@ -64,7 +64,7 @@ nav.tabs[role=tab-control] a.active {
   background-color: var(--pico-color-primary-50);
 }
 
-#sql-select-clause {
+.text-sm {
   font-size: 0.8rem;
 }
 

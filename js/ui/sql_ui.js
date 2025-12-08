@@ -328,8 +328,11 @@ const SqlUi = {
       const textarea = document.createElement('textarea');
       textarea.value = content;
       textarea.readOnly = true;
-      textarea.style.height = '300px';
+      textarea.style.height = 'auto';
+      textarea.style.maxHeight = '80vh';
+      textarea.style.fieldSizing = 'content';
       textarea.style.fontFamily = 'monospace';
+      textarea.classList.add('text-sm');
 
       div.appendChild(textarea);
       this.elements.resultContents.appendChild(div);
