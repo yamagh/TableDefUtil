@@ -217,7 +217,6 @@ function generateDto(className, columnDefs) {
 
   content += `/**\n * SQL検索結果用DTO\n */\n`;
   content += `@Data\n`;
-  content += `@Sql\n`;
   content += `public class ${className} {\n`;
 
   columnDefs.forEach(col => {
