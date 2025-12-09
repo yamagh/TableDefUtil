@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let output;
       switch (format) {
         case 'ddl': output = generateDDL(tables); break;
+        case 'ddl-play': output = generatePlayEvolution(tables); break;
         case 'typescript': output = generateTypeScript(tables); break;
         case 'zod-schema': output = generateZodSchema(tables); break;
         case 'zod-type': output = generateZodType(tables); break;

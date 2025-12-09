@@ -72,3 +72,85 @@ function generateDDL(tables) {
 
   return [{ path: 'schema.sql', content: ddl }];
 }
+
+/**
+ * DDL (PlayFramework Evolution) 生成
+ * 1.sql のような形式で !Ups と !Downs を生成する
+ */
+function generatePlayEvolution(tables) {
+  let ups = '# --- !Ups\n\n';
+  let downs = '# --- !Downs\n\n';
+
+  tables.forEach(table => {
+    const tableName = table.tableName;
+    const pkColumns = table.columns.filter(c => c.pkfk === 'PK').map(c => c.colName);
+    const akColumns = table.columns.filter(c => c.pkfk === 'AK').map(c => c.colName);
+
+    // --- !Ups ---
+
+    // テーブル作成
+    ups += `# ${table.tableNameJP || tableName}\n`;
+    ups += `CREATE TABLE ${tableName} (\n`;
+    const columnDefs = table.columns.map(col => {
+      let def = `    ${col.colName}`;
+
+      if (col.type === 'varchar' && col.length) {
+        def += ` VARCHAR(${col.length})`;
+      } else if (col.type === 'char' && col.length) {
+        def += ` CHAR(${col.length})`;
+      } else {
+        def += ` ${col.type.toUpperCase()}`;
+      }
+
+      if (col.constraint) {
+        if (col.constraint.includes('NN')) {
+          def += ' NOT NULL';
+        }
+        if (col.constraint.includes('U')) {
+          def += ' UNIQUE';
+        }
+      }
+
+      if (col.default) {
+        def += ` DEFAULT ${col.default}`;
+      }
+      return def;
+    });
+
+    ups += columnDefs.join(',\n');
+
+    // 主キー
+    if (pkColumns.length > 0) {
+      ups += `,\n    PRIMARY KEY (${pkColumns.join(', ')})`;
+    }
+
+    // 代替キー（ユニーク制約）
+    if (akColumns.length > 0) {
+      ups += `,\n    CONSTRAINT ${tableName}_ak UNIQUE (${akColumns.join(', ')})`;
+    }
+
+    ups += '\n);\n\n';
+
+    // コメント
+    ups += `COMMENT ON TABLE ${tableName} IS '${table.tableNameJP}';\n`;
+    table.columns.forEach(col => {
+      ups += `COMMENT ON COLUMN ${tableName}.${col.colName} IS '${col.colNameJP}';\n`;
+    });
+    ups += '\n';
+
+    // インデックス
+    Object.keys(table.indexes).forEach(idxKey => {
+      const index = table.indexes[idxKey];
+      const indexName = `${tableName}_${idxKey.toLowerCase()}`;
+      const indexColumns = index.map(i => i.colName).join(', ');
+      ups += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
+    });
+
+    ups += '\n';
+
+    // --- !Downs ---
+    downs += `DROP TABLE IF EXISTS ${tableName};\n`;
+  });
+
+  return ups + downs;
+}

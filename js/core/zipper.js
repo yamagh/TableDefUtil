@@ -36,6 +36,16 @@ const Zipper = {
             output.forEach(f => zip.file(f.path, f.content));
           }
           break;
+        case 'ddl-play':
+          output = generatePlayEvolution(tables);
+          // Play Evolution usually goes into conf/evolutions/default/1.sql or similar.
+          // For the ZIP, we'll just put it in evolutions/1.sql
+          if (typeof output === 'string') {
+            zip.file('evolutions/1.sql', output);
+          } else {
+            output.forEach(f => zip.file(f.path, f.content));
+          }
+          break;
         case 'typescript':
           output = generateTypeScript(tables);
           if (typeof output === 'string') zip.file('entities.ts', output);
