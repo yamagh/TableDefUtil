@@ -166,13 +166,13 @@ const SqlUi = {
       const rightOptions = AppState.sql.selectedTables.map(t => `<option value="${t.alias}" ${t.alias === join.rightAlias ? 'selected' : ''}>${t.alias}</option>`).join('');
 
       div.innerHTML = `
-              <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" style="width: auto;">${leftOptions}</select>
-              <select onchange="updateSqlJoin(${index}, 'type', this.value)" style="width: auto;">
+              <select onchange="updateSqlJoin(${index}, 'leftAlias', this.value)" class="select-sm" style="width: auto;">${leftOptions}</select>
+              <select onchange="updateSqlJoin(${index}, 'type', this.value)" class="select-sm" style="width: auto;">
                 <option value="INNER JOIN" ${join.type === 'INNER JOIN' ? 'selected' : ''}>INNER</option>
                 <option value="LEFT JOIN" ${join.type === 'LEFT JOIN' ? 'selected' : ''}>LEFT</option>
               </select>
-              <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" style="width: auto;">${rightOptions}</select>
-              <span style="margin-top: 1rem;">ON</span>
+              <select onchange="updateSqlJoin(${index}, 'rightAlias', this.value)" class="select-sm" style="width: auto;">${rightOptions}</select>
+              <span style="margin-top: 0.4rem;">ON</span>
               <textarea onchange="updateSqlJoin(${index}, 'condition', this.value)" placeholder="例: t0.id = t1.user_id" class="text-sm" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">${join.condition.replace(/"/g, '&quot;')}</textarea>
               <div role="group" style="width: auto;">
                 <button class="outline secondary btn-sm" onclick="moveSqlJoin(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
@@ -221,9 +221,9 @@ const SqlUi = {
       }
 
       div.innerHTML = `
-          <select onchange="updateSqlSort(${index}, 'alias', this.value)" style="width:auto;">${aliasOptions}</select>
-          <select onchange="updateSqlSort(${index}, 'column', this.value)">${colOptions}</select>
-          <select onchange="updateSqlSort(${index}, 'direction', this.value)" style="width:150px;">
+          <select onchange="updateSqlSort(${index}, 'alias', this.value)" class="select-sm" style="width:auto;">${aliasOptions}</select>
+          <select onchange="updateSqlSort(${index}, 'column', this.value)" class="select-sm">${colOptions}</select>
+          <select onchange="updateSqlSort(${index}, 'direction', this.value)" class="select-sm" style="width:150px;">
               <option value="ASC" ${sort.direction === 'ASC' ? 'selected' : ''}>ASC</option>
               <option value="DESC" ${sort.direction === 'DESC' ? 'selected' : ''}>DESC</option>
           </select>

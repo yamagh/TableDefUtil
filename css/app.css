@@ -68,6 +68,11 @@ nav.tabs[role=tab-control] a.active {
   font-size: 0.8rem;
 }
 
+.select-sm {
+  padding: 0.3rem 0.5rem !important;
+  background-image: initial !important;
+}
+
 @media (min-width: 1536px) {
   .sql-builder-grid {
     display: grid;
