@@ -24,6 +24,7 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `import java.nio.file.Files;\n`;
     classContent += `import java.nio.file.StandardOpenOption;\n`;
     classContent += `import java.time.Instant;\n`;
+    classContent += `import java.time.LocalTime;\n`;
     classContent += `import java.util.concurrent.CompletionStage;\n`;
     classContent += `import java.util.List;\n`;
     classContent += `import java.util.Optional;\n`;
@@ -149,6 +150,7 @@ function generateJavaService(tables, rlsOptions) {
       else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;
       else if (javaType === 'Boolean') parseLogic = `Boolean.parseBoolean(values[${i}])`;
       else if (javaType === 'java.time.Instant') parseLogic = `Instant.parse(values[${i}])`;
+      else if (javaType === 'java.time.LocalTime') parseLogic = `LocalTime.parse(values[${i}])`;
       else if (javaType === 'byte[]') parseLogic = `new java.math.BigInteger(values[${i}], 16).toByteArray()`;
 
       classContent += `                        if (values.length > ${i} && !values[${i}].isEmpty()) model.${setter}(${parseLogic});\n`;

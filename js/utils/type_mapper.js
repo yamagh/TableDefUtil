@@ -27,7 +27,8 @@ function mapPostgresToJavaType(pgType) {
   if (['integer', 'smallint'].includes(pgType)) return 'Integer';
   if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
   if (['boolean'].includes(pgType)) return 'Boolean';
-  if (['timestamp', 'date', 'time'].includes(pgType)) return 'java.time.Instant';
+  if (['timestamp', 'date'].includes(pgType)) return 'java.time.Instant';
+  if (['time'].includes(pgType)) return 'java.time.LocalTime';
   if (['bytea'].includes(pgType)) return 'byte[]';
   return 'Object';
 }
