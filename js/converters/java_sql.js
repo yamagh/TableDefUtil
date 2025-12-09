@@ -21,11 +21,24 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
 
   // 3. 基本名の決定
   const baseName = determineBaseName(sqlState, returnType);
-  const dtoName = returnType.isModel ? returnType.modelName : `${baseName}Dto`;
-  const modelDtoType = returnType.isModel ? returnType.modelName : dtoName;
+
+  // 単一カラム判定
+  const isSingleColumn = !returnType.isModel && columnDefs.length === 1;
+
+  let dtoName, modelDtoType;
+  if (returnType.isModel) {
+    dtoName = returnType.modelName;
+    modelDtoType = returnType.modelName;
+  } else if (isSingleColumn) {
+    dtoName = "";
+    modelDtoType = columnDefs[0].javaType;
+  } else {
+    dtoName = `${baseName}Dto`;
+    modelDtoType = dtoName;
+  }
 
   // 4. DTO生成 (必要な場合)
-  if (!returnType.isModel) {
+  if (!returnType.isModel && !isSingleColumn) {
     result.push({
       path: `models/dto/${dtoName}.java`,
       content: generateDto(dtoName, columnDefs)
@@ -45,14 +58,14 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
   const repoName = `${baseName}SqlRepository`;
   result.push({
     path: `repository/${repoName}.java`,
-    content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, sqlState, selectClause, columnDefs, parameters)
+    content: generateSqlRepository(repoName, modelDtoType, returnType.isModel, isSingleColumn, sqlState, selectClause, columnDefs, parameters)
   });
 
   // 6. Service生成
   const serviceName = `${baseName}SqlService`;
   result.push({
     path: `services/${serviceName}.java`,
-    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel, parameters)
+    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel, isSingleColumn, parameters)
   });
 
   // 7. Controller生成
@@ -232,8 +245,19 @@ function generateDto(className, columnDefs) {
 /**
  * Repositoryの生成
  */
-function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, selectClause, columnDefs, parameters) {
-  const packageImport = isModel ? `models.${modelDtoType}` : `models.dto.${modelDtoType}`;
+function generateSqlRepository(repoName, modelDtoType, isModel, isSingleColumn, sqlState, selectClause, columnDefs, parameters) {
+  let packageImport = "";
+  if (isModel) {
+    packageImport = `models.${modelDtoType}`;
+  } else if (!isSingleColumn) {
+    packageImport = `models.dto.${modelDtoType}`;
+  } else {
+    if (modelDtoType === 'BigDecimal') packageImport = 'java.math.BigDecimal';
+    else if (modelDtoType === 'UUID') packageImport = 'java.util.UUID';
+    else if (['LocalDate', 'LocalTime', 'LocalDateTime', 'Instant'].includes(modelDtoType)) {
+      packageImport = `java.time.${modelDtoType}`;
+    }
+  }
 
   // SQLの構築
   let sql = "";
@@ -252,7 +276,9 @@ function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, select
   if (!isModel) {
     content += `import io.ebean.SqlRow;\n`;
   }
-  content += `import ${packageImport};\n`;
+  if (packageImport) {
+    content += `import ${packageImport};\n`;
+  }
   content += `import java.util.List;\n`;
   content += `import java.util.concurrent.CompletionStage;\n`;
   content += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n`;
@@ -275,7 +301,7 @@ function generateSqlRepository(repoName, modelDtoType, isModel, sqlState, select
 
   content += `            String sql = """\n${sql}\n            """;\n\n`;
 
-  if (isModel) {
+  if (isModel || isSingleColumn) {
     content += `            return DB.findNative(${modelDtoType}.class, sql)\n`;
   } else {
     content += `            return DB.findDto(${modelDtoType}.class, sql)\n`;
@@ -387,7 +413,7 @@ function buildSqlForDto(sqlState, selectClause) {
 /**
  * Serviceの生成
  */
-function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, parameters) {
+function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, isSingleColumn, parameters) {
   const signatureParams = parameters.filter(p => !p.isDerived);
   const methodArgs = signatureParams.map(p => `${p.type} ${p.name}`).join(', ');
   const callArgs = signatureParams.map(p => p.name).join(', ');
@@ -395,8 +421,18 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
   let content = `package services;\n\n`;
   if (isModel) {
     content += `import models.${modelDtoType};\n`;
-  } else {
+  } else if (!isSingleColumn) {
     content += `import models.dto.${modelDtoType};\n`;
+  } else {
+    let typeImport = "";
+    if (modelDtoType === 'BigDecimal') typeImport = 'java.math.BigDecimal';
+    else if (modelDtoType === 'UUID') typeImport = 'java.util.UUID';
+    else if (['LocalDate', 'LocalTime', 'LocalDateTime', 'Instant'].includes(modelDtoType)) {
+      typeImport = `java.time.${modelDtoType}`;
+    }
+    if (typeImport) {
+      content += `import ${typeImport};\n`;
+    }
   }
   content += `import repository.${repoName};\n`;
   content += `import java.util.List;\n`;
