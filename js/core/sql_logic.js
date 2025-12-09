@@ -84,7 +84,14 @@ const SqlLogic = {
 
     const commonIdCols = leftCols.filter(c => rightCols.includes(c) && c.includes('_id'));
 
-    if (commonIdCols.length > 0) {
+    // Check for matching AK/FK columns
+    const leftAkFk = leftDef.columns.filter(c => c.pkfk && (c.pkfk.includes('AK') || c.pkfk.includes('FK'))).map(c => c.colName);
+    const rightAkFk = rightDef.columns.filter(c => c.pkfk && (c.pkfk.includes('AK') || c.pkfk.includes('FK'))).map(c => c.colName);
+    const commonAkFk = leftAkFk.filter(c => rightAkFk.includes(c));
+
+    if (commonAkFk.length > 0) {
+      condition = `${leftTableState.alias}.${commonAkFk[0]} = ${rightTableState.alias}.${commonAkFk[0]}`;
+    } else if (commonIdCols.length > 0) {
       condition = `${leftTableState.alias}.${commonIdCols[0]} = ${rightTableState.alias}.${commonIdCols[0]}`;
     } else {
       if (leftCols.includes(`${rightTableState.tableName}_id`)) {
