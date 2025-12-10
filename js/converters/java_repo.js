@@ -117,8 +117,14 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `        }, executionContext);\n`;
     classContent += `    }\n\n`;
 
-    // findByAK
-    akColumns.forEach(col => {
+    // findBy Unique Columns
+    const uniqueColumns = table.columns.filter(c => (c.pkfk === 'AK' || (c.constraint && c.constraint.includes('U'))) && c.pkfk !== 'PK');
+    const uniqueColNames = new Set();
+
+    uniqueColumns.forEach(col => {
+      if (uniqueColNames.has(col.colName)) return;
+      uniqueColNames.add(col.colName);
+
       const colCamel = toCamelCase(col.colName);
       const colPascal = toPascalCase(col.colName);
       const colType = mapPostgresToJavaType(col.type);

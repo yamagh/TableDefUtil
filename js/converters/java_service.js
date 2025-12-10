@@ -28,6 +28,11 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `import java.util.concurrent.CompletionStage;\n`;
     classContent += `import java.util.List;\n`;
     classContent += `import java.util.Optional;\n`;
+    classContent += `import java.util.concurrent.CompletionStage;\n`;
+    classContent += `import java.util.List;\n`;
+    classContent += `import java.util.Map;\n`;
+    classContent += `import java.util.HashMap;\n`;
+    classContent += `import java.util.Optional;\n`;
     classContent += `import java.util.stream.Collectors;\n`;
     classContent += `import javax.inject.Inject;\n`;
     classContent += `import static java.util.concurrent.CompletableFuture.supplyAsync;\n\n`;
@@ -40,6 +45,48 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `    @Inject\n`;
     classContent += `    public ${serviceName}(${repoName} ${repoVar}) {\n`;
     classContent += `        this.${repoVar} = ${repoVar};\n`;
+    classContent += `    }\n\n`;
+
+    classContent += `    /**\n     * データの整合性をチェックします。\n     * @param ${modelVar} データ\n     */\n`;
+    classContent += `    private void validate(${modelName} ${modelVar}) {\n`;
+    (() => {
+      let checks = "";
+      // 1. テーブル定義に基づくバリデーション
+      table.columns.forEach(col => {
+        const colPascal = toPascalCase(col.colName);
+        const colCamel = toCamelCase(col.colName);
+        const javaType = mapPostgresToJavaType(col.type);
+
+        // 必須チェック
+        if (col.constraint && col.constraint.includes('NN') && col.colName !== 'id' && col.colName !== 'created_at' && col.colName !== 'updated_at' && col.colName !== 'is_deleted') {
+          checks += `        if (${modelVar}.get${colPascal}() == null) {\n`;
+          checks += `            throw new RuntimeException("${col.colNameJP}は必須です。");\n`;
+          checks += `        }\n`;
+        }
+        // 文字数チェック (Stringのみ)
+        if (javaType === 'String' && col.length) {
+          checks += `        if (${modelVar}.get${colPascal}() != null && ${modelVar}.get${colPascal}().length() > ${col.length}) {\n`;
+          checks += `            throw new RuntimeException("${col.colNameJP}は${col.length}文字以内で入力してください。");\n`;
+          checks += `        }\n`;
+        }
+      });
+
+      // 2. DBのユニーク制約チェック
+      const uniqueColumns = table.columns.filter(c => c.pkfk === 'AK' || (c.constraint && c.constraint.includes('U')));
+      uniqueColumns.forEach(col => {
+        const colPascal = toPascalCase(col.colName);
+        const colCamel = toCamelCase(col.colName);
+        // 値が存在する場合のみDBチェックを行う
+        checks += `        if (${modelVar}.get${colPascal}() != null) {\n`;
+        checks += `            ${repoVar}.findBy${colPascal}(${modelVar}.get${colPascal}()).thenAccept(opt -> {\n`;
+        checks += `                if (opt.isPresent() && !opt.get().getId().equals(${modelVar}.getId())) {\n`;
+        checks += `                    throw new RuntimeException("${col.colNameJP}は既に使用されています。");\n`;
+        checks += `                }\n`;
+        checks += `            }).toCompletableFuture().join();\n`;
+        checks += `        }\n`;
+      });
+      classContent += checks;
+    })();
     classContent += `    }\n\n`;
 
     classContent += `    public CompletionStage<ObjectNode> find() {\n`;
@@ -85,12 +132,15 @@ function generateJavaService(tables, rlsOptions) {
     // create
     classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param ${modelVar} 登録データ\n     * @return 登録後のデータ\n     */\n`;
     classContent += `    public CompletionStage<${modelName}> create(${modelName} ${modelVar}) {\n`;
+    classContent += `        validate(${modelVar});\n`;
     classContent += `        return ${repoVar}.insert(${modelVar});\n`;
     classContent += `    }\n\n`;
 
     // update
     classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param ${modelVar} 更新データ\n     * @return 更新後のデータ\n     */\n`;
     classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} ${modelVar}) {\n`;
+    classContent += `        ${modelVar}.setId(id);\n`;
+    classContent += `        validate(${modelVar});\n`;
     classContent += `        return ${repoVar}.update(id, ${modelVar}, ${modelVar}.getUpdatedAt());\n`;
     classContent += `    }\n\n`;
 
@@ -158,6 +208,24 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `                        return model;\n`;
     classContent += `                    })\n`;
     classContent += `                    .collect(Collectors.toList());\n`;
+    classContent += `\n`;
+    classContent += `                // 3. In-memory Validation (Validation 3)\n`;
+    (() => {
+      let batchChecks = "";
+      const uniqueColumns = table.columns.filter(c => c.pkfk === 'AK' || (c.constraint && c.constraint.includes('U')));
+      uniqueColumns.forEach(col => {
+        const colPascal = toPascalCase(col.colName);
+        batchChecks += `                Map<Object, Long> ${col.colName}Counts = models.stream()\n`;
+        batchChecks += `                    .filter(m -> m.get${colPascal}() != null)\n`;
+        batchChecks += `                    .collect(Collectors.groupingBy(${modelName}::get${colPascal}, Collectors.counting()));\n`;
+        batchChecks += `                if (${col.colName}Counts.values().stream().anyMatch(count -> count > 1)) {\n`;
+        batchChecks += `                    throw new RuntimeException("CSVファイル内に重複する${col.colNameJP}が存在します。");\n`;
+        batchChecks += `                }\n`;
+      });
+      classContent += batchChecks;
+    })();
+    classContent += `                // Per-item Validation (Validation 1 & 2)\n`;
+    classContent += `                models.forEach(this::validate);\n`;
     classContent += `\n`;
     classContent += `                return ${repoVar}.batchInsert(models).toCompletableFuture().join();\n`;
     classContent += `            } catch (IOException e) {\n`;
