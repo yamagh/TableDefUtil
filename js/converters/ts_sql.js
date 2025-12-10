@@ -52,6 +52,7 @@ function parseSelectClauseForTs(selectClause, sqlState, parsedTables) {
     let colName = '';
     let tsType = 'any';
     let originalColName = '';
+    let colNameJP = ''; // Added
 
     if (dotMatch) {
       tableAlias = dotMatch[1];
@@ -66,6 +67,7 @@ function parseSelectClauseForTs(selectClause, sqlState, parsedTables) {
             if (colDef) {
               tsType = mapPostgresToTsType(colDef.type);
               originalColName = colDef.colName;
+              colNameJP = colDef.colNameJP; // Extract
             }
           }
         }
@@ -79,7 +81,8 @@ function parseSelectClauseForTs(selectClause, sqlState, parsedTables) {
     return {
       alias,
       tsType,
-      originalColName: originalColName || alias
+      originalColName: originalColName || alias,
+      colNameJP: colNameJP || "" // Return
     };
   });
 }
@@ -107,6 +110,9 @@ function generateTsInterface(typeName, columnDefs) {
   columnDefs.forEach(col => {
     const propName = toCamelCase(col.alias);
     const type = col.tsType;
+    if (col.colNameJP) {
+      content += `  /** ${col.colNameJP} */\n`;
+    }
     // 全てオプショナルにするか、NN制約を見るかは議論があるが、
     // ここでは使い勝手優先で既存のtypescript.jsに合わせてオプショナルにする
     content += `  ${propName}?: ${type};\n`;

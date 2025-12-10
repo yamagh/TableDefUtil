@@ -101,6 +101,7 @@ function parseSelectClause(selectClause, sqlState, parsedTables) {
     let colName = '';
     let javaType = 'String';
     let originalColName = '';
+    let colNameJP = '';  // Added for Japanese Comment
 
     if (dotMatch) {
       tableAlias = dotMatch[1];
@@ -115,6 +116,7 @@ function parseSelectClause(selectClause, sqlState, parsedTables) {
             if (colDef) {
               javaType = mapPostgresToJavaType(colDef.type);
               originalColName = colDef.colName;
+              colNameJP = colDef.colNameJP; // Extract Japanese Name
             }
           }
         }
@@ -129,7 +131,8 @@ function parseSelectClause(selectClause, sqlState, parsedTables) {
       expr,
       alias,
       javaType,
-      originalColName: originalColName || alias
+      originalColName: originalColName || alias,
+      colNameJP: colNameJP || "" // Return Japanese Name with default
     };
   });
 }
@@ -235,6 +238,9 @@ function generateDto(className, columnDefs) {
   columnDefs.forEach(col => {
     const fieldName = toCamelCase(col.alias);
     const type = col.javaType;
+    if (col.colNameJP) {
+      content += `    /** ${col.colNameJP} */\n`;
+    }
     content += `    private ${type} ${fieldName};\n`;
   });
 

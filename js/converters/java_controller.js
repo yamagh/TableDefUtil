@@ -44,6 +44,7 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // find
+    classContent += `    /**\n     * ${table.tableNameJP} を検索します。\n     * @param request リクエスト\n     * @return 検索結果\n     */\n`;
     classContent += `    public CompletionStage<Result> find(Http.Request request) {\n`;
     classContent += `        int offset = request.queryString("offset").map(Integer::parseInt).orElse(0);\n`;
     classContent += `        int limit = request.queryString("limit").map(Integer::parseInt).orElse(Integer.MAX_VALUE);\n`;
@@ -57,6 +58,7 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // findById
+    classContent += `    /**\n     * IDで ${table.tableNameJP} を検索します。\n     * @param request リクエスト\n     * @param ${pkName} ID\n     * @return 検索結果\n     */\n`;
     classContent += `    public CompletionStage<Result> findById(Http.Request request, ${pkType} ${pkName}) {\n`;
     classContent += `        return ${serviceVar}.findById(${pkName}).thenApply(${modelVar}Opt ->\n`;
     classContent += `            ${modelVar}Opt.map(m -> ok(Json.toJson(m)))\n`;
@@ -65,6 +67,7 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // create
+    classContent += `    /**\n     * ${table.tableNameJP} を新規登録します。\n     * @param request リクエスト\n     * @return 登録結果\n     */\n`;
     classContent += `    public CompletionStage<Result> create(Http.Request request) {\n`;
     classContent += `        JsonNode json = request.body().asJson();\n`;
     classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
@@ -74,6 +77,7 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // update
+    classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param request リクエスト\n     * @param ${pkName} ID\n     * @return 更新結果\n     */\n`;
     classContent += `    public CompletionStage<Result> update(Http.Request request, ${pkType} ${pkName}) {\n`;
     classContent += `        JsonNode json = request.body().asJson();\n`;
     classContent += `        ${modelName} ${modelVar} = Json.fromJson(json, ${modelName}.class);\n`;
@@ -83,11 +87,13 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // delete
+    classContent += `    /**\n     * ${table.tableNameJP} を削除します。\n     * @param request リクエスト\n     * @param ${pkName} ID\n     * @param updatedAt 更新日時\n     * @return 削除結果\n     */\n`;
     classContent += `    public CompletionStage<Result> delete(Http.Request request, ${pkType} ${pkName}, String updatedAt) {\n`;
     classContent += `        return ${serviceVar}.delete(${pkName}, Instant.parse(updatedAt)).thenApply(result -> ok());\n`;
     classContent += `    }\n\n`;
 
     // exportCsv
+    classContent += `    /**\n     * ${table.tableNameJP} をCSVエクスポートします。\n     * @param request リクエスト\n     * @return CSVファイル\n     */\n`;
     classContent += `    public CompletionStage<Result> exportCsv(Http.Request request) {\n`;
     classContent += `        Map<String, String> params = request.queryString().entrySet().stream()\n`;
     classContent += `            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()[0]));\n`;
@@ -99,6 +105,7 @@ function generateJavaController(tables) {
     classContent += `    }\n\n`;
 
     // importCsv
+    classContent += `    /**\n     * ${table.tableNameJP} をCSVインポートします。\n     * @param request リクエスト\n     * @return インポート結果\n     */\n`;
     classContent += `    public CompletionStage<Result> importCsv(Http.Request request) {\n`;
     classContent += `        return CsvImportHandler.handle(request, file ->\n`;
     classContent += `            ${serviceVar}.importCsv(file).thenApply(result -> {\n`;
