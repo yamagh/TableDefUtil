@@ -503,7 +503,7 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
         // getOrDefaultなどで安全に取得する
         content += `        List<String> ${p.name} = request.queryString().containsKey("${p.name}") ? java.util.Arrays.asList(request.queryString().get("${p.name}")) : java.util.Collections.emptyList();\n`;
       } else {
-        content += `        String ${p.name} = request.getQueryString("${p.name}");\n`;
+        content += `        String ${p.name} = request.queryString("${p.name}").orElse(null);\n`;
       }
     });
     content += `\n`;
