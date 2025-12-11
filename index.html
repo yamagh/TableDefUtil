@@ -12,229 +12,20 @@
 </head>
 
 <body>
-  <header class="container-fluid">
-    <h1>テーブル定義変換ツール</h1>
-  </header>
+  <div id="app">
+    <!-- Vue App will be mounted here -->
+    <div class="container-fluid" style="padding: 2rem; text-align: center;">
+      <span aria-busy="true">Loading Application...</span>
+    </div>
+  </div>
 
-  <main class="container-fluid">
-    <article>
-      <header>1. 入力</header>
-      <section>
-
-        <div role="group">
-          <a role="button" href="#" data-tab="file-input" class="btn-sm" aria-current="true">ファイル入力</a>
-          <a role="button" href="#" data-tab="text-input" class="btn-sm">テキストエリア入力</a>
-        </div>
-
-
-        <div id="file-input" class="tab-content active">
-          <input type="file" id="fileInput">
-          <small>TSVまたはCSVファイルを選択してください。</small>
-        </div>
-        <div id="text-input" class="tab-content">
-          <textarea id="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
-        </div>
-      </section>
-    </article>
-
-    <article>
-      <header>2. 変換オプション</header>
-      <section>
-        <details closed>
-          <summary>変換先フォーマット</summary>
-          <fieldset>
-            <label><input type="checkbox" id="ddl" name="format" value="ddl" checked> DDL (PostgreSQL)</label>
-            <label><input type="checkbox" id="ddl-play" name="format" value="ddl-play" checked> DDL
-              (PlayFramework)</label>
-            <label><input type="checkbox" id="typescript" name="format" value="typescript" checked> TypeScript
-              type</label>
-            <label><input type="checkbox" id="zod-schema" name="format" value="zod-schema" checked> Zod Schema</label>
-            <label><input type="checkbox" id="zod-type" name="format" value="zod-type" checked> TypeScript type from
-              Zod</label>
-            <label><input type="checkbox" id="java-model" name="format" value="java-model" checked> Java (EBean)
-              model</label>
-            <label><input type="checkbox" id="java-repo" name="format" value="java-repo" checked> Java
-              repository</label>
-            <label><input type="checkbox" id="java-service" name="format" value="java-service" checked> Java
-              service</label>
-            <label><input type="checkbox" id="java-controller" name="format" value="java-controller" checked> Java
-              controller</label>
-          </fieldset>
-        </details>
-        <details>
-          <summary>Java RLS (Row-Level Security) オプション</summary>
-          <fieldset>
-            <label>
-              <input type="checkbox" id="rlsEnabled" name="rls">
-              RLSを有効にする
-            </label>
-            <div id="rlsOptions" style="display: none;">
-              <label for="tenantIdColumn">
-                テナントIDカラム名
-                <input type="text" id="tenantIdColumn" name="tenantIdColumn" value="tenant_id">
-              </label>
-              <label for="adminFlagColumn">
-                管理者フラグカラム名
-                <input type="text" id="adminFlagColumn" name="adminFlagColumn" value="is_admin">
-              </label>
-            </div>
-          </fieldset>
-        </details>
-      </section>
-      <footer><button id="convertBtn" style="width: 100%;">変換実行</button></footer>
-    </article>
-
-    <article>
-      <header>3. 変換結果</header>
-      <section>
-        <nav role="tab-control" class="tabs" style="overflow-x: scroll; white-space: nowrap;">
-          <ul id="result-tabs">
-            <!-- 結果タブがここに追加されます -->
-          </ul>
-        </nav>
-        <div id="result-contents">
-          <!-- 結果コンテンツがここに追加されます -->
-        </div>
-      </section>
-      <footer id="result-footer">
-      </footer>
-    </article>
-
-    <article>
-      <header>4. SQL 作成</header>
-      <section id="sql-builder-section" style="display: none;">
-        <div class="sql-builder-grid">
-          <div class="sql-builder-col-left">
-            <!-- 1. テーブル選択 -->
-            <div>
-              <details style="margin-bottom: 1rem;">
-                <summary style="cursor: pointer;">ℹ️ 変数機能の使い方</summary>
-                <article style="margin-top: 0.5rem; font-size: 0.9rem;">
-                  <p>結合条件や絞り込み条件で、<code>:variableName</code> の形式で変数を記述すると、Javaコード生成時に自動的に引数として処理されます。</p>
-                  <ul>
-                    <li><strong>単一の値:</strong>
-                      <br><code>t0.name = :name</code>
-                      <br>&rarr; Java側で <code>String name</code> として扱われます。
-                    </li>
-                    <li><strong>リスト:</strong>
-                      <br><code>t0.id IN (:ids)</code>
-                      <br>&rarr; <code>IN</code> 句の中で使用されると、Java側で <code>List&lt;String&gt; ids</code> として扱われます。
-                    </li>
-                    <li><strong>リストサイズ:</strong>
-                      <br><code>:idsSize</code>
-                      <br>&rarr; <code>ids</code> がリスト変数の場合、<code>idsSize</code> は自動的に「リストのサイズ
-                      (<code>ids.size()</code>)」に置き換わります。メソッドの引数には現れません。
-                      <br><em>使用例:</em> <code>:idsSize = 0 OR t0.id IN (:ids)</code> (リストが空の場合は全件検索、など)
-                    </li>
-                  </ul>
-                </article>
-              </details>
-
-              <h4>1. テーブル選択</h4>
-              <fieldset role="group">
-                <select id="sql-table-select">
-                  <option value="">テーブルを追加...</option>
-                </select>
-                <button id="sql-add-table-btn" style="white-space: nowrap;" class="btn-sm">追加</button>
-              </fieldset>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Alias</th>
-                    <th>Table Name</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody id="sql-selected-tables">
-                </tbody>
-              </table>
-            </div>
-
-            <hr>
-
-            <!-- 2. 結合条件 -->
-            <div>
-              <h4>2. 結合条件</h4>
-              <div id="sql-joins-container"></div>
-              <button id="sql-add-join-btn" class="secondary outline btn-sm"
-                style="margin-top: 0.5rem; width: 100%;">結合条件を追加</button>
-            </div>
-
-            <hr>
-
-            <!-- 3. 絞り込み条件 -->
-            <div>
-              <h4>3. 絞り込み条件 (WHERE)</h4>
-              <div id="sql-filters-container"></div>
-              <button id="sql-add-filter-btn" class="secondary outline btn-sm"
-                style="margin-top: 0.5rem; width: 100%;">条件を追加</button>
-            </div>
-
-            <hr>
-
-            <!-- 4. ソート順 -->
-            <div>
-              <h4>4. ソート順 (ORDER BY)</h4>
-              <div id="sql-sorts-container"></div>
-              <button id="sql-add-sort-btn" class="secondary outline btn-sm"
-                style="margin-top: 0.5rem; width: 100%;">ソートを追加</button>
-            </div>
-
-            <hr>
-
-            <!-- 5. Limit / Offset -->
-            <div>
-              <h4>5. Limit / Offset</h4>
-              <div class="grid">
-                <label>
-                  Limit
-                  <input type="text" id="sql-limit" placeholder="例: 10 または :limit" oninput="updateSqlOutput()">
-                </label>
-                <label>
-                  Offset
-                  <input type="text" id="sql-offset" placeholder="例: 0 または :offset" oninput="updateSqlOutput()">
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div class="sql-builder-col-right">
-            <!-- 6. 取得カラム -->
-            <div>
-              <h4>6. 取得カラム (SELECT)</h4>
-              <div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: #666;">
-                ※テーブルを追加・削除・並べ替えするとリセットされます
-              </div>
-              <textarea id="sql-select-clause"
-                style="height: auto;field-sizing: content;max-height: 90vh; min-height: 100px; font-family: monospace; white-space: pre;"
-                class="text-sm" oninput="updateSqlOutput()"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <hr>
-
-        <!-- 7. 生成結果 -->
-        <div>
-          <h4>7. 生成結果</h4>
-          <div id="sql-java-result-container" style="display: none;">
-            <nav role="tab-control" class="tabs">
-              <ul id="sql-java-tabs"></ul>
-            </nav>
-            <div id="sql-java-contents"></div>
-            <button id="sql-java-download-btn" style="width: 100%; margin-bottom: 1rem;">生成ファイルをダウンロード (ZIP)</button>
-          </div>
-        </div>
-      </section>
-    </article>
-  </main>
-
-  <!-- <script src="https://cdn.jsdelivr.net/npm/zod@3/lib/index.umd.min.js"></script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script> -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script> -->
+  <!-- Vendors -->
+  <script src="vendor/js/vue.global.js"></script>
   <script src="vendor/js/papaparse.min.js"></script>
   <script src="vendor/js/jszip.min.js"></script>
   <script src="vendor/js/sql-formatter.min.js"></script>
+
+  <!-- Core & Utils -->
   <script src="js/utils/common.js"></script>
   <script src="js/utils/type_mapper.js"></script>
   <script src="js/core/state.js"></script>
@@ -242,6 +33,7 @@
   <script src="js/core/zipper.js"></script>
   <script src="js/core/sql_logic.js"></script>
 
+  <!-- Converters -->
   <script src="js/converters/ddl.js"></script>
   <script src="js/converters/typescript.js"></script>
   <script src="js/converters/zod.js"></script>
@@ -252,8 +44,18 @@
   <script src="js/converters/java_sql.js"></script>
   <script src="js/converters/ts_sql.js"></script>
 
-  <script src="js/ui/sql_ui.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Vue Components -->
+  <script src="js/components/InputSection.js"></script>
+  <script src="js/components/OptionsSection.js"></script>
+  <script src="js/components/ResultSection.js"></script>
+  <script src="js/components/SqlTableSelect.js"></script>
+  <script src="js/components/SqlJoins.js"></script>
+  <script src="js/components/SqlFilters.js"></script>
+  <script src="js/components/SqlSorts.js"></script>
+  <script src="js/components/SqlBuilder.js"></script>
+
+  <!-- Main App -->
+  <script src="js/app.js"></script>
 </body>
 
 </html>

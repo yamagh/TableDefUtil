@@ -1,5 +1,7 @@
 // Global state management
-const AppState = {
+// Assumes Vue is loaded globally via <script> tag
+
+const AppState = Vue.reactive({
   // Parsed table definitions
   parsedTables: [],
 
@@ -22,7 +24,7 @@ const AppState = {
     this.sql.limit = '';
     this.sql.offset = '';
   }
-};
+});
 
-// Backwards compatibility/Shortcuts if needed, but prefer AppState.parsedTables
-// We will replace 'parsedTables' and 'sqlState' usage with 'AppState.parsedTables' and 'AppState.sql'
+// For console debugging
+window.AppState = AppState;
