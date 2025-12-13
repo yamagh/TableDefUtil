@@ -1,7 +1,7 @@
 const ProcessingOptions = {
   emits: ['update:mode'],
   setup(props, { emit }) {
-    const selectedMode = Vue.ref('scaffolding');
+    const selectedMode = Vue.ref('preview');
 
     const updateMode = (mode) => {
       selectedMode.value = mode;
@@ -18,6 +18,15 @@ const ProcessingOptions = {
       <h2>処理オプション</h2>
       <div class="grid">
         <article 
+          :class="{ 'selected-mode': selectedMode === 'preview' }"
+          @click="updateMode('preview')"
+          style="cursor: pointer;"
+        >
+          <header><strong>定義プレビュー</strong></header>
+          読み込んだテーブル定義を表形式で確認します。
+        </article>
+
+        <article
           :class="{ 'selected-mode': selectedMode === 'scaffolding' }"
           @click="updateMode('scaffolding')"
           style="cursor: pointer;"
@@ -25,23 +34,14 @@ const ProcessingOptions = {
           <header><strong>アプリケーション雛形</strong></header>
           DDL, Model, Repository等のコードを生成します。
         </article>
-        
-        <article 
+
+        <article
           :class="{ 'selected-mode': selectedMode === 'sql' }"
           @click="updateMode('sql')"
           style="cursor: pointer;"
         >
           <header><strong>SQLコード生成</strong></header>
           GUIでSQLを構築し、Java/TSコードを生成します。
-        </article>
-
-        <article 
-          :class="{ 'selected-mode': selectedMode === 'preview' }"
-          @click="updateMode('preview')"
-          style="cursor: pointer;"
-        >
-          <header><strong>定義プレビュー</strong></header>
-          読み込んだテーブル定義を表形式で確認します。
         </article>
       </div>
     </section>

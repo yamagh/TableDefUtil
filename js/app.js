@@ -12,7 +12,7 @@ const App = {
   },
   setup() {
     // App Mode
-    const currentMode = ref('scaffolding');
+    const currentMode = ref('preview');
 
     // Theme Management
     const theme = ref(localStorage.getItem('theme') || 'auto');
