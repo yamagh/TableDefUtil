@@ -18,7 +18,7 @@ const ProcessingOptions = {
       <h2>処理オプション</h2>
       <div class="grid">
         <article 
-          :class="{ 'primary-border': selectedMode === 'scaffolding' }"
+          :class="{ 'selected-mode': selectedMode === 'scaffolding' }"
           @click="updateMode('scaffolding')"
           style="cursor: pointer;"
         >
@@ -27,7 +27,7 @@ const ProcessingOptions = {
         </article>
         
         <article 
-          :class="{ 'primary-border': selectedMode === 'sql' }"
+          :class="{ 'selected-mode': selectedMode === 'sql' }"
           @click="updateMode('sql')"
           style="cursor: pointer;"
         >
@@ -36,7 +36,7 @@ const ProcessingOptions = {
         </article>
 
         <article 
-          :class="{ 'primary-border': selectedMode === 'preview' }"
+          :class="{ 'selected-mode': selectedMode === 'preview' }"
           @click="updateMode('preview')"
           style="cursor: pointer;"
         >
@@ -44,11 +44,6 @@ const ProcessingOptions = {
           読み込んだテーブル定義を表形式で確認します。
         </article>
       </div>
-      <style>
-        .primary-border {
-          border: 2px solid var(--primary);
-        }
-      </style>
     </section>
   `
 };

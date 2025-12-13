@@ -92,3 +92,8 @@ nav.tabs[role=tab-control] a.active {
     height: 100%;
   }
 }
+
+.selected-mode {
+  border: 2px solid var(--pico-color-primary-400);
+  background-color: var(--pico-color-primary-50);
+}

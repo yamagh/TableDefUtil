@@ -98,7 +98,7 @@ const App = {
   },
   template: `
     <div>
-      <header class="container-fluid">
+      <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem;">
         <h1>テーブル定義変換ツール</h1>
       </header>
       <main class="container-fluid">
