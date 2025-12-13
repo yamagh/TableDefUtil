@@ -320,7 +320,7 @@ function generateSqlRepository(repoName, modelDtoType, isModel, isSingleColumn, 
       content += `                .setParameter("${p.name}", ${p.derivedFrom}.size())\n`;
     } else {
       // Normal parameter
-      content += `                .setParameter("${p.name}", ${p.name})\n`;
+      content += `                .setParameter("${p.name}", ${p.name} != null ? ${p.name} : "")\n`;
     }
   });
 
