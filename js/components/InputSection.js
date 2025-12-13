@@ -1,7 +1,7 @@
 const InputSection = {
   template: `
     <article>
-      <header>1. 入力</header>
+      <header>入力</header>
       <section>
         <div role="group">
           <a role="button" href="#" 

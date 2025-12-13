@@ -4,11 +4,16 @@ const { createApp, ref, reactive, computed } = Vue;
 const App = {
   components: {
     InputSection,
+    ProcessingOptions,
     OptionsSection,
     ResultSection,
-    SqlBuilder
+    SqlBuilder,
+    TablePreviewSection
   },
   setup() {
+    // App Mode
+    const currentMode = ref('scaffolding');
+
     // Current Results
     const conversionResults = ref(null);
     const convertedFormats = ref([]); // To track which formats were requested
@@ -83,6 +88,7 @@ const App = {
     };
 
     return {
+      currentMode,
       handleDataLoaded,
       handleConvert,
       handleDownloadAll,
@@ -97,9 +103,21 @@ const App = {
       </header>
       <main class="container-fluid">
         <InputSection @data-loaded="handleDataLoaded" />
-        <OptionsSection @convert="handleConvert" />
-        <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
-        <SqlBuilder />
+        
+        <ProcessingOptions @update:mode="currentMode = $event" />
+        
+        <div v-show="currentMode === 'scaffolding'">
+          <OptionsSection @convert="handleConvert" />
+          <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
+        </div>
+
+        <div v-show="currentMode === 'sql'">
+          <SqlBuilder />
+        </div>
+
+        <div v-show="currentMode === 'preview'">
+          <TablePreviewSection />
+        </div>
       </main>
     </div>
   `

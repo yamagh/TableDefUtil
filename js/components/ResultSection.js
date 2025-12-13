@@ -2,7 +2,7 @@ const ResultSection = {
   props: ['results', 'formats'],
   template: `
     <article v-if="results && formats.length > 0">
-      <header>3. 変換結果</header>
+      <header>変換結果</header>
       <section>
         <nav role="tab-control" class="tabs" style="overflow-x: scroll; white-space: nowrap;">
           <ul>

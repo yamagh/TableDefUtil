@@ -1,7 +1,7 @@
 const OptionsSection = {
   template: `
     <article>
-      <header>2. 変換オプション</header>
+      <header>変換オプション</header>
       <section>
         <details>
           <summary>変換先フォーマット</summary>

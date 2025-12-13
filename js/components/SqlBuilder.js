@@ -7,7 +7,7 @@ const SqlBuilder = {
   },
   template: `
      <article>
-       <header>4. SQL 作成</header>
+       <header>SQL 作成</header>
        <section id="sql-builder-section" style="display: block;">
          <div class="sql-builder-grid">
            <div class="sql-builder-col-left">
