@@ -1,50 +1,96 @@
 const TablePreviewSection = {
   setup() {
-    // Access global state directly since it's reactive
+    // Access global state
     const tables = Vue.computed(() => AppState.parsedTables);
 
+    // Column Definitions
+    const columnsDef = [
+      { key: 'colNo', label: 'No' },
+      { key: 'colNameJP', label: '論理名' },
+      { key: 'colName', label: '物理名' },
+      { key: 'pkfk', label: 'PK/FK' },
+      { key: 'type', label: '型' },
+      { key: 'length', label: '長さ' },
+      { key: 'constraint', label: '制約' },
+      { key: 'default', label: 'デフォルト' },
+      { key: 'description', label: '説明' }
+    ];
+
+    // Reactive state for visible columns (initially all true)
+    const visibleColumns = Vue.ref(columnsDef.map(c => c.key));
+
+    const scrollToTable = (tableName) => {
+      const el = document.getElementById(`table-def-${tableName}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+
     return {
-      tables
+      tables,
+      columnsDef,
+      visibleColumns,
+      scrollToTable
     };
   },
   template: `
     <section id="table-preview" v-if="tables.length > 0">
       <h2>テーブル定義プレビュー</h2>
-      
-      <div v-for="table in tables" :key="table.tableName" class="card" style="margin-bottom: 2rem;">
-        <header>
-          <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
-          <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p>
-        </header>
-        <div style="overflow-x: auto;">
-          <table role="grid">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>論理名</th>
-                <th>物理名</th>
-                <th>PK/FK</th>
-                <th>型</th>
-                <th>長さ</th>
-                <th>制約</th>
-                <th>デフォルト</th>
-                <th>説明</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="col in table.columns" :key="col.colName">
-                <td>{{ col.colNo }}</td>
-                <td>{{ col.colNameJP }}</td>
-                <td>{{ col.colName }}</td>
-                <td>{{ col.pkfk }}</td>
-                <td>{{ col.type }}</td>
-                <td>{{ col.length }}</td>
-                <td>{{ col.constraint }}</td>
-                <td>{{ col.default }}</td>
-                <td>{{ col.description }}</td>
-              </tr>
-            </tbody>
-          </table>
+
+      <div class="grid" style="grid-template-columns: 250px 1fr; gap: 2rem; align-items: start;">
+        <!-- Sidebar Navigation -->
+        <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
+          <nav>
+            <ul>
+              <li><strong>テーブル一覧</strong></li>
+              <li v-for="table in tables" :key="table.tableName">
+                <a href="#" @click.prevent="scrollToTable(table.tableName)" style="display: block; overflow: hidden;">
+                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableNameJP">{{ table.tableNameJP }}</div>
+                  <small style="display: block; color: var(--muted-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableName">{{ table.tableName }}</small>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div>
+          <!-- Column Visibility Settings -->
+          <details open style="margin-bottom: 2rem;">
+            <summary>表示カラム設定</summary>
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem;">
+              <label v-for="col in columnsDef" :key="col.key">
+                <input type="checkbox" :value="col.key" v-model="visibleColumns">
+                {{ col.label }}
+              </label>
+            </div>
+          </details>
+
+          <!-- Table List -->
+          <div v-for="table in tables" :key="table.tableName" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
+            <header>
+              <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
+              <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p>
+            </header>
+            <div style="overflow-x: auto;">
+              <table role="grid">
+                <thead>
+                  <tr>
+                    <th v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
+                      {{ def.label }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="col in table.columns" :key="col.colName">
+                    <td v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
+                      {{ col[def.key] }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </section>
