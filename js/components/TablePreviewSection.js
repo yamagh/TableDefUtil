@@ -19,6 +19,33 @@ const TablePreviewSection = {
     // Reactive state for visible columns (initially all true)
     const visibleColumns = Vue.ref(columnsDef.map(c => c.key));
 
+    // Hide Common Columns Logic
+    const hideCommonColumns = Vue.ref(true);
+
+    const commonColumnNames = Vue.computed(() => {
+      const allTables = tables.value;
+      if (allTables.length <= 1) return [];
+
+      // Initialize with logical column names from the first table
+      let common = new Set(allTables[0].columns.map(c => c.colName));
+
+      // Intersect with remaining tables
+      for (let i = 1; i < allTables.length; i++) {
+        const currentTableCols = new Set(allTables[i].columns.map(c => c.colName));
+        common = new Set([...common].filter(x => currentTableCols.has(x)));
+      }
+
+      // Exclude 'id' from being hidden
+      common.delete('id');
+
+      return Array.from(common);
+    });
+
+    const shouldShowRow = (col) => {
+      if (!hideCommonColumns.value) return true;
+      return !commonColumnNames.value.includes(col.colName);
+    };
+
     const scrollToTable = (tableName) => {
       const el = document.getElementById(`table-def-${tableName}`);
       if (el) {
@@ -30,6 +57,9 @@ const TablePreviewSection = {
       tables,
       columnsDef,
       visibleColumns,
+      hideCommonColumns,
+      commonColumnNames,
+      shouldShowRow,
       scrollToTable
     };
   },
@@ -58,11 +88,20 @@ const TablePreviewSection = {
           <!-- Column Visibility Settings -->
           <details open style="margin-bottom: 2rem;">
             <summary>表示カラム設定</summary>
-            <div style="display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem;">
-              <label v-for="col in columnsDef" :key="col.key">
-                <input type="checkbox" :value="col.key" v-model="visibleColumns">
-                {{ col.label }}
-              </label>
+            <div style="padding: 1rem;">
+              <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--muted-border-color);" v-if="commonColumnNames.length > 0">
+                <label>
+                  <input type="checkbox" v-model="hideCommonColumns">
+                  共通カラムを隠す ({{ commonColumnNames.length }}件)
+                  <span :data-tooltip="commonColumnNames.join(', ')">ℹ️</span>
+                </label>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                <label v-for="col in columnsDef" :key="col.key">
+                  <input type="checkbox" :value="col.key" v-model="visibleColumns">
+                  {{ col.label }}
+                </label>
+              </div>
             </div>
           </details>
 
@@ -82,7 +121,7 @@ const TablePreviewSection = {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="col in table.columns" :key="col.colName">
+                  <tr v-for="col in table.columns" :key="col.colName" v-show="shouldShowRow(col)">
                     <td v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
                       {{ col[def.key] }}
                     </td>
