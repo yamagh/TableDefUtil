@@ -42,6 +42,8 @@ const App = {
 
     const convertedRlsOptions = ref(null);
 
+    const hasData = computed(() => AppState.parsedTables.length > 0);
+
     // Handlers
     const handleDataLoaded = (tsvData) => {
       // Use existing Papa Parse logic
@@ -117,7 +119,8 @@ const App = {
       handleConvert,
       handleDownloadAll,
       conversionResults,
-      convertedFormats
+      convertedFormats,
+      hasData
     };
   },
   template: `
@@ -131,19 +134,21 @@ const App = {
       <main class="container-fluid">
         <InputSection @data-loaded="handleDataLoaded" />
         
-        <ProcessingOptions @update:mode="currentMode = $event" />
-        
-        <div v-show="currentMode === 'scaffolding'">
-          <OptionsSection @convert="handleConvert" />
-          <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
-        </div>
+        <div v-if="hasData">
+          <ProcessingOptions @update:mode="currentMode = $event" />
+          
+          <div v-show="currentMode === 'scaffolding'">
+            <OptionsSection @convert="handleConvert" />
+            <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
+          </div>
 
-        <div v-show="currentMode === 'sql'">
-          <SqlBuilder />
-        </div>
+          <div v-show="currentMode === 'sql'">
+            <SqlBuilder />
+          </div>
 
-        <div v-show="currentMode === 'preview'">
-          <TablePreviewSection />
+          <div v-show="currentMode === 'preview'">
+            <TablePreviewSection />
+          </div>
         </div>
       </main>
     </div>
