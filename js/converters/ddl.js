@@ -89,7 +89,7 @@ function generatePlayEvolution(tables) {
     // --- !Ups ---
 
     // テーブル作成
-    ups += `# ${table.tableNameJP || tableName}\n`;
+    ups += `--\n-- ${table.tableNameJP || tableName}\n--\n`;
     ups += `CREATE TABLE ${tableName} (\n`;
     const columnDefs = table.columns.map(col => {
       let def = `    ${col.colName}`;
