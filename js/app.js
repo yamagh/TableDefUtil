@@ -14,6 +14,28 @@ const App = {
     // App Mode
     const currentMode = ref('scaffolding');
 
+    // Theme Management
+    const theme = ref(localStorage.getItem('theme') || 'auto');
+
+    const updateTheme = (newTheme) => {
+      theme.value = newTheme;
+      localStorage.setItem('theme', newTheme);
+      const html = document.documentElement;
+      if (newTheme === 'auto') {
+        html.removeAttribute('data-theme');
+      } else {
+        html.setAttribute('data-theme', newTheme);
+      }
+    };
+
+    // Initialize theme
+    updateTheme(theme.value);
+
+    const toggleTheme = () => {
+      const next = theme.value === 'light' ? 'dark' : 'light';
+      updateTheme(next);
+    };
+
     // Current Results
     const conversionResults = ref(null);
     const convertedFormats = ref([]); // To track which formats were requested
@@ -89,6 +111,8 @@ const App = {
 
     return {
       currentMode,
+      theme,
+      toggleTheme,
       handleDataLoaded,
       handleConvert,
       handleDownloadAll,
@@ -98,8 +122,11 @@ const App = {
   },
   template: `
     <div>
-      <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem;">
+      <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem; display: flex; justify-content: space-between; align-items: center;">
         <h1>テーブル定義変換ツール</h1>
+        <button class="outline secondary" @click="toggleTheme">
+          {{ theme === 'light' ? '🌙' : '☀️' }}
+        </button>
       </header>
       <main class="container-fluid">
         <InputSection @data-loaded="handleDataLoaded" />
