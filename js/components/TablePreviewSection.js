@@ -1,11 +1,12 @@
 const TablePreviewSection = {
   setup() {
-    // Access global state
+    // 全テーブル
     const tables = Vue.computed(() => AppState.parsedTables);
 
-    // Search
+    // 検索
     const searchQuery = Vue.ref('');
 
+    // 検索結果
     const filteredTables = Vue.computed(() => {
       const query = searchQuery.value.trim().toLowerCase();
       if (!query) return tables.value;
@@ -16,49 +17,57 @@ const TablePreviewSection = {
       });
     });
 
-    // Column Definitions
+    // テーブル表示するカラム定義
     const columnsDef = [
-      { key: 'colNo', label: 'No' },
-      { key: 'colNameJP', label: '論理名' },
-      { key: 'colName', label: '物理名' },
-      { key: 'pkfk', label: 'PK/FK' },
-      { key: 'type', label: '型' },
-      { key: 'length', label: '長さ' },
-      { key: 'constraint', label: '制約' },
-      { key: 'default', label: 'デフォルト' },
-      { key: 'description', label: '説明' }
+      { key: 'colNo', label: 'No', defaultVisibility: false },
+      { key: 'colNameJP', label: '論理名', defaultVisibility: true },
+      { key: 'colName', label: '物理名', defaultVisibility: true },
+      { key: 'pkfk', label: 'PK/FK', defaultVisibility: true },
+      { key: 'type', label: '型', defaultVisibility: true },
+      { key: 'length', label: '長さ', defaultVisibility: true },
+      { key: 'constraint', label: '制約', defaultVisibility: true },
+      { key: 'default', label: 'デフォルト', defaultVisibility: false },
+      { key: 'description', label: '説明', defaultVisibility: false },
+      { key: 'idx1', label: 'Idx1', defaultVisibility: false },
+      { key: 'idx2', label: 'Idx2', defaultVisibility: false },
+      { key: 'idx3', label: 'Idx3', defaultVisibility: false },
+      { key: 'idx4', label: 'Idx4', defaultVisibility: false },
+      { key: 'idx5', label: 'Idx5', defaultVisibility: false }
     ];
 
-    // Reactive state for visible columns (initially all true)
-    const visibleColumns = Vue.ref(columnsDef.map(c => c.key));
+    // 表示するカラム
+    const visibleColumns = Vue.ref(columnsDef.filter(c => c.defaultVisibility).map(c => c.key));
 
-    // Hide Common Columns Logic
+    // 共通カラムを隠す
     const hideCommonColumns = Vue.ref(true);
 
+    // 共通カラム名
     const commonColumnNames = Vue.computed(() => {
       const allTables = tables.value;
       if (allTables.length <= 1) return [];
 
-      // Initialize with logical column names from the first table
+      // 最初のテーブルの論理列名で初期化
       let common = new Set(allTables[0].columns.map(c => c.colName));
 
-      // Intersect with remaining tables
+      // 他のテーブルと交差
       for (let i = 1; i < allTables.length; i++) {
         const currentTableCols = new Set(allTables[i].columns.map(c => c.colName));
         common = new Set([...common].filter(x => currentTableCols.has(x)));
       }
 
-      // Exclude 'id' from being hidden
+      // 'id'を除外
       common.delete('id');
 
       return Array.from(common);
     });
 
+    // 表示する行
     const shouldShowRow = (col) => {
       if (!hideCommonColumns.value) return true;
       return !commonColumnNames.value.includes(col.colName);
     };
 
+    // テーブルスクロール
     const scrollToTable = (tableName) => {
       const el = document.getElementById(`table-def-${tableName}`);
       if (el) {

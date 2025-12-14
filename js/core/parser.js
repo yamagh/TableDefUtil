@@ -27,7 +27,12 @@ function transformToIntermediate(data) {
       length: row.Length,
       constraint: row.Constraint,
       default: row.Default,
-      description: row.Description // Descriptionは最初の行にあることが多いので、とりあえず全てのカラムで同じと仮定する
+      description: row.Description, // Todo: テーブルの説明はあとで定義可能とするが今は、１行目のカラム説明を入れておく
+      idx1: row.Idx1,
+      idx2: row.Idx2,
+      idx3: row.Idx3,
+      idx4: row.Idx4,
+      idx5: row.Idx5
     });
 
     // インデックスの収集
