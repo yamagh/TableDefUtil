@@ -34,15 +34,17 @@ const ResultSection = {
     </article>
   `,
   setup(props, { emit }) {
+    // 選択されたタブ
     const activeTab = Vue.ref(props.formats[0] || '');
 
-    // Watch props to update activeTab if formats change
+    // フォーマットが変更された場合、タブを更新する
     Vue.watch(() => props.formats, (newFormats) => {
       if (newFormats.length > 0 && !newFormats.includes(activeTab.value)) {
         activeTab.value = newFormats[0];
       }
     });
 
+    // 結果取得
     const getResultContent = (format) => {
       if (!props.results || !props.results[format]) return '';
       const output = props.results[format];
@@ -53,11 +55,13 @@ const ResultSection = {
       return '';
     };
 
+    // 現在の結果をダウンロード
     const downloadCurrent = () => {
       const content = getResultContent(activeTab.value);
       downloadFile(content, 'output.txt'); // Helper from common.js
     };
 
+    // すべての結果をダウンロード
     const downloadAll = () => {
       emit('download-all');
     };

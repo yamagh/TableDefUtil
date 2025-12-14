@@ -30,14 +30,7 @@ const InputSection = {
     const textInput = Vue.ref('');
     const fileInput = Vue.ref(null);
 
-    const parseData = (content) => {
-      // Access global function for now, or move logic here later
-      // Assuming runConversion/parse logic is global or imported
-      // We'll emit an event or call a global handler.
-      // For now, let's call the global logic exposed in main.js (which we will refactor)
-      // Ideally, we emit to parent.
-    };
-
+    // ファイル選択時
     const handleFileChange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -48,6 +41,7 @@ const InputSection = {
       reader.readAsText(file);
     };
 
+    // テキストエリア入力時
     const handleTextSubmit = () => {
       if (!textInput.value.trim()) {
         alert('入力データがありません。');

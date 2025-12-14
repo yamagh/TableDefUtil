@@ -1,8 +1,10 @@
 const ProcessingOptions = {
   emits: ['update:mode'],
   setup(props, { emit }) {
+    // 選択されたモード
     const selectedMode = Vue.ref('preview');
 
+    // モード更新
     const updateMode = (mode) => {
       selectedMode.value = mode;
       emit('update:mode', mode);

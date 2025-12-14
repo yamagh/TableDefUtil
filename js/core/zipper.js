@@ -1,9 +1,9 @@
 /**
- * Code generation and Zipping logic
+ * コード生成とZIPファイル生成のロジック
  */
 const Zipper = {
   /**
-   * Generate ZIP file from tables and options
+   * テーブルとオプションからZIPファイルを生成
    * @param {Array} tables Parsed tables
    * @param {Array} formats List of formats to generate
    * @param {Object} rlsOptions RLS options
@@ -18,18 +18,12 @@ const Zipper = {
 
     formats.forEach(format => {
       let output;
-      // Note: We assume the generator functions are globally available or imported
-      // For now, adhering to the plan of refactoring converters to return objects
-      // but we need to support the current "string" return style until we finish refactoring converters.
-      // So this Zipper will implement the logic assuming the NEW style (array of objects),
-      // or we handle legacy string returns if we want to do it iteratively.
-      // 
-      // Plan: We refactor converters NEXT. So this Zipper should expect structured data.
+      // コンバータがグローバルにロードされていることを前提
 
       switch (format) {
         case 'ddl':
+          // 通常の DDL を返す
           output = generateDDL(tables);
-          // DDL usually returns single string. We can wrap it.
           if (typeof output === 'string') {
             zip.file('schema.sql', output);
           } else {
@@ -37,9 +31,8 @@ const Zipper = {
           }
           break;
         case 'ddl-play':
+          // Play Evolution 用の DDL を返す
           output = generatePlayEvolution(tables);
-          // Play Evolution usually goes into conf/evolutions/default/1.sql or similar.
-          // For the ZIP, we'll just put it in evolutions/1.sql
           if (typeof output === 'string') {
             zip.file('evolutions/1.sql', output);
           } else {
@@ -47,16 +40,19 @@ const Zipper = {
           }
           break;
         case 'typescript':
+          // TypeScript を返す
           output = generateTypeScript(tables);
           if (typeof output === 'string') zip.file('entities.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
           break;
         case 'zod-schema':
+          // Zod スキーマを返す
           output = generateZodSchema(tables);
           if (typeof output === 'string') zip.file('schemas.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
           break;
         case 'zod-type':
+          // Zod 型を返す
           output = generateZodType(tables);
           if (typeof output === 'string') zip.file('zod-types.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
@@ -70,7 +66,6 @@ const Zipper = {
           else if (format === 'java-controller') output = generateJavaController(tables, rlsOptions);
           else output = generateJavaService(tables, rlsOptions);
 
-          // Handle both legacy string (split by // --- FileName:) and new object array
           if (typeof output === 'string') {
             const files = output.split('// --- FileName: ');
             files.forEach(fileContent => {
@@ -80,11 +75,6 @@ const Zipper = {
               const content = fileContent.substring(firstLineEnd + 5);
 
               let path = '';
-              // Note: This path logic was in main.js. We should ideally move it to the converter itself.
-              // But for legacy string support we keep it here or assume the converter handles it?
-              // The plan says converters will return { path: ..., content: ... }.
-              // So if we see an array, we trust the path.
-
               if (format === 'java-model') path = 'models/';
               else if (format === 'java-repo') path = 'repository/';
               else if (format === 'java-service') path = 'services/';

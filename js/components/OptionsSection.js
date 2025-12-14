@@ -37,12 +37,14 @@ const OptionsSection = {
   `,
   emits: ['convert'],
   setup(props, { emit }) {
+    // 選択されたフォーマット
     const selectedFormats = Vue.ref([
       'ddl', 'ddl-play', 'typescript', 'zod-schema',
       'zod-type', 'java-model', 'java-repo',
       'java-service', 'java-controller'
     ]);
 
+    // フォーマットオプション
     const formatOptions = [
       { value: 'ddl', label: 'DDL (PostgreSQL)' },
       { value: 'ddl-play', label: 'DDL (PlayFramework)' },
@@ -55,12 +57,14 @@ const OptionsSection = {
       { value: 'java-controller', label: 'Java controller' }
     ];
 
+    // RLS (Row-Level Security) オプション
     const rls = Vue.reactive({
       enabled: false,
       tenantIdColumn: 'tenant_id',
       adminFlagColumn: 'is_admin'
     });
 
+    // 変換実行
     const handleConvert = () => {
       emit('convert', {
         formats: selectedFormats.value,

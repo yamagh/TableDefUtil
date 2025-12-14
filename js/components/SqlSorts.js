@@ -26,13 +26,19 @@ const SqlSorts = {
     </div>
   `,
   setup() {
+    // ソート順
     const sorts = Vue.computed(() => AppState.sql.sorts);
+    // 選択されたテーブル
     const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
 
+    // ソート順を追加
     const addSort = () => SqlLogic.addSort();
+    // ソート順を削除
     const removeSort = (index) => SqlLogic.removeSort(index);
+    // ソート順を移動
     const moveSort = (index, dir) => SqlLogic.moveSort(index, dir);
 
+    // 列を取得
     const getColumns = (alias) => {
       const t = AppState.sql.selectedTables.find(t => t.alias === alias);
       if (!t) return [];

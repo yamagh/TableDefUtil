@@ -1,21 +1,27 @@
-// Global state management
-// Assumes Vue is loaded globally via <script> tag
+// Global の状態管理
+// Vue はグローバルにロードされていることを前提
 
 const AppState = Vue.reactive({
-  // Parsed table definitions
+  // パースされたテーブル定義
   parsedTables: [],
 
   // SQL Builder State
   sql: {
+    // 選択されたテーブル
     selectedTables: [],
+    // 結合条件
     joins: [],
+    // フィルター
     filters: [],
+    // ソート
     sorts: [],
+    // LIMIT
     limit: '',
+    // OFFSET
     offset: ''
   },
 
-  // Helper to reset SQL state
+  // SQL Builder State のリセット
   resetSqlState() {
     this.sql.selectedTables = [];
     this.sql.joins = [];
@@ -26,5 +32,5 @@ const AppState = Vue.reactive({
   }
 });
 
-// For console debugging
+// コンソールデバッグ用
 window.AppState = AppState;

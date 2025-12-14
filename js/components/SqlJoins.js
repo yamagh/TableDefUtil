@@ -28,6 +28,7 @@ const SqlJoins = {
     const joins = Vue.computed(() => AppState.sql.joins);
     const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
 
+    // 結合条件を追加
     const addJoin = () => {
       try {
         SqlLogic.addJoin();
@@ -36,17 +37,15 @@ const SqlJoins = {
       }
     };
 
+    // 結合条件を削除
     const removeJoin = (index) => {
       SqlLogic.removeJoin(index);
     };
 
+    // 結合条件を移動
     const moveJoin = (index, dir) => {
       SqlLogic.moveJoin(index, dir);
     };
-
-    // Note: v-model on `join.condition` works directly on the AppState object because AppState is reactive.
-    // However, if we need side effects (like updating output), we might need watchers.
-    // The main SqlBuilder component should probably watch AppState.sql and update the generated code.
 
     return {
       joins,

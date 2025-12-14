@@ -83,7 +83,7 @@ const SqlBuilder = {
     const generatedFiles = Vue.shallowRef([]);
     const activeTab = Vue.ref('');
 
-    // Watch table selection changes to update SELECT clause
+    // SELECT 句を更新
     Vue.watch(() => sql.value.selectedTables, (newTables) => {
       const selects = [];
       newTables.forEach(t => {
@@ -99,9 +99,7 @@ const SqlBuilder = {
       selectClauseQuery.value = selects.join(',\n');
     }, { deep: true });
 
-    // Watch everything to re-generate code
-    // We can verify if deep watcher on AppState.sql works.
-    // Also need to watch selectClauseQuery itself.
+    // すべての結果を生成
     const generate = () => {
       if (sql.value.selectedTables.length === 0) {
         generatedFiles.value = [];
@@ -118,12 +116,12 @@ const SqlBuilder = {
       }
     };
 
-    // Watch for any change in SQL state OR Select Clause
+    // SQL 状態または Select 句が変更された場合、再生成
     Vue.watch([() => sql.value, selectClauseQuery], () => {
       generate();
     }, { deep: true });
 
-
+    // ファイル名を取得
     const getFileLabel = (path) => {
       const fileName = path.split('/').pop();
       if (fileName.endsWith('Repository.java')) return 'Repository';
@@ -135,6 +133,7 @@ const SqlBuilder = {
       return fileName;
     };
 
+    // ZIP ファイルをダウンロード
     const downloadZip = () => {
       if (!generatedFiles.value.length) return;
       if (typeof JSZip === 'undefined') {

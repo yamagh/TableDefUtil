@@ -3,7 +3,7 @@
  */
 const SqlLogic = {
   /**
-   * Add a table to selection
+   * セクションにテーブルを追加
    */
   addTable(tableName) {
     const alias = `t${AppState.sql.selectedTables.length}`;
@@ -11,42 +11,50 @@ const SqlLogic = {
     return AppState.sql.selectedTables;
   },
 
+  /**
+   * セクションからテーブルを削除
+   */
   removeTable(index) {
     AppState.sql.selectedTables.splice(index, 1);
-    // Re-assign aliases
+    // エイリアスの再割り当て
     AppState.sql.selectedTables.forEach((item, idx) => {
       item.alias = `t${idx}`;
     });
   },
 
+  /**
+   * セクション内のテーブルを移動
+   */
   moveTable(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= AppState.sql.selectedTables.length) return Promise.resolve(); // or just return
     const item = AppState.sql.selectedTables.splice(index, 1)[0];
     AppState.sql.selectedTables.splice(newIndex, 0, item);
-    // Re-assign aliases if we want consistent t0, t1 order? 
-    // The original code did re-assign aliases on render. 
-    // If we want logic to be pure, we should probably do it here or let UI trigger it.
-    // Original: renderSqlTables -> item.alias = `t${index}`
-    // So moving tables changes their aliases.
+    // エイリアスの再割り当て
     AppState.sql.selectedTables.forEach((item, idx) => {
       item.alias = `t${idx}`;
     });
   },
 
+  /**
+   * セクションに結合条件を追加
+   */
   addJoin() {
     if (AppState.sql.selectedTables.length < 2) {
-      throw new Error('At least 2 tables needed for join.');
+      throw new Error('結合条件を追加するには、2つ以上のテーブルが必要です。');
     }
+    // 右側のテーブル
     const rightIdx = AppState.sql.selectedTables.length - 1;
+    // 左側のテーブル
     const leftIdx = Math.max(0, rightIdx - 1);
 
-    // We need parsedTables to generate condition. Passing from AppState.parsedTables
+    // 結合条件を生成
     const condition = this.generateDefaultJoinCondition(
       AppState.sql.selectedTables[leftIdx],
       AppState.sql.selectedTables[rightIdx]
     );
 
+    // 結合条件を追加
     AppState.sql.joins.push({
       leftAlias: AppState.sql.selectedTables[leftIdx].alias,
       rightAlias: AppState.sql.selectedTables[rightIdx].alias,
@@ -55,16 +63,25 @@ const SqlLogic = {
     });
   },
 
+  /**
+   * 結合条件を更新
+   */
   updateJoin(index, key, value) {
     if (AppState.sql.joins[index]) {
       AppState.sql.joins[index][key] = value;
     }
   },
 
+  /**
+   * 結合条件を削除
+   */
   removeJoin(index) {
     AppState.sql.joins.splice(index, 1);
   },
 
+  /**
+   * 結合条件を移動
+   */
   moveJoin(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= AppState.sql.joins.length) return;
@@ -72,23 +89,28 @@ const SqlLogic = {
     AppState.sql.joins.splice(newIndex, 0, item);
   },
 
+  /**
+   * 結合条件を生成
+   */
   generateDefaultJoinCondition(leftTableState, rightTableState) {
     const leftDef = AppState.parsedTables.find(t => t.tableName === leftTableState.tableName);
     const rightDef = AppState.parsedTables.find(t => t.tableName === rightTableState.tableName);
 
-    if (!leftDef || !rightDef) return '/* Table definition not found */';
+    if (!leftDef || !rightDef) return '/* テーブル定義が見つかりません */';
 
     let condition = '';
     const leftCols = leftDef.columns.map(c => c.colName);
     const rightCols = rightDef.columns.map(c => c.colName);
 
+    // IDカラムの一致
     const commonIdCols = leftCols.filter(c => rightCols.includes(c) && c.includes('_id'));
 
-    // Check for matching AK/FK columns
+    // AK/FKカラムの一致
     const leftAkFk = leftDef.columns.filter(c => c.pkfk && (c.pkfk.includes('AK') || c.pkfk.includes('FK'))).map(c => c.colName);
     const rightAkFk = rightDef.columns.filter(c => c.pkfk && (c.pkfk.includes('AK') || c.pkfk.includes('FK'))).map(c => c.colName);
     const commonAkFk = leftAkFk.filter(c => rightAkFk.includes(c));
 
+    // 一致するカラムがあれば、それを使用
     if (commonAkFk.length > 0) {
       condition = `${leftTableState.alias}.${commonAkFk[0]} = ${rightTableState.alias}.${commonAkFk[0]}`;
     } else if (commonIdCols.length > 0) {
@@ -101,6 +123,7 @@ const SqlLogic = {
       }
     }
 
+    // 削除フラグの一致
     if (leftCols.includes('is_deleted')) {
       condition += `\nAND ${leftTableState.alias}.is_deleted = false`;
     }
@@ -108,6 +131,7 @@ const SqlLogic = {
       condition += `\nAND ${rightTableState.alias}.is_deleted = false`;
     }
 
+    // ANDを削除
     if (condition.startsWith(' AND ')) condition = condition.substring(5);
 
     return condition.length > 0 ? condition : '/* 結合条件を設定してください */';
@@ -126,11 +150,12 @@ const SqlLogic = {
   },
 
   addSort() {
+    // 1つ以上のテーブルが選択されているかチェック
     if (AppState.sql.selectedTables.length === 0) return;
     const firstTbl = AppState.sql.selectedTables[0];
     const firstDef = AppState.parsedTables.find(t => t.tableName === firstTbl.tableName);
 
-    // Safety check
+    // 安全チェック
     if (!firstDef || firstDef.columns.length === 0) return;
 
     AppState.sql.sorts.push({
@@ -141,10 +166,12 @@ const SqlLogic = {
   },
 
   updateSort(index, key, value) {
+    // ソートを更新
     const sort = AppState.sql.sorts[index];
     if (!sort) return;
     sort[key] = value;
 
+    // エイリアスが変更された場合、カラムを再設定
     if (key === 'alias') {
       const tblState = AppState.sql.selectedTables.find(t => t.alias === value);
       if (tblState) {
@@ -220,7 +247,7 @@ const SqlLogic = {
     const autoGenResult = {};
     if (AppState.sql.selectedTables.length === 0) return autoGenResult;
 
-    // Check if select clause is edited
+    // select句が編集されているかチェック
     let defaultSelects = [];
     AppState.sql.selectedTables.forEach(t => {
       const def = AppState.parsedTables.find(table => table.tableName === t.tableName);
@@ -235,18 +262,15 @@ const SqlLogic = {
     const defaultSelectClause = defaultSelects.join(',\n');
     const isSelectEdited = (selectClause.replace(/\s/g, '') !== defaultSelectClause.replace(/\s/g, ''));
 
-    // Note: we assume generateJavaSql/generateTsSql are global or we import them.
-    // Since they are script-loaded, they are global.
+    // Javaコード生成
     const javaFiles = generateJavaSql(AppState.sql, AppState.parsedTables, selectClause, isSelectEdited);
+    // TypeScriptコード生成
     const tsFiles = generateTsSql(AppState.sql, AppState.parsedTables, selectClause, isSelectEdited);
 
-    // Merge results. Note that converters now return [{path, content}] array.
-    // We need to merge them into a consistent structure for UI or Zip.
-    // Let's stick to returning array of files.
-
+    // 結果をマージ
     const allFiles = [];
 
-    // Add SQL file
+    // SQLファイル
     const sqlContent = this.generateSql(selectClause);
     if (sqlContent && sqlContent.trim() !== '') {
       let baseName = "CustomQuery";
@@ -260,8 +284,10 @@ const SqlLogic = {
       allFiles.push({ path: `sql/${baseName}.sql`, content: sqlContent });
     }
 
-    // Add Java and TS files after SQL
-    allFiles.push(...javaFiles, ...tsFiles);
+    // Javaファイル
+    allFiles.push(...javaFiles);
+    // TypeScriptファイル
+    allFiles.push(...tsFiles);
 
     return allFiles;
   }

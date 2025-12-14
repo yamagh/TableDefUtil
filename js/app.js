@@ -11,12 +11,13 @@ const App = {
     TablePreviewSection
   },
   setup() {
-    // App Mode
+    // モード: preview, scaffolding, sql
     const currentMode = ref('preview');
 
-    // Theme Management
+    // テーマ: light, dark, auto
     const theme = ref(localStorage.getItem('theme') || 'auto');
 
+    // テーマを更新
     const updateTheme = (newTheme) => {
       theme.value = newTheme;
       localStorage.setItem('theme', newTheme);
@@ -28,25 +29,26 @@ const App = {
       }
     };
 
-    // Initialize theme
+    // テーマを初期化
     updateTheme(theme.value);
 
+    // テーマを切り替える
     const toggleTheme = () => {
       const next = theme.value === 'light' ? 'dark' : 'light';
       updateTheme(next);
     };
 
-    // Current Results
+    // 変換結果
     const conversionResults = ref(null);
-    const convertedFormats = ref([]); // To track which formats were requested
-
+    // 変換形式
+    const convertedFormats = ref([]);
+    // RLS オプション
     const convertedRlsOptions = ref(null);
-
+    // データが存在するかどうか
     const hasData = computed(() => AppState.parsedTables.length > 0);
 
-    // Handlers
+    // データロードハンドラ
     const handleDataLoaded = (tsvData) => {
-      // Use existing Papa Parse logic
       Papa.parse(tsvData, {
         header: true,
         skipEmptyLines: true,
@@ -60,10 +62,10 @@ const App = {
           const tables = transformToIntermediate(results.data);
           AppState.parsedTables = tables;
 
-          // Reset SQL Builder state
+          // SQL Builderの状態をリセット
           AppState.resetSqlState();
 
-          // Clear previous results
+          // 変換結果をクリア
           conversionResults.value = null;
           convertedFormats.value = [];
           convertedRlsOptions.value = null;
@@ -73,6 +75,7 @@ const App = {
       });
     };
 
+    // 変換ハンドラ
     const handleConvert = ({ formats, rls }) => {
       if (AppState.parsedTables.length === 0) {
         alert('データを入力してください。');
@@ -99,6 +102,7 @@ const App = {
       convertedRlsOptions.value = rls;
     };
 
+    // 全てのファイルをダウンロードするハンドラ
     const handleDownloadAll = () => {
       if (!convertedFormats.value || convertedFormats.value.length === 0) {
         alert("先に「変換実行」を押してください。");

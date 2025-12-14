@@ -3,14 +3,6 @@ const SqlFilters = {
     <div>
       <h4>3. 絞り込み条件 (WHERE)</h4>
       <div v-for="(filter, index) in filters" :key="index" style="display: flex; gap: 10px; margin-bottom: 5px; align-items: center;">
-         <!-- 
-            Directly modifying array of strings in Vue is tricky with v-model if it's a primitive array.
-            AppState.sql.filters is an array of strings.
-            To modify index, we need a wrapper in logic or special handling.
-            Best approach: Component displays inputs, and we update via index.
-            Actually, Vue 3 allows v-model on array items if they are objects, but strings are primitives.
-            We will use a computed setter or handle input event.
-         -->
          <textarea 
             :value="filter"
             @input="updateFilter(index, $event.target.value)"
@@ -23,6 +15,7 @@ const SqlFilters = {
     </div>
   `,
   setup() {
+    // 絞り込み条件
     const filters = Vue.computed(() => AppState.sql.filters);
 
     const addFilter = () => SqlLogic.addFilter();

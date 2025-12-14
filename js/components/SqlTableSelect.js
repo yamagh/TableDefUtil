@@ -59,29 +59,32 @@ const SqlTableSelect = {
     </div>
   `,
   setup() {
-    // We access global AppState directly in logic, but standard way is to use props or inject.
-    // Given the architecture, using global AppState is consistent.
-
-    // However, to make it reactive in template:
+    // 選択可能なテーブル
     const availableTables = Vue.computed(() => AppState.parsedTables);
+    // 選択されたテーブル
     const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
+    // 追加するテーブル
     const selectedTableToAdd = Vue.ref('');
 
+    // テーブル名を取得
     const getTableNameJP = (name) => {
       const t = AppState.parsedTables.find(x => x.tableName === name);
       return t ? t.tableNameJP : '';
     };
 
+    // テーブルを追加
     const addTable = () => {
       if (!selectedTableToAdd.value) return;
       SqlLogic.addTable(selectedTableToAdd.value); // Logic operates on AppState
       selectedTableToAdd.value = '';
     };
 
+    // テーブルを削除
     const removeTable = (index) => {
       SqlLogic.removeTable(index);
     };
 
+    // テーブルを移動
     const moveTable = (index, dir) => {
       SqlLogic.moveTable(index, dir);
     };
