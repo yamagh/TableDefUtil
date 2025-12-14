@@ -16,10 +16,10 @@ const InputSection = {
 
         <div v-show="activeTab === 'file'" class="tab-content" style="display: block;">
           <input type="file" ref="fileInput" @change="handleFileChange">
-          <small>TSVまたはCSVファイルを選択してください。</small>
+          <small>TSV、CSV、またはJSONファイルを選択してください。</small>
         </div>
         <div v-show="activeTab === 'text'" class="tab-content" style="display: block;">
-          <textarea v-model="textInput" placeholder="ここにTSVまたはCSVデータを貼り付けます"></textarea>
+          <textarea v-model="textInput" placeholder="ここにTSV、CSV、またはJSONデータを貼り付けます"></textarea>
           <button @click="handleTextSubmit" style="margin-top: 1rem;">読み込み</button>
         </div>
       </section>

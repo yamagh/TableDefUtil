@@ -48,8 +48,28 @@ const App = {
     const hasData = computed(() => AppState.parsedTables.length > 0);
 
     // データロードハンドラ
-    const handleDataLoaded = (tsvData) => {
-      Papa.parse(tsvData, {
+    const handleDataLoaded = (rawData) => {
+      // JSONとしてパースを試みる
+      const trimmed = rawData.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          const jsonData = JSON.parse(rawData);
+          // 配列であり、かつ中身が期待する形式（空配列 または tableNameを持つオブジェクト）か簡易チェック
+          if (Array.isArray(jsonData) && (jsonData.length === 0 || (jsonData[0] && jsonData[0].tableName))) {
+            AppState.parsedTables = jsonData;
+            AppState.resetSqlState();
+            conversionResults.value = null;
+            convertedFormats.value = [];
+            convertedRlsOptions.value = null;
+            // alert('JSONファイルを読み込みました。');
+            return;
+          }
+        } catch (e) {
+          console.warn('JSON parsing failed, falling back to CSV/TSV', e);
+        }
+      }
+
+      Papa.parse(rawData, {
         header: true,
         skipEmptyLines: true,
         delimiter: '\t',
@@ -69,8 +89,6 @@ const App = {
           conversionResults.value = null;
           convertedFormats.value = [];
           convertedRlsOptions.value = null;
-
-          // alert('テーブル定義を読み込みました。変換実行やSQL作成が可能です。');
         }
       });
     };

@@ -268,6 +268,10 @@ const TablePreviewSection = {
         });
 
         downloadFile(tsvContent, 'table_definitions_edited.tsv');
+      },
+      downloadJson: () => {
+        const jsonContent = JSON.stringify(AppState.parsedTables, null, 2);
+        downloadFile(jsonContent, 'table_definitions_edited.json');
       }
     };
   },
@@ -286,6 +290,7 @@ const TablePreviewSection = {
             <div v-if="isEditMode" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
                <button class="outline" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="addTable">＋ テーブル追加</button>
                <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadTsv">⇩ TSV保存</button>
+               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadJson">⇩ JSON保存</button>
             </div>
           </div>
 
