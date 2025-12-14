@@ -3,6 +3,19 @@ const TablePreviewSection = {
     // Access global state
     const tables = Vue.computed(() => AppState.parsedTables);
 
+    // Search
+    const searchQuery = Vue.ref('');
+
+    const filteredTables = Vue.computed(() => {
+      const query = searchQuery.value.trim().toLowerCase();
+      if (!query) return tables.value;
+
+      return tables.value.filter(table => {
+        return table.tableName.toLowerCase().includes(query) ||
+          (table.tableNameJP && table.tableNameJP.toLowerCase().includes(query));
+      });
+    });
+
     // Column Definitions
     const columnsDef = [
       { key: 'colNo', label: 'No' },
@@ -59,6 +72,8 @@ const TablePreviewSection = {
       visibleColumns,
       hideCommonColumns,
       commonColumnNames,
+      searchQuery,
+      filteredTables,
       shouldShowRow,
       scrollToTable
     };
@@ -70,10 +85,12 @@ const TablePreviewSection = {
       <div class="grid" style="grid-template-columns: 250px 1fr; gap: 2rem; align-items: start;">
         <!-- Sidebar Navigation -->
         <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
+          <div style="margin-bottom: 1rem;">
+            <input type="search" placeholder="テーブル名で検索..." v-model="searchQuery" style="margin-bottom: 0;">
+          </div>
           <nav>
             <ul>
-              <li><strong>テーブル一覧</strong></li>
-              <li v-for="table in tables" :key="table.tableName">
+              <li v-for="table in filteredTables" :key="table.tableName">
                 <a href="#" @click.prevent="scrollToTable(table.tableName)" style="display: block; overflow: hidden;">
                   <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableNameJP">{{ table.tableNameJP }}</div>
                   <small style="display: block; color: var(--muted-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableName">{{ table.tableName }}</small>
