@@ -7,11 +7,11 @@ const InputSection = {
           <a role="button" href="#" 
              @click.prevent="activeTab = 'file'" 
              :class="{ 'outline': activeTab !== 'file' }"
-             class="btn-sm">ファイル入力</a>
+             class="btn-sm"><i class="bi bi-file-earmark-arrow-up"></i> ファイル入力</a>
           <a role="button" href="#" 
              @click.prevent="activeTab = 'text'" 
              :class="{ 'outline': activeTab !== 'text' }"
-             class="btn-sm">テキストエリア入力</a>
+             class="btn-sm"><i class="bi bi-pencil-square"></i> テキストエリア入力</a>
         </div>
 
         <div v-show="activeTab === 'file'" class="tab-content" style="display: block;">
@@ -20,7 +20,7 @@ const InputSection = {
         </div>
         <div v-show="activeTab === 'text'" class="tab-content" style="display: block;">
           <textarea v-model="textInput" placeholder="ここにTSV、CSV、またはJSONデータを貼り付けます"></textarea>
-          <button @click="handleTextSubmit" style="margin-top: 1rem;">読み込み</button>
+          <button @click="handleTextSubmit" style="margin-top: 1rem;"><i class="bi bi-upload"></i> 読み込み</button>
         </div>
       </section>
     </article>

@@ -16,12 +16,12 @@ const SqlJoins = {
          <span style="margin-top: 0.4rem;">ON</span>
          <textarea v-model="join.condition" placeholder="例: t0.id = t1.user_id" class="text-sm" style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;"></textarea>
          <div role="group" style="width: auto;">
-            <button class="outline secondary btn-sm" @click="moveJoin(index, -1)" :disabled="index === 0">↑</button>
-            <button class="outline secondary btn-sm" @click="moveJoin(index, 1)" :disabled="index === joins.length - 1">↓</button>
-            <button class="outline contrast btn-sm btn-danger" @click="removeJoin(index)" title="削除">x</button>
+            <button class="outline secondary btn-sm" @click="moveJoin(index, -1)" :disabled="index === 0"><i class="bi bi-arrow-up"></i></button>
+            <button class="outline secondary btn-sm" @click="moveJoin(index, 1)" :disabled="index === joins.length - 1"><i class="bi bi-arrow-down"></i></button>
+            <button class="outline contrast btn-sm btn-danger" @click="removeJoin(index)" title="削除"><i class="bi bi-x-lg"></i></button>
          </div>
       </div>
-      <button @click="addJoin" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;">結合条件を追加</button>
+      <button @click="addJoin" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;"><i class="bi bi-plus-lg"></i> 結合条件を追加</button>
     </div>
   `,
   setup() {

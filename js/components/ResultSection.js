@@ -24,10 +24,10 @@ const ResultSection = {
       <footer v-if="activeTab">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
            <button class="secondary" @click="downloadCurrent">
-             {{ activeTab.toUpperCase() }} をダウンロード
+             <i class="bi bi-download"></i> {{ activeTab.toUpperCase() }} をダウンロード
            </button>
            <button class="primary" @click="downloadAll">
-             すべてダウンロード (ZIP)
+             <i class="bi bi-file-zip"></i> すべてダウンロード (ZIP)
            </button>
         </div>
       </footer>

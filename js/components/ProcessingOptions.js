@@ -24,7 +24,7 @@ const ProcessingOptions = {
           @click="updateMode('preview')"
           style="cursor: pointer;"
         >
-          <header><strong>定義プレビュー</strong></header>
+          <header><strong><i class="bi bi-table"></i> 定義プレビュー</strong></header>
           読み込んだテーブル定義を表形式で確認します。
         </article>
 
@@ -33,7 +33,7 @@ const ProcessingOptions = {
           @click="updateMode('scaffolding')"
           style="cursor: pointer;"
         >
-          <header><strong>アプリケーション雛形</strong></header>
+          <header><strong><i class="bi bi-code-square"></i> アプリケーション雛形</strong></header>
           DDL, Model, Repository等のコードを生成します。
         </article>
 
@@ -42,7 +42,7 @@ const ProcessingOptions = {
           @click="updateMode('sql')"
           style="cursor: pointer;"
         >
-          <header><strong>SQLコード生成</strong></header>
+          <header><strong><i class="bi bi-database"></i> SQLコード生成</strong></header>
           GUIでSQLを構築し、Java/TSコードを生成します。
         </article>
       </div>

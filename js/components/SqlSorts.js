@@ -17,12 +17,12 @@ const SqlSorts = {
           </select>
           
           <div role="group" style="width: auto;">
-            <button class="outline secondary btn-sm" @click="moveSort(index, -1)" :disabled="index === 0">↑</button>
-            <button class="outline secondary btn-sm" @click="moveSort(index, 1)" :disabled="index === sorts.length - 1">↓</button>
-            <button class="outline contrast btn-sm btn-danger" @click="removeSort(index)" title="削除">x</button>
+            <button class="outline secondary btn-sm" @click="moveSort(index, -1)" :disabled="index === 0"><i class="bi bi-arrow-up"></i></button>
+            <button class="outline secondary btn-sm" @click="moveSort(index, 1)" :disabled="index === sorts.length - 1"><i class="bi bi-arrow-down"></i></button>
+            <button class="outline contrast btn-sm btn-danger" @click="removeSort(index)" title="削除"><i class="bi bi-x-lg"></i></button>
           </div>
       </div>
-      <button @click="addSort" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;">ソートを追加</button>
+      <button @click="addSort" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;"><i class="bi bi-plus-lg"></i> ソートを追加</button>
     </div>
   `,
   setup() {

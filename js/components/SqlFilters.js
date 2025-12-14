@@ -9,9 +9,9 @@ const SqlFilters = {
             placeholder="例: t0.id > 100" 
             style="field-sizing: content; flex-grow:1; height: auto; min-height: 2rem; resize: vertical; padding: 0.25rem; margin: 0;">
          </textarea>
-         <button class="outline contrast btn-sm btn-danger" @click="removeFilter(index)" title="削除">x</button>
+         <button class="outline contrast btn-sm btn-danger" @click="removeFilter(index)" title="削除"><i class="bi bi-x-lg"></i></button>
       </div>
-      <button @click="addFilter" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;">条件を追加</button>
+      <button @click="addFilter" class="secondary outline btn-sm" style="margin-top: 0.5rem; width: 100%;"><i class="bi bi-plus-lg"></i> 条件を追加</button>
     </div>
   `,
   setup() {

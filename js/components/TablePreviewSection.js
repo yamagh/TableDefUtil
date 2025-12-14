@@ -288,15 +288,15 @@ const TablePreviewSection = {
               編集モード
             </label>
             <div v-if="isEditMode" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-               <button class="outline" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="addTable">＋ テーブル追加</button>
-               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadTsv">⇩ TSV保存</button>
-               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadJson">⇩ JSON保存</button>
+               <button class="outline" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="addTable"><i class="bi bi-plus-circle"></i> テーブル追加</button>
+               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadTsv"><i class="bi bi-file-earmark-arrow-down"></i> TSV保存</button>
+               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadJson"><i class="bi bi-file-earmark-code"></i> JSON保存</button>
             </div>
           </div>
 
           <!-- Column Visibility Settings (Dropdown) -->
           <details class="dropdown" style="margin-bottom: 1rem;">
-            <summary>表示カラム設定</summary>
+            <summary><i class="bi bi-layout-three-columns"></i> 表示カラム設定</summary>
             <ul>
               <li v-if="commonColumnNames.length > 0">
                 <label>
@@ -349,7 +349,8 @@ const TablePreviewSection = {
                 <input type="text" v-model="table.tableName" placeholder="物理名" style="margin-bottom: 0;">
               </div>
               
-              <button v-if="isEditMode" class="outline contrast" style="margin-left: 1rem; padding: 0.2rem 0.5rem; font-size: 0.8rem; white-space: nowrap;" @click="removeTable(tIndex)">削除</button>
+              
+              <button v-if="isEditMode" class="outline contrast" style="margin-left: 1rem; padding: 0.2rem 0.5rem; font-size: 0.8rem; white-space: nowrap;" @click="removeTable(tIndex)"><i class="bi bi-trash"></i> 削除</button>
             </header>
             <div style="overflow-x: auto;">
               <table role="grid">
@@ -365,9 +366,9 @@ const TablePreviewSection = {
                   <tr v-for="(col, cIndex) in table.columns" :key="cIndex" v-show="shouldShowRow(col) || isEditMode">
                     <td v-if="isEditMode">
                        <div style="display: flex; gap: 2px;">
-                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'up')" :disabled="cIndex === 0">↑</button>
-                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'down')" :disabled="cIndex === table.columns.length - 1">↓</button>
-                         <button class="outline contrast" style="padding: 2px 4px; font-size: 0.7rem;" @click="removeColumn(table, cIndex)">×</button>
+                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'up')" :disabled="cIndex === 0"><i class="bi bi-arrow-up"></i></button>
+                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'down')" :disabled="cIndex === table.columns.length - 1"><i class="bi bi-arrow-down"></i></button>
+                         <button class="outline contrast" style="padding: 2px 4px; font-size: 0.7rem;" @click="removeColumn(table, cIndex)"><i class="bi bi-x-lg"></i></button>
                        </div>
                     </td>
                     <td v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
@@ -383,7 +384,7 @@ const TablePreviewSection = {
                 </tbody>
               </table>
               <div v-if="isEditMode" style="padding: 0.5rem; text-align: center;">
-                 <button class="outline" style="width: 100%;" @click="addColumn(table)">＋ カラム追加</button>
+                 <button class="outline" style="width: 100%;" @click="addColumn(table)"><i class="bi bi-plus-lg"></i> カラム追加</button>
               </div>
             </div>
           </div>
@@ -393,7 +394,7 @@ const TablePreviewSection = {
     <div v-else>
       <p>テーブル定義が読み込まれていません。</p>
       <div style="margin-top: 1rem;">
-        <button @click="addTable">新規テーブル作成</button>
+        <button @click="addTable"><i class="bi bi-plus-circle"></i> 新規テーブル作成</button>
       </div>
     </div>
   `

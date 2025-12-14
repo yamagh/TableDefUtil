@@ -159,7 +159,8 @@ const App = {
       <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem; display: flex; justify-content: space-between; align-items: center;">
         <h1>テーブル定義変換ツール</h1>
         <button style="border: none;" class="outline secondary" @click="toggleTheme">
-          {{ theme === 'light' ? '🌙' : '☀️' }}
+          <i v-if="theme === 'light'" class="bi bi-moon-fill"></i>
+          <i v-else class="bi bi-sun-fill"></i>
         </button>
       </header>
       <main class="container-fluid">

@@ -2,7 +2,7 @@ const SqlTableSelect = {
   template: `
     <div>
       <details style="margin-bottom: 1rem;">
-        <summary style="cursor: pointer;">ℹ️ 変数機能の使い方</summary>
+        <summary style="cursor: pointer;"><i class="bi bi-info-circle-fill"></i> 変数機能の使い方</summary>
         <article style="margin-top: 0.5rem; font-size: 0.9rem;">
             <p>結合条件や絞り込み条件で、<code>:variableName</code> の形式で変数を記述すると、Javaコード生成時に自動的に引数として処理されます。</p>
             <ul>
@@ -32,7 +32,7 @@ const SqlTableSelect = {
             {{ t.tableName }} ({{ t.tableNameJP }})
           </option>
         </select>
-        <button @click="addTable" style="white-space: nowrap;" class="btn-sm">追加</button>
+        <button @click="addTable" style="white-space: nowrap;" class="btn-sm"><i class="bi bi-plus"></i> 追加</button>
       </fieldset>
       <table>
         <thead>
@@ -48,9 +48,9 @@ const SqlTableSelect = {
             <td style="width: 100%;">{{ item.tableName }} ({{ getTableNameJP(item.tableName) }})</td>
             <td>
               <div role="group" style="width: auto; margin: 0;">
-                <button class="outline secondary btn-sm" @click="moveTable(index, -1)" :disabled="index === 0">↑</button>
-                <button class="outline secondary btn-sm" @click="moveTable(index, 1)" :disabled="index === selectedTables.length - 1">↓</button>
-                <button class="outline contrast btn-sm btn-danger" @click="removeTable(index)" title="削除">x</button>
+                <button class="outline secondary btn-sm" @click="moveTable(index, -1)" :disabled="index === 0"><i class="bi bi-arrow-up"></i></button>
+                <button class="outline secondary btn-sm" @click="moveTable(index, 1)" :disabled="index === selectedTables.length - 1"><i class="bi bi-arrow-down"></i></button>
+                <button class="outline contrast btn-sm btn-danger" @click="removeTable(index)" title="削除"><i class="bi bi-x-lg"></i></button>
               </div>
             </td>
           </tr>

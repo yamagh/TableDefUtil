@@ -74,7 +74,7 @@ const SqlBuilder = {
                   <textarea readonly style="height: auto; field-sizing: content; max-height: 80vh; font-family: monospace;" class="text-sm">{{ file.content }}</textarea>
                 </div>
              </div>
-             <button @click="downloadZip" style="width: 100%; margin-bottom: 1rem;">生成ファイルをダウンロード (ZIP)</button>
+             <button @click="downloadZip" style="width: 100%; margin-bottom: 1rem;"><i class="bi bi-file-zip"></i> 生成ファイルをダウンロード (ZIP)</button>
            </div>
            <div v-else>
              <p>テーブルを選択すると結果が表示されます。</p>
