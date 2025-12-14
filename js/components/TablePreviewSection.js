@@ -6,6 +6,9 @@ const TablePreviewSection = {
     // 検索
     const searchQuery = Vue.ref('');
 
+    // 現在表示中のテーブル (スクロール追従用)
+    const activeTable = Vue.ref('');
+
     // 検索結果
     const filteredTables = Vue.computed(() => {
       const query = searchQuery.value.trim().toLowerCase();
@@ -112,11 +115,53 @@ const TablePreviewSection = {
 
     // テーブルスクロール
     const scrollToTable = (tableName) => {
+      activeTable.value = tableName;
       const el = document.getElementById(`table-def-${tableName}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
       }
     };
+
+    // IntersectionObserverの設定
+    let observer = null;
+    const setupIntersectionObserver = () => {
+      if (observer) observer.disconnect();
+
+      const options = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px', // 画面上部20%〜下部60%の範囲で検知 (少し上の方にあるものを優先)
+        threshold: 0
+      };
+
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // id="table-def-tablename" から tablename を抽出
+            const tableName = entry.target.id.replace('table-def-', '');
+            activeTable.value = tableName;
+          }
+        });
+      }, options);
+
+      // DOM更新後に監視対象を設定
+      Vue.nextTick(() => {
+        const tableCards = document.querySelectorAll('.card[id^="table-def-"]');
+        tableCards.forEach(card => observer.observe(card));
+      });
+    };
+
+    // テーブルデータが変わったり、フィルタリングが変わったりしたらObserverを再設定
+    Vue.watch(filteredTables, () => {
+      setupIntersectionObserver();
+    }, { flush: 'post' }); // DOM更新後に実行
+
+    Vue.onMounted(() => {
+      setupIntersectionObserver();
+    });
+
+    Vue.onUnmounted(() => {
+      if (observer) observer.disconnect();
+    });
 
     return {
       tables,
@@ -129,13 +174,12 @@ const TablePreviewSection = {
       scrollToTable,
       isIdxVisible,
       displayOptionColumns,
-      searchQuery
+      searchQuery,
+      activeTable
     };
   },
   template: `
     <section id="table-preview" v-if="tables.length > 0">
-      <h2>テーブル定義プレビュー</h2>
-
       <div class="grid" style="grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
         <!-- Sidebar Navigation -->
         <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
@@ -165,9 +209,15 @@ const TablePreviewSection = {
           <nav>
             <ul>
               <li v-for="table in filteredTables" :key="table.tableName">
-                <a href="#" @click.prevent="scrollToTable(table.tableName)" style="display: block; overflow: hidden;">
-                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableNameJP">{{ table.tableNameJP }}</div>
-                  <small style="display: block; color: var(--muted-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" :title="table.tableName">{{ table.tableName }}</small>
+                <a href="#" @click.prevent="scrollToTable(table.tableName)" 
+                   style="display: block; overflow: hidden; padding: 0.5rem 1.5rem; border-radius: 4px; transition: background-color 0.2s;"
+                   :style="{ backgroundColor: activeTable === table.tableName ? 'var(--primary-focus)' : 'transparent' }">
+                  <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;" 
+                       :style="{ color: activeTable === table.tableName ? 'var(--primary-inverse)' : 'inherit' }"
+                       :title="table.tableNameJP">{{ table.tableNameJP }}</div>
+                  <small style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" 
+                         :style="{ color: activeTable === table.tableName ? 'var(--primary-inverse)' : 'var(--muted-color)' }"
+                         :title="table.tableName">{{ table.tableName }}</small>
                 </a>
               </li>
             </ul>

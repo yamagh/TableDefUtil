@@ -5,6 +5,8 @@
   --pico-color-primary-900: var(--pico-color-azure-900);
   --pico-color-secondary-50: var(--pico-color-zinc-50);
   --pico-color-secondary-400: var(--pico-color-zinc-400);
+  --primary-focus: var(--pico-color-primary-50);
+  --primary-inverse: var(--pico-color-primary-900);
 }
 
 body {
@@ -98,6 +100,11 @@ nav.tabs[role=tab-control] a.active {
 .selected-mode {
   border: 2px solid var(--pico-color-primary-400);
   background-color: var(--pico-color-primary-50);
+}
+
+[data-theme="dark"] {
+  --primary-focus: var(--pico-color-primary-900);
+  --primary-inverse: var(--pico-color-primary-100);
 }
 
 [data-theme="dark"] .selected-mode {
