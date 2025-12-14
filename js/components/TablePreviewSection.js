@@ -135,12 +135,32 @@ const TablePreviewSection = {
     <section id="table-preview" v-if="tables.length > 0">
       <h2>テーブル定義プレビュー</h2>
 
-      <div class="grid" style="grid-template-columns: 250px 1fr; gap: 2rem; align-items: start;">
+      <div class="grid" style="grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
         <!-- Sidebar Navigation -->
         <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
+          <!-- Column Visibility Settings (Dropdown) -->
+          <details class="dropdown" style="margin-bottom: 1rem;">
+            <summary>表示カラム設定</summary>
+            <ul>
+              <li v-if="commonColumnNames.length > 0">
+                <label>
+                  <input type="checkbox" v-model="hideCommonColumns">
+                  共通カラムを隠す ({{ commonColumnNames.length }}件)
+                </label>
+              </li>
+              <li v-for="col in displayOptionColumns" :key="col.key">
+                <label>
+                  <input v-if="col.isGroup" type="checkbox" v-model="isIdxVisible">
+                  <input v-else type="checkbox" :value="col.key" v-model="visibleColumns">
+                  {{ col.label }}
+                </label>
+              </li>
+            </ul>
+          </details>
           <div style="margin-bottom: 1rem;">
             <input type="search" placeholder="テーブル名で検索..." v-model="searchQuery" style="margin-bottom: 0;">
           </div>
+
           <nav>
             <ul>
               <li v-for="table in filteredTables" :key="table.tableName">
@@ -155,29 +175,6 @@ const TablePreviewSection = {
 
         <!-- Main Content -->
         <div>
-          <!-- Column Visibility Settings -->
-          <details open style="margin-bottom: 2rem;">
-            <summary>表示カラム設定</summary>
-            <div style="padding: 1rem;">
-              <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--muted-border-color);" v-if="commonColumnNames.length > 0">
-                <label>
-                  <input type="checkbox" v-model="hideCommonColumns">
-                  共通カラムを隠す ({{ commonColumnNames.length }}件)
-                  <span :data-tooltip="commonColumnNames.join(', ')">ℹ️</span>
-                </label>
-              </div>
-              <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                <label v-for="col in displayOptionColumns" :key="col.key">
-                  <!-- グループ項目 (Idx) の場合 -->
-                  <input v-if="col.isGroup" type="checkbox" v-model="isIdxVisible">
-                  <!-- 通常項目 の場合 -->
-                  <input v-else type="checkbox" :value="col.key" v-model="visibleColumns">
-                  {{ col.label }}
-                </label>
-              </div>
-            </div>
-          </details>
-
           <!-- Table List -->
           <div v-for="table in tables" :key="table.tableName" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
             <header>
