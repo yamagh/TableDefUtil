@@ -299,7 +299,7 @@ function generateSqlRepository(repoName, modelDtoType, isModel, isSingleColumn, 
   content += `    }\n\n`;
 
   content += `    /**\n`;
-  content += `     * ${repoName} の検索結果を取得します。\n`;
+  content += `     * ${modelDtoType} の検索結果を取得します。\n`;
   content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
   content += `     */\n`;
   content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
@@ -453,7 +453,7 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
   content += `    }\n\n`;
 
   content += `    /**\n`;
-  content += `     * ${serviceName} の検索結果をJSONで取得します。\n`;
+  content += `     * ${modelDtoType} の検索結果をJSONで取得します。\n`;
   content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
   content += `     */\n`;
   content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
@@ -490,7 +490,7 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
   content += `    }\n\n`;
 
   content += `    /**\n`;
-  content += `     * ${controllerName} の検索結果をJSONで取得します。\n`;
+  content += `     * ${modelDtoType} の検索結果をJSONで取得します。\n`;
   content += `     * @return JSON形式の検索結果\n`;
   content += `     */\n`;
   content += `    public CompletionStage<Result> search(Http.Request request) {\n`;
