@@ -133,6 +133,15 @@ const App = {
       });
     };
 
+    // デフォルトデータの読み込み
+    Vue.onMounted(() => {
+      if (AppState.parsedTables.length === 0 && window.DEFAULT_TABLE_DEFINITIONS) {
+        console.log('Loading default data...');
+        AppState.parsedTables = window.DEFAULT_TABLE_DEFINITIONS;
+        AppState.resetSqlState();
+      }
+    });
+
     return {
       currentMode,
       theme,
@@ -176,5 +185,4 @@ const App = {
     </div>
   `
 };
-
 createApp(App).mount('#app');
