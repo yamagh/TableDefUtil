@@ -175,7 +175,100 @@ const TablePreviewSection = {
       isIdxVisible,
       displayOptionColumns,
       searchQuery,
-      activeTable
+      activeTable,
+      isEditMode: Vue.ref(false),
+      tables,
+      addTable: () => {
+        let i = 1;
+        let pName = 'new_table';
+        while (AppState.parsedTables.some(t => t.tableName === pName)) {
+          i++;
+          pName = `new_table_${i}`;
+        }
+
+        AppState.parsedTables.push({
+          tableName: pName,
+          tableNameJP: '新規テーブル',
+          columns: []
+        });
+      },
+      removeTable: (index) => {
+        if (confirm('このテーブルを削除しますか？')) {
+          AppState.parsedTables.splice(index, 1);
+        }
+      },
+      addColumn: (table) => {
+        let i = 1;
+        let cName = 'new_col';
+        while (table.columns.some(c => c.colName === cName)) {
+          i++;
+          cName = `new_col_${i}`;
+        }
+
+        table.columns.push({
+          colName: cName,
+          colNameJP: '新規カラム',
+          type: 'varchar',
+          length: '255',
+          constraint: '',
+          pkfk: '',
+          default: '',
+          description: '',
+          idx1: '', idx2: '', idx3: '', idx4: '', idx5: ''
+        });
+      },
+      removeColumn: (table, index) => {
+        table.columns.splice(index, 1);
+      },
+      moveColumn: (table, index, direction) => {
+        if (direction === 'up' && index > 0) {
+          const temp = table.columns[index];
+          table.columns[index] = table.columns[index - 1];
+          table.columns[index - 1] = temp;
+        } else if (direction === 'down' && index < table.columns.length - 1) {
+          const temp = table.columns[index];
+          table.columns[index] = table.columns[index + 1];
+          table.columns[index + 1] = temp;
+        }
+      },
+      downloadTsv: () => {
+        const data = [];
+        AppState.parsedTables.forEach(table => {
+          // カラムがないテーブルも出力する場合はここで空行を追加するなどの処理が必要だが、
+          // 基本的にカラム定義がメインなので、カラムがないテーブルは出力されない（行が作られない）
+          // 必要ならダミーカラムを入れるなどの対応検討。今のところはカラム必須とする。
+
+          table.columns.forEach(col => {
+            data.push({
+              'TableName': table.tableName,
+              'TableName_JP': table.tableNameJP,
+              'ColName': col.colName,
+              'ColName_JP': col.colNameJP,
+              'PK/FK': col.pkfk,
+              'Type': col.type,
+              'Length': col.length,
+              'Constraint': col.constraint,
+              'Default': col.default,
+              'Description': col.description,
+              'Idx1': col.idx1,
+              'Idx2': col.idx2,
+              'Idx3': col.idx3,
+              'Idx4': col.idx4,
+              'Idx5': col.idx5
+            });
+          });
+        });
+
+        // Papa Parseを使ってTSV生成
+        const tsvContent = Papa.unparse(data, {
+          delimiter: "\t",
+          header: true,
+          newline: "\n",
+          quotes: false, // 必要なければクォートしない（TSVは通常しないことが多いが、改行などある場合は自動判定される）
+        });
+
+        downloadFile(tsvContent, 'table_definitions_edited.tsv');
+      }
     };
   },
   template: `
@@ -183,6 +276,19 @@ const TablePreviewSection = {
       <div class="grid" style="grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
         <!-- Sidebar Navigation -->
         <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
+          
+          <!-- Edit Mode & Actions -->
+          <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--muted-border-color); padding-bottom: 1rem;">
+            <label>
+              <input type="checkbox" role="switch" v-model="isEditMode">
+              編集モード
+            </label>
+            <div v-if="isEditMode" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+               <button class="outline" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="addTable">＋ テーブル追加</button>
+               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadTsv">⇩ TSV保存</button>
+            </div>
+          </div>
+
           <!-- Column Visibility Settings (Dropdown) -->
           <details class="dropdown" style="margin-bottom: 1rem;">
             <summary>表示カラム設定</summary>
@@ -227,28 +333,53 @@ const TablePreviewSection = {
         <!-- Main Content -->
         <div>
           <!-- Table List -->
-          <div v-for="table in tables" :key="table.tableName" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
-            <header>
-              <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
-              <!-- <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p> -->
+          <div v-for="(table, tIndex) in tables" :key="table.tableName + '_' + tIndex" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
+            <header style="display: flex; justify-content: space-between; align-items: center;">
+              <div v-if="!isEditMode">
+                <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
+                <!-- <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p> -->
+              </div>
+              <div v-else style="display: flex; gap: 0.5rem; width: 100%;">
+                <input type="text" v-model="table.tableNameJP" placeholder="論理名" style="margin-bottom: 0;">
+                <input type="text" v-model="table.tableName" placeholder="物理名" style="margin-bottom: 0;">
+              </div>
+              
+              <button v-if="isEditMode" class="outline contrast" style="margin-left: 1rem; padding: 0.2rem 0.5rem; font-size: 0.8rem; white-space: nowrap;" @click="removeTable(tIndex)">削除</button>
             </header>
             <div style="overflow-x: auto;">
               <table role="grid">
                 <thead>
                   <tr>
+                    <th v-if="isEditMode" style="width: 80px;">操作</th>
                     <th v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
                       {{ def.label }}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="col in table.columns" :key="col.colName" v-show="shouldShowRow(col)">
+                  <tr v-for="(col, cIndex) in table.columns" :key="col.colName + '_' + cIndex" v-show="shouldShowRow(col) || isEditMode">
+                    <td v-if="isEditMode">
+                       <div style="display: flex; gap: 2px;">
+                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'up')" :disabled="cIndex === 0">↑</button>
+                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'down')" :disabled="cIndex === table.columns.length - 1">↓</button>
+                         <button class="outline contrast" style="padding: 2px 4px; font-size: 0.7rem;" @click="removeColumn(table, cIndex)">×</button>
+                       </div>
+                    </td>
                     <td v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
-                      {{ col[def.key] }}
+                      <template v-if="!isEditMode">
+                        {{ col[def.key] }}
+                      </template>
+                      <template v-else>
+                         <input v-if="def.key !== 'colNo'" type="text" v-model="col[def.key]" style="margin-bottom: 0; padding: 0.2rem; font-size: 0.9rem; min-width: 60px;">
+                         <span v-else>{{ cIndex + 1 }}</span>
+                      </template>
                     </td>
                   </tr>
                 </tbody>
               </table>
+              <div v-if="isEditMode" style="padding: 0.5rem; text-align: center;">
+                 <button class="outline" style="width: 100%;" @click="addColumn(table)">＋ カラム追加</button>
+              </div>
             </div>
           </div>
         </div>
@@ -256,6 +387,9 @@ const TablePreviewSection = {
     </section>
     <div v-else>
       <p>テーブル定義が読み込まれていません。</p>
+      <div style="margin-top: 1rem;">
+        <button @click="addTable">新規テーブル作成</button>
+      </div>
     </div>
   `
 };

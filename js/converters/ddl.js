@@ -61,8 +61,9 @@ function generateDDL(tables) {
     ddl += '\n';
 
     // インデックス
-    Object.keys(table.indexes).forEach(idxKey => {
-      const index = table.indexes[idxKey];
+    const indexes = getIndexes(table);
+    Object.keys(indexes).forEach(idxKey => {
+      const index = indexes[idxKey];
       const indexName = `${tableName}_${idxKey.toLowerCase()}`;
       const indexColumns = index.map(i => i.colName).join(', ');
       ddl += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
@@ -139,8 +140,9 @@ function generatePlayEvolution(tables) {
     ups += '\n';
 
     // インデックス
-    Object.keys(table.indexes).forEach(idxKey => {
-      const index = table.indexes[idxKey];
+    const indexes = getIndexes(table);
+    Object.keys(indexes).forEach(idxKey => {
+      const index = indexes[idxKey];
       const indexName = `${tableName}_${idxKey.toLowerCase()}`;
       const indexColumns = index.map(i => i.colName).join(', ');
       ups += `CREATE INDEX ${indexName} ON ${tableName} (${indexColumns});\n`;
@@ -153,4 +155,35 @@ function generatePlayEvolution(tables) {
   });
 
   return ups + downs;
+}
+
+/**
+ * テーブルのカラム定義からインデックス情報を再構築するヘルパー
+ */
+function getIndexes(table) {
+  const indexes = {};
+  if (!table.columns) return indexes;
+
+  table.columns.forEach(col => {
+    // idx1 ~ idx5 をチェック
+    for (let i = 1; i <= 5; i++) {
+      const key = `idx${i}`;
+      const val = col[key];
+      if (val) {
+        const idxKey = `Idx${i}`;
+        if (!indexes[idxKey]) indexes[idxKey] = [];
+        indexes[idxKey].push({
+          order: parseInt(val, 10) || 0,
+          colName: col.colName
+        });
+      }
+    }
+  });
+
+  // 順序でソート
+  Object.keys(indexes).forEach(k => {
+    indexes[k].sort((a, b) => a.order - b.order);
+  });
+
+  return indexes;
 }
