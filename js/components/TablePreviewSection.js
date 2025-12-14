@@ -208,10 +208,10 @@ const TablePreviewSection = {
 
           <nav>
             <ul>
-              <li v-for="table in filteredTables" :key="table.tableName">
+              <li v-for="table in filteredTables" :key="table.tableName" style="padding-top: 0; padding-bottom: 0;">
                 <a href="#" @click.prevent="scrollToTable(table.tableName)" 
-                   style="display: block; overflow: hidden; padding: 0.5rem 1.5rem; border-radius: 4px; transition: background-color 0.2s;"
-                   :style="{ backgroundColor: activeTable === table.tableName ? 'var(--primary-focus)' : 'transparent' }">
+                   style="display: block; overflow: hidden; padding: 0.5rem 1.5rem; margin: 0 1px; transition: background-color 0.2s;"
+                   :style="{ backgroundColor: activeTable === table.tableName ? 'var(--primary-focus)' : 'transparent', border: activeTable === table.tableName ? '1px solid var(--pico-color-primary-600)' : '0' }">
                   <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;" 
                        :style="{ color: activeTable === table.tableName ? 'var(--primary-inverse)' : 'inherit' }"
                        :title="table.tableNameJP">{{ table.tableNameJP }}</div>
