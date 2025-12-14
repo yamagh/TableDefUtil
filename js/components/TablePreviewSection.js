@@ -357,7 +357,7 @@ const TablePreviewSection = {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(col, cIndex) in table.columns" :key="col.colName + '_' + cIndex" v-show="shouldShowRow(col) || isEditMode">
+                  <tr v-for="(col, cIndex) in table.columns" :key="cIndex" v-show="shouldShowRow(col) || isEditMode">
                     <td v-if="isEditMode">
                        <div style="display: flex; gap: 2px;">
                          <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'up')" :disabled="cIndex === 0">↑</button>
