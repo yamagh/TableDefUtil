@@ -20,7 +20,7 @@ const SqlBuilder = {
              <SqlSorts />
              <hr>
              <!-- Limit / Offset -->
-             <div>
+            <div>
                <h4>5. Limit / Offset</h4>
                <div class="grid">
                  <label>
@@ -30,6 +30,12 @@ const SqlBuilder = {
                  <label>
                    Offset
                    <input type="text" v-model="sql.offset" placeholder="例: 0 または :offset">
+                 </label>
+               </div>
+               <div style="margin-top: 0.5rem;">
+                 <label>
+                   <input type="checkbox" v-model="sql.includeCountMethod">
+                   件数取得 (count) メソッドも生成する
                  </label>
                </div>
              </div>

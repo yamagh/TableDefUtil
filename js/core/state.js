@@ -18,7 +18,9 @@ const AppState = Vue.reactive({
     // LIMIT
     limit: '',
     // OFFSET
-    offset: ''
+    offset: '',
+    // カウントメソッドを生成するか
+    includeCountMethod: false
   },
 
   // SQL Builder State のリセット
@@ -29,6 +31,7 @@ const AppState = Vue.reactive({
     this.sql.sorts = [];
     this.sql.limit = '';
     this.sql.offset = '';
+    this.sql.includeCountMethod = false;
   }
 });
 

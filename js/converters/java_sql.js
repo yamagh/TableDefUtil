@@ -65,14 +65,14 @@ function generateJavaSql(sqlState, parsedTables, selectClause, isSelectEdited) {
   const serviceName = `${baseName}SqlService`;
   result.push({
     path: `services/${serviceName}.java`,
-    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel, isSingleColumn, parameters)
+    content: generateSqlService(serviceName, repoName, modelDtoType, baseName, returnType.isModel, isSingleColumn, parameters, sqlState)
   });
 
   // 7. Controller生成
   const controllerName = `${baseName}SqlController`;
   result.push({
     path: `controllers/${controllerName}.java`,
-    content: generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel, parameters)
+    content: generateSqlController(controllerName, serviceName, modelDtoType, baseName, returnType.isModel, parameters, sqlState)
   });
 
   return result;
@@ -329,6 +329,45 @@ function generateSqlRepository(repoName, modelDtoType, isModel, isSingleColumn, 
   content += `        }, executionContext);\n`;
   content += `    }\n`;
 
+  // カウントメソッド (Optional)
+  if (sqlState.includeCountMethod) {
+    // LIMIT/OFFSETを除いたパラメータ
+    const countSignatureParams = signatureParams.filter(p => !['limit', 'offset'].includes(p.name.toLowerCase()));
+    const countMethodArgs = countSignatureParams.map(p => `${p.type} ${p.name}`).join(', ');
+
+    // Count SQLの構築
+    const countSql = buildCountSql(sqlState);
+
+    content += `\n`;
+    content += `    /**\n`;
+    content += `     * 検索条件に一致する件数を取得します。\n`;
+    content += `     * @return CompletionStage<Long>\n`;
+    content += `     */\n`;
+    content += `    public CompletionStage<Long> count(${countMethodArgs}) {\n`;
+    content += `        return supplyAsync(() -> {\n`;
+    content += `            String sql = """\n${countSql}\n            """;\n\n`;
+
+    // Ebean のバージョンや使用法によるが、Long の取得には findNative(Long.class, sql).findOne() または sqlQuery(sql).mapTo(Long.class).findOne() が使われる。
+    // ここでは DB.findNative(Long.class, sql).findOne() を採用する（DB.findNativeがimportされている前提）
+    content += `            return DB.findNative(Long.class, sql)\n`;
+
+    // パラメータ設定
+    parameters.forEach(p => {
+      // LIMIT/OFFSET は count では使用しない
+      if (['limit', 'offset'].includes(p.name.toLowerCase())) return;
+
+      if (p.isDerived && p.derivedFrom) {
+        content += `                .setParameter("${p.name}", ${p.derivedFrom}.size())\n`;
+      } else {
+        content += `                .setParameter("${p.name}", ${p.name} != null ? ${p.name} : "")\n`;
+      }
+    });
+
+    content += `                .findOne();\n`;
+    content += `        }, executionContext);\n`;
+    content += `    }\n`;
+  }
+
   content += `}\n`;
 
   return content;
@@ -417,14 +456,51 @@ function buildSqlForDto(sqlState, selectClause) {
 }
 
 /**
+ * Count用のSQLを構築 (SELECT count(*) FROM ...)
+ */
+function buildCountSql(sqlState) {
+  let sql = '                SELECT\n';
+  sql += '                    count(*)';
+
+  sql += '\n                FROM\n';
+  const first = sqlState.selectedTables[0];
+  sql += `                    ${first.tableName} AS ${first.alias}`;
+
+  // Joins
+  sqlState.joins.forEach(join => {
+    const rightTbl = sqlState.selectedTables.find(t => t.alias === join.rightAlias);
+    const rightName = rightTbl ? rightTbl.tableName : '???';
+    sql += `\n                ${join.type} ${rightName} AS ${join.rightAlias} ON ${join.condition.replace(/\n/g, '\n                    ')}`;
+  });
+
+  const validFilters = sqlState.filters.filter(f => f.trim() !== '');
+  if (validFilters.length > 0) {
+    sql += '\n                WHERE\n';
+    sql += validFilters.map(f => `                    ${f}`).join(' AND\n');
+  }
+
+  // CountなのでORDER BY, LIMIT, OFFSETは含めない
+
+  return sql;
+}
+
+/**
  * Serviceの生成
  */
-function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, isSingleColumn, parameters) {
+function generateSqlService(serviceName, repoName, modelDtoType, baseName, isModel, isSingleColumn, parameters, sqlState) {
   const signatureParams = parameters.filter(p => !p.isDerived);
   const methodArgs = signatureParams.map(p => `${p.type} ${p.name}`).join(', ');
   const callArgs = signatureParams.map(p => p.name).join(', ');
 
+  const includeCount = sqlState && sqlState.includeCountMethod;
+
   let content = `package services;\n\n`;
+
+  if (includeCount) {
+    content += `import com.fasterxml.jackson.databind.node.ObjectNode;\n`;
+    content += `import play.libs.Json;\n`;
+  }
+
   if (isModel) {
     content += `import models.${modelDtoType};\n`;
   } else if (!isSingleColumn) {
@@ -452,13 +528,35 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
   content += `        this.repository = repository;\n`;
   content += `    }\n\n`;
 
-  content += `    /**\n`;
-  content += `     * ${modelDtoType} の検索結果をJSONで取得します。\n`;
-  content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
-  content += `     */\n`;
-  content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
-  content += `        return repository.search(${callArgs});\n`;
-  content += `    }\n`;
+  if (includeCount) {
+    // Countメソッド用の引数 (Limit/Offset除外)
+    const countSignatureParams = signatureParams.filter(p => !['limit', 'offset'].includes(p.name.toLowerCase()));
+    const countCallArgs = countSignatureParams.map(p => p.name).join(', ');
+
+    content += `    /**\n`;
+    content += `     * ${modelDtoType} の検索結果と件数をJSONで取得します。\n`;
+    content += `     * @return CompletionStage<ObjectNode>\n`;
+    content += `     */\n`;
+    content += `    public CompletionStage<ObjectNode> search(${methodArgs}) {\n`;
+    content += `        CompletionStage<Integer> totalFuture = repository.count(${countCallArgs}).thenApply(Long::intValue);\n`;
+    content += `        CompletionStage<List<${modelDtoType}>> dataFuture = repository.search(${callArgs});\n`;
+    content += `        return totalFuture.thenCombine(dataFuture, (total, data) -> {\n`;
+    content += `            ObjectNode result = Json.newObject();\n`;
+    content += `            result.put("total", total);\n`;
+    content += `            result.set("data", Json.toJson(data));\n`;
+    content += `            return result;\n`;
+    content += `        });\n`;
+    content += `    }\n`;
+  } else {
+    content += `    /**\n`;
+    content += `     * ${modelDtoType} の検索結果をJSONで取得します。\n`;
+    content += `     * @return CompletionStage<List<${modelDtoType}>>\n`;
+    content += `     */\n`;
+    content += `    public CompletionStage<List<${modelDtoType}>> search(${methodArgs}) {\n`;
+    content += `        return repository.search(${callArgs});\n`;
+    content += `    }\n`;
+  }
+
   content += `}\n`;
   return content;
 }
@@ -466,9 +564,11 @@ function generateSqlService(serviceName, repoName, modelDtoType, baseName, isMod
 /**
  * Controllerの生成
  */
-function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel, parameters) {
+function generateSqlController(controllerName, serviceName, modelDtoType, baseName, isModel, parameters, sqlState) {
   const signatureParams = parameters.filter(p => !p.isDerived);
   const callArgs = signatureParams.map(p => p.name).join(', ');
+
+  const includeCount = sqlState && sqlState.includeCountMethod;
 
   let content = `package controllers.api;\n\n`;
   content += `import services.${serviceName};\n`;
@@ -509,7 +609,11 @@ function generateSqlController(controllerName, serviceName, modelDtoType, baseNa
     content += `\n`;
   }
 
-  content += `        return service.search(${callArgs}).thenApplyAsync(list -> ok(play.libs.Json.toJson(list)));\n`;
+  if (includeCount) {
+    content += `        return service.search(${callArgs}).thenApplyAsync(json -> ok(json));\n`;
+  } else {
+    content += `        return service.search(${callArgs}).thenApplyAsync(list -> ok(play.libs.Json.toJson(list)));\n`;
+  }
   content += `    }\n`;
   content += `}\n`;
   return content;
