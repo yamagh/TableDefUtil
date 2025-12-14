@@ -127,7 +127,7 @@ const App = {
     <div>
       <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem; display: flex; justify-content: space-between; align-items: center;">
         <h1>テーブル定義変換ツール</h1>
-        <button class="outline secondary" @click="toggleTheme">
+        <button style="border: none;" class="outline secondary" @click="toggleTheme">
           {{ theme === 'light' ? '🌙' : '☀️' }}
         </button>
       </header>

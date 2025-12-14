@@ -109,7 +109,7 @@ const TablePreviewSection = {
           <div v-for="table in tables" :key="table.tableName" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
             <header>
               <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
-              <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p>
+              <!-- <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p> -->
             </header>
             <div style="overflow-x: auto;">
               <table role="grid">
