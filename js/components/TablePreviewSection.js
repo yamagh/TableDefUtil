@@ -38,6 +38,49 @@ const TablePreviewSection = {
     // 表示するカラム
     const visibleColumns = Vue.ref(columnsDef.filter(c => c.defaultVisibility).map(c => c.key));
 
+    // インデックス列の各キー
+    const indexColumnKeys = ['idx1', 'idx2', 'idx3', 'idx4', 'idx5'];
+
+    // インデックス列を一括で表示・非表示にするためのComputedプロパティ
+    const isIdxVisible = Vue.computed({
+      get: () => {
+        // どれか一つでも表示されていればチェック状態とする
+        return indexColumnKeys.some(key => visibleColumns.value.includes(key));
+      },
+      set: (value) => {
+        if (value) {
+          // チェックされたら、まだ表示されていないインデックス列を追加する
+          indexColumnKeys.forEach(key => {
+            if (!visibleColumns.value.includes(key)) {
+              visibleColumns.value.push(key);
+            }
+          });
+        } else {
+          // チェックが外されたら、インデックス列をすべて削除する
+          visibleColumns.value = visibleColumns.value.filter(key => !indexColumnKeys.includes(key));
+        }
+      }
+    });
+
+    // 画面上の選択肢として表示するカラム定義
+    // Idx1, Idx2... はまとめて "Idx" という1つの選択肢にする
+    const displayOptionColumns = Vue.computed(() => {
+      const result = [];
+      let idxGroupAdded = false;
+
+      columnsDef.forEach(col => {
+        if (indexColumnKeys.includes(col.key)) {
+          if (!idxGroupAdded) {
+            result.push({ key: 'idx_group', label: 'Idx', isGroup: true });
+            idxGroupAdded = true;
+          }
+        } else {
+          result.push({ ...col, isGroup: false });
+        }
+      });
+      return result;
+    });
+
     // 共通カラムを隠す
     const hideCommonColumns = Vue.ref(true);
 
@@ -81,10 +124,11 @@ const TablePreviewSection = {
       visibleColumns,
       hideCommonColumns,
       commonColumnNames,
-      searchQuery,
       filteredTables,
       shouldShowRow,
-      scrollToTable
+      scrollToTable,
+      isIdxVisible,
+      displayOptionColumns
     };
   },
   template: `
@@ -123,8 +167,11 @@ const TablePreviewSection = {
                 </label>
               </div>
               <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-                <label v-for="col in columnsDef" :key="col.key">
-                  <input type="checkbox" :value="col.key" v-model="visibleColumns">
+                <label v-for="col in displayOptionColumns" :key="col.key">
+                  <!-- グループ項目 (Idx) の場合 -->
+                  <input v-if="col.isGroup" type="checkbox" v-model="isIdxVisible">
+                  <!-- 通常項目 の場合 -->
+                  <input v-else type="checkbox" :value="col.key" v-model="visibleColumns">
                   {{ col.label }}
                 </label>
               </div>
