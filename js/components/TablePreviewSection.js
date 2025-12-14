@@ -128,7 +128,8 @@ const TablePreviewSection = {
       shouldShowRow,
       scrollToTable,
       isIdxVisible,
-      displayOptionColumns
+      displayOptionColumns,
+      searchQuery
     };
   },
   template: `
