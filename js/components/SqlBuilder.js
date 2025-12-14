@@ -96,7 +96,7 @@ const SqlBuilder = {
         const def = AppState.parsedTables.find(table => table.tableName === t.tableName);
         if (def) {
           def.columns.forEach(col => {
-            selects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
+            selects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}${col.colNameJP ? (' /* ' + col.colNameJP + ' */') : ''}`);
           });
         } else {
           selects.push(`${t.alias}.*`);
