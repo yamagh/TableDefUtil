@@ -1,14 +1,67 @@
-TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1	Idx2	Idx3
-user	ユーザー	id	ID	PK	bigserial		NN			1		
-user	ユーザー	user_name	ユーザー名	AK	varchar	255	NN, U		ユーザーのディスプレイネーム		1	2
-user	ユーザー	email	メールアドレス		varchar	255	NN, U				2	3
-user	ユーザー	note	説明		varchar							
-user	ユーザー	is_admin	管理者フラグ		boolean		NN	false	True: 全てのユーザーレコードにアクセス可能、False:カレントユーザーの部署コードと一致するレコードのみアクセス可能			
-user	ユーザー	demartment_code	部署コード		char	3	NN				3	1
-user	ユーザー	is_deleted	削除フラグ		boolean		NN	false				
-user	ユーザー	created_at	作成日時		timestamp		NN	now()				
-department	部署	id	ID	PK	bigserial		NN			1		
-department	部署	code	部署コード	AK	char	3	NN				1	
-department	部署	description	説明		varchar							
-department	部署	name	部署名		varchar	256	NN					
-department	部署	created_at	作成日時		timestamp		NN	now()				
+TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1	Idx2	Idx3	Idx4	Idx5
+user	ユーザー	id	ID	PK	bigserial		NN			1				
+user	ユーザー	user_name	ユーザー名	AK	varchar	255	NN, U		ユーザーのディスプレイネーム		1	2			
+user	ユーザー	email	メールアドレス		varchar	255	NN, U				2	3			
+user	ユーザー	note	説明		varchar									
+user	ユーザー	is_admin	管理者フラグ		boolean		NN	false	True: 全てのユーザーレコードにアクセス可能、False:カレントユーザーの部署コードと一致するレコードのみアクセス可能					
+user	ユーザー	demartment_code	部署コード		char	3	NN				3	1			
+user	ユーザー	is_deleted	削除フラグ		boolean		NN	false						
+user	ユーザー	created_at	作成日時		timestamp		NN	now()						
+department	部署	id	ID	PK	bigserial		NN			1				
+department	部署	code	部署コード	AK	char	3	NN				1			
+department	部署	description	説明		varchar									
+department	部署	name	部署名		varchar	256	NN							
+department	部署	created_at	作成日時		timestamp		NN	now()						
+todos	ToDo	id	ID	PK	bigserial		NN			1				
+todos	ToDo	title	タイトル		varchar	255	NN		タスクのタイトル					
+todos	ToDo	description	詳細		text									
+todos	ToDo	is_done	完了フラグ		boolean		NN	false						
+todos	ToDo	priority	優先度		integer		NN	0	0:低, 1:中, 2:高	2				
+todos	ToDo	due_date	期限		timestamp							2				
+todos	ToDo	user_id	ユーザーID	FK	bigint		NN				2			1	
+todos	ToDo	created_at	作成日時		timestamp		NN	now()						
+todos	ToDo	updated_at	更新日時		timestamp		NN	now()						
+categories	カテゴリ	id	ID	PK	bigserial		NN			1				
+categories	カテゴリ	name	カテゴリ名	AK	varchar	100	NN, U				1			
+todo_categories	ToDoカテゴリ	todo_id	ToDo ID	PK, FK	bigint		NN			1				
+todo_categories	ToDoカテゴリ	category_id	カテゴリID	PK, FK	bigint		NN			1				
+products	商品	id	ID	PK	bigserial		NN			1				
+products	商品	name	商品名		varchar	255	NN				1			
+products	商品	sku	SKU	AK	varchar	50	NN, U		Stock Keeping Unit		1			
+products	商品	price	価格		decimal	10,2	NN	0					
+products	商品	description	説明		text									
+products	商品	is_published	公開フラグ		boolean		NN	true					
+products	商品	created_at	作成日時		timestamp		NN	now()						
+product_variants	商品バリエーション	id	ID	PK	bigserial		NN			1				
+product_variants	商品バリエーション	product_id	商品ID	FK	bigint		NN			1	1			
+product_variants	商品バリエーション	color	色		varchar	50				1				
+product_variants	商品バリエーション	size	サイズ		varchar	50				1				
+product_variants	商品バリエーション	stock_quantity	在庫数		integer		NN	0					
+orders	注文	id	ID	PK	bigserial		NN			1				
+orders	注文	user_id	ユーザーID	FK	bigint		NN				1			
+orders	注文	order_date	注文日時		timestamp		NN	now()			1			
+orders	注文	total_amount	合計金額		decimal	12,2	NN	0					
+orders	注文	status	ステータス		varchar	20	NN	'PENDING'	PENDING, PAID, SHIPPED, COMPLETED, CANCELLED						
+order_items	注文明細	id	ID	PK	bigserial		NN			1				
+order_items	注文明細	order_id	注文ID	FK	bigint		NN			1			
+order_items	注文明細	product_variant_id	商品バリエーションID	FK	bigint		NN				1			
+order_items	注文明細	quantity	数量		integer		NN	1					
+order_items	注文明細	price_at_purchase	購入時単価		decimal	10,2	NN						
+employees	社員	id	ID	PK	bigserial		NN			1				
+employees	社員	first_name	名		varchar	50	NN					
+employees	社員	last_name	姓		varchar	50	NN					
+employees	社員	email	メールアドレス	AK	varchar	255	NN, U				1			
+employees	社員	hire_date	入社日		date		NN					
+employees	社員	department_id	部署ID	FK	bigint						1		
+salaries	給与	id	ID	PK	bigserial		NN			1				
+salaries	給与	employee_id	社員ID	FK	bigint		NN				1			
+salaries	給与	amount	支給額		decimal	10,2	NN					
+salaries	給与	payment_date	支給日		date		NN				1			
+job_titles	役職	id	ID	PK	bigserial		NN			1				
+job_titles	役職	title	役職名	AK	varchar	100	NN, U				1			
+job_titles	役職	min_salary	最小給与想定		decimal	10,2						
+job_titles	役職	max_salary	最大給与想定		decimal	10,2						
+employee_jobs	社員役職履歴	employee_id	社員ID	PK, FK	bigint		NN			1				
+employee_jobs	社員役職履歴	job_title_id	役職ID	PK, FK	bigint		NN			1				
+employee_jobs	社員役職履歴	start_date	開始日	PK	date		NN			1				
+employee_jobs	社員役職履歴	end_date	終了日		date			NULLの場合は現在就任中						
