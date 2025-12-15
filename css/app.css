@@ -111,3 +111,11 @@ nav.tabs[role=tab-control] a.active {
   background-color: var(--pico-color-primary-900);
   border-color: var(--pico-color-primary-600);
 }
+
+input.sm {
+  margin-bottom: 0px;
+  padding: 0.2rem;
+  font-size: 0.9rem;
+  min-width: 60px;
+  height: 1.5rem;
+}

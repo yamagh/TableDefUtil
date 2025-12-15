@@ -376,7 +376,7 @@ const TablePreviewSection = {
                         {{ col[def.key] }}
                       </template>
                       <template v-else>
-                         <input v-if="def.key !== 'colNo'" type="text" v-model="col[def.key]" style="margin-bottom: 0; padding: 0.2rem; font-size: 0.9rem; min-width: 60px;">
+                         <input v-if="def.key !== 'colNo'" type="text" v-model="col[def.key]" class="sm">
                          <span v-else>{{ cIndex + 1 }}</span>
                       </template>
                     </td>
