@@ -1,0 +1,21 @@
+[
+  {
+    "tableName": "orders",
+    "tableNameJP": "注文",
+    "columns": [
+      {
+        "colName": "id",
+        "colNameJP": "ID",
+        "type": "bigserial",
+        "pk": true,
+        "notNull": true
+      },
+      {
+        "colName": "total_amount",
+        "colNameJP": "合計金額",
+        "type": "integer",
+        "notNull": true
+      }
+    ]
+  }
+]

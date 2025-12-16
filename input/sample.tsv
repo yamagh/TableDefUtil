@@ -1,0 +1,4 @@
+TableName	TableName_JP	ColName	ColName_JP	PK/FK	Type	Length	Constraint	Default	Description	Idx1	Idx2	Idx3
+products	商品	id	ID	PK	bigserial		NN			1		
+products	商品	name	商品名		varchar	255	NN					
+products	商品	price	価格		integer		NN	0				

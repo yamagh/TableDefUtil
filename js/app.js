@@ -135,11 +135,20 @@ const App = {
     };
 
     // デフォルトデータの読み込み
-    Vue.onMounted(() => {
-      if (AppState.parsedTables.length === 0 && window.DEFAULT_TABLE_DEFINITIONS) {
-        console.log('Loading default data...');
-        AppState.parsedTables = window.DEFAULT_TABLE_DEFINITIONS;
-        AppState.resetSqlState();
+    Vue.onMounted(async () => {
+      if (AppState.parsedTables.length === 0) {
+        console.log('Loading default data from input/default.json...');
+        try {
+          const response = await fetch('input/default.json');
+          if (response.ok) {
+            const jsonText = await response.text();
+            handleDataLoaded(jsonText);
+          } else {
+            console.warn('Failed to load input/default.json');
+          }
+        } catch (e) {
+          console.warn('Error fetching input/default.json', e);
+        }
       }
     });
 
