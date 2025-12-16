@@ -5,6 +5,9 @@ const AppState = Vue.reactive({
   // パースされたテーブル定義
   parsedTables: [],
 
+  // アプリケーション設定
+  config: null,
+
   // SQL Builder State
   sql: {
     // 選択されたテーブル

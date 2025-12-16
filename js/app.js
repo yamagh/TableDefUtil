@@ -15,7 +15,8 @@ const App = {
     const currentMode = ref('preview');
 
     // テーマ: light, dark, auto
-    const theme = ref(localStorage.getItem('theme') || 'auto');
+    const initialTheme = localStorage.getItem('theme') || (AppState.config && AppState.config.theme) || 'auto';
+    const theme = ref(initialTheme);
 
     // テーマを更新
     const updateTheme = (newTheme) => {
@@ -186,4 +187,26 @@ const App = {
     </div>
   `
 };
-createApp(App).mount('#app');
+// 設定をロードする
+const loadConfig = async () => {
+  try {
+    const response = await fetch('config/config.json');
+    if (response.ok) {
+      const config = await response.json();
+      AppState.config = config;
+      // Config-based initialization
+      if (config.sql && config.sql.includeCountMethod !== undefined) {
+        AppState.sql.includeCountMethod = config.sql.includeCountMethod;
+      }
+    } else {
+      console.warn('Failed to load config.json, using defaults.');
+    }
+  } catch (e) {
+    console.warn('Error loading config.json:', e);
+  }
+};
+
+// アプリケーションの起動
+loadConfig().then(() => {
+  createApp(App).mount('#app');
+});

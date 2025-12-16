@@ -38,11 +38,11 @@ const OptionsSection = {
   emits: ['convert'],
   setup(props, { emit }) {
     // 選択されたフォーマット
-    const selectedFormats = Vue.ref([
-      'ddl', 'ddl-play', 'typescript', 'zod-schema',
-      'zod-type', 'java-model', 'java-repo',
-      'java-service', 'java-controller'
-    ]);
+    const defaultFormats = (AppState.config && AppState.config.export && AppState.config.export.defaultFormats)
+      ? AppState.config.export.defaultFormats
+      : ['ddl', 'ddl-play', 'typescript', 'zod-schema', 'zod-type', 'java-model', 'java-repo', 'java-service', 'java-controller'];
+
+    const selectedFormats = Vue.ref(defaultFormats);
 
     // フォーマットオプション
     const formatOptions = [
@@ -58,10 +58,11 @@ const OptionsSection = {
     ];
 
     // RLS (Row-Level Security) オプション
+    const rlsConfig = (AppState.config && AppState.config.export && AppState.config.export.rls) || {};
     const rls = Vue.reactive({
-      enabled: false,
-      tenantIdColumn: 'tenant_id',
-      adminFlagColumn: 'is_admin'
+      enabled: rlsConfig.enabled !== undefined ? rlsConfig.enabled : false,
+      tenantIdColumn: rlsConfig.tenantIdColumn || 'tenant_id',
+      adminFlagColumn: rlsConfig.adminFlagColumn || 'is_admin'
     });
 
     // 変換実行

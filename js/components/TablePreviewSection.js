@@ -39,7 +39,10 @@ const TablePreviewSection = {
     ];
 
     // 表示するカラム
-    const visibleColumns = Vue.ref(columnsDef.filter(c => c.defaultVisibility).map(c => c.key));
+    const defaultCols = (AppState.config && AppState.config.preview && AppState.config.preview.defaultVisibleColumns)
+      ? AppState.config.preview.defaultVisibleColumns
+      : columnsDef.filter(c => c.defaultVisibility).map(c => c.key);
+    const visibleColumns = Vue.ref(defaultCols);
 
     // インデックス列の各キー
     const indexColumnKeys = ['idx1', 'idx2', 'idx3', 'idx4', 'idx5'];
