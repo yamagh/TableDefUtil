@@ -28,6 +28,13 @@ const InputSection = {
         </div>
         <div v-show="activeTab === 'server'" class="tab-content" style="display: block;">
           <div v-if="serverFiles.length > 0">
+            <details style="margin-bottom: 1rem;">
+              <summary style="font-size: 0.9em; cursor: pointer;"><i class="bi bi-info-circle"></i> 使い方</summary>
+              <p style="font-size: 0.9em; color: var(--muted-color, #666); margin-top: 0.5rem;">
+                <code>./input</code> フォルダ内のファイルを選択して読み込みます。<br>
+                新しいファイルを追加するには、<code>input</code> フォルダにファイルを配置し、<code>input/files.json</code> にファイル名を記述してください。
+              </p>
+            </details>
             <label>
               ファイルを選択:
               <select v-model="selectedServerFile">
