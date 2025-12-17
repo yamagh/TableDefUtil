@@ -7,7 +7,7 @@ const InputSection = {
           <a role="button" href="#"
              @click.prevent="activeTab = 'server'"
              :class="{ 'outline': activeTab !== 'server' }"
-             class="btn-sm"><i class="bi bi-hdd-network"></i> ローカルファイル</a>
+             class="btn-sm"><i class="bi bi-hdd-network"></i> サーバファイル</a>
           <a role="button" href="#" 
              @click.prevent="activeTab = 'file'" 
              :class="{ 'outline': activeTab !== 'file' }"
@@ -32,7 +32,7 @@ const InputSection = {
               <summary style="font-size: 0.9em; cursor: pointer;"><i class="bi bi-info-circle"></i> 使い方</summary>
               <p style="font-size: 0.9em; color: var(--muted-color, #666); margin-top: 0.5rem;">
                 <code>./input</code> フォルダ内のファイルを選択して読み込みます。<br>
-                新しいファイルを追加するには、<code>input</code> フォルダにファイルを配置し、<code>input/files.json</code> にファイル名を記述してください。
+                新しいファイルを追加するには、<code>input</code> フォルダにファイルを配置し、<code>input/files.json</code> (または <code>files.js</code>) にファイル名を記述してください。
               </p>
             </details>
             <label>
@@ -61,6 +61,15 @@ const InputSection = {
 
     // マウント時にファイル一覧を取得
     Vue.onMounted(async () => {
+      // window.InputFiles があればそれを使う
+      if (window.InputFiles && Array.isArray(window.InputFiles.files)) {
+        serverFiles.value = window.InputFiles.files;
+        if (serverFiles.value.length > 0) {
+          selectedServerFile.value = serverFiles.value[0];
+        }
+        return;
+      }
+
       try {
         const response = await fetch('input/files.json');
         if (response.ok) {
@@ -83,6 +92,13 @@ const InputSection = {
         alert('ファイルを選択してください。');
         return;
       }
+
+      // window.DefaultData の利用 (default.js or default.json)
+      if ((selectedServerFile.value === 'default.js' || selectedServerFile.value === 'default.json') && window.DefaultData) {
+        emit('data-loaded', window.DefaultData);
+        return;
+      }
+
       try {
         const response = await fetch(`input/${selectedServerFile.value}`);
         if (!response.ok) {

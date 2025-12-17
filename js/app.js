@@ -50,6 +50,16 @@ const App = {
 
     // データロードハンドラ
     const handleDataLoaded = (rawData) => {
+      // すでにオブジェクトの場合はそのまま利用
+      if (typeof rawData === 'object' && rawData !== null) {
+        AppState.parsedTables = rawData;
+        AppState.resetSqlState();
+        conversionResults.value = null;
+        convertedFormats.value = [];
+        convertedRlsOptions.value = null;
+        return;
+      }
+
       // JSONとしてパースを試みる
       const trimmed = rawData.trim();
       if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
@@ -137,6 +147,13 @@ const App = {
     // デフォルトデータの読み込み
     Vue.onMounted(async () => {
       if (AppState.parsedTables.length === 0) {
+        // window.DefaultDataがあればそれを使う (files.js で定義されることを想定、あるいは default.js)
+        if (window.DefaultData) {
+          console.log('Loading default data from window.DefaultData...');
+          handleDataLoaded(window.DefaultData);
+          return;
+        }
+
         console.log('Loading default data from input/default.json...');
         try {
           const response = await fetch('input/default.json');
@@ -198,6 +215,16 @@ const App = {
 };
 // 設定をロードする
 const loadConfig = async () => {
+  // window.AppConfig があればそれを使う
+  if (typeof window.AppConfig === 'object') {
+    console.log('Using window.AppConfig');
+    AppState.config = window.AppConfig;
+    if (AppState.config.sql && AppState.config.sql.includeCountMethod !== undefined) {
+      AppState.sql.includeCountMethod = AppState.config.sql.includeCountMethod;
+    }
+    return;
+  }
+
   try {
     const response = await fetch('config/config.json');
     if (response.ok) {
