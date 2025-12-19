@@ -30,5 +30,18 @@ window.AppConfig = {
   },
   "sql": {
     "includeCountMethod": true
+  },
+  "commonColumns": {
+    "id": "id",
+    "created_at": "created_at",
+    "created_by": "created_by",
+    "updated_at": "updated_at",
+    "updated_by": "updated_by",
+    "is_deleted": {
+      "name": "is_deleted",
+      "type": "boolean",
+      "valTrue": true,
+      "valFalse": false
+    }
   }
 };

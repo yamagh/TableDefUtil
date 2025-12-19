@@ -2,7 +2,23 @@
  * Javaモデルクラス生成
  */
 function generateJavaModel(tables, rlsOptions) {
-  const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+  const config = (AppState.config && AppState.config.commonColumns) ? AppState.config.commonColumns : {
+    id: 'id',
+    is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false },
+    created_at: 'created_at',
+    created_by: 'created_by',
+    updated_at: 'updated_at',
+    updated_by: 'updated_by'
+  };
+
+  const baseModelCols = new Set([
+    config.id,
+    config.is_deleted.name,
+    config.created_at,
+    config.created_by,
+    config.updated_at,
+    config.updated_by
+  ]);
   const files = [];
 
   if (rlsOptions && rlsOptions.enabled) {
@@ -42,6 +58,14 @@ public interface RlsAware {
   }
 
 
+  let isDeletedField = '';
+  if (config.is_deleted.type === 'string') {
+    const defaultVal = config.is_deleted.valFalse !== undefined ? `"${config.is_deleted.valFalse}"` : '"0"';
+    isDeletedField = `    public String ${toCamelCase(config.is_deleted.name)} = ${defaultVal};`;
+  } else {
+    isDeletedField = `    public Boolean ${toCamelCase(config.is_deleted.name)} = false;`;
+  }
+
   const baseModelContent = `
 package models;
 
@@ -62,34 +86,34 @@ import lombok.Setter;
 @Setter
 public class BaseModel extends Model {
     @Id
-    public Long id;
+    public Long ${toCamelCase(config.id)};
 
     /**
      * 論理削除フラグ
      */
-    public Boolean isDeleted = false;
+    ${isDeletedField}
 
     /**
      * 作成日時
      */
     @WhenCreated
-    public Instant createdAt;
+    public Instant ${toCamelCase(config.created_at)};
     
     /** 
      * 作成者ID
      */
-    public String createdBy;
+    public String ${toCamelCase(config.created_by)};
 
     /**
      * 更新日時
      */
     @WhenModified
-    public Instant updatedAt;
+    public Instant ${toCamelCase(config.updated_at)};
     
     /**
      * 更新者ID
      */
-    public String updatedBy;
+    public String ${toCamelCase(config.updated_by)};
 }
 `;
   files.push({ path: 'models/BaseModel.java', content: baseModelContent.trim() });

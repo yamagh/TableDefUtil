@@ -2,7 +2,30 @@
  * Javaリポジトリクラス生成
  */
 function generateJavaRepo(tables, rlsOptions) {
-  const baseModelCols = new Set(['id', 'is_deleted', 'created_at', 'created_by', 'updated_at', 'updated_by']);
+  const config = (AppState.config && AppState.config.commonColumns) ? AppState.config.commonColumns : {
+    id: 'id',
+    is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false },
+    created_at: 'created_at',
+    created_by: 'created_by',
+    updated_at: 'updated_at',
+    updated_by: 'updated_by'
+  };
+
+  const idProp = toCamelCase(config.id);
+  const isDeletedProp = toCamelCase(config.is_deleted.name);
+  const updatedAtProp = toCamelCase(config.updated_at);
+
+  const isDeletedTrueVal = config.is_deleted.type === 'string' ? `"${config.is_deleted.valTrue}"` : 'true';
+  const isDeletedFalseVal = config.is_deleted.type === 'string' ? `"${config.is_deleted.valFalse}"` : 'false';
+
+  const baseModelCols = new Set([
+    config.id,
+    config.is_deleted.name,
+    config.created_at,
+    config.created_by,
+    config.updated_at,
+    config.updated_by
+  ]);
   const files = [];
 
   const exceptionContent = `
@@ -111,8 +134,8 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    public CompletionStage<Optional<${modelName}>> findById(Long id) {\n`;
     classContent += `        return supplyAsync(() -> {\n`;
     classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
-    classContent += `            return query.eq("id", id)\n`;
-    classContent += `                .eq("isDeleted", false)\n`;
+    classContent += `            return query.eq("${idProp}", id)\n`;
+    classContent += `                .eq("${isDeletedProp}", ${isDeletedFalseVal})\n`;
     classContent += `                .findOneOrEmpty();\n`;
     classContent += `        }, executionContext);\n`;
     classContent += `    }\n\n`;
@@ -133,7 +156,7 @@ public abstract class BaseRepository<T extends BaseModel> {
       classContent += `        return supplyAsync(() -> {\n`;
       classContent += `            ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`};\n`;
       classContent += `            return query.eq("${colCamel}", ${colCamel})\n`;
-      classContent += `                .eq("isDeleted", false)\n`;
+      classContent += `                .eq("${isDeletedProp}", ${isDeletedFalseVal})\n`;
       classContent += `                .findOneOrEmpty();\n`;
       classContent += `        }, executionContext);\n`;
       classContent += `    }\n\n`;
@@ -150,7 +173,7 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    public CompletionStage<List<${modelName}>> findAll(int offset, int limit) {\n`;
     classContent += `        return supplyAsync(() ->\n`;
     classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
-    classContent += `                .eq("isDeleted", false)\n`;
+    classContent += `                .eq("${isDeletedProp}", ${isDeletedFalseVal})\n`;
     classContent += `                .setFirstRow(offset)\n`;
     classContent += `                .setMaxRows(limit)\n`;
     classContent += `                .findList()\n`;
@@ -161,7 +184,7 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    public CompletionStage<Integer> countAll() {\n`;
     classContent += `        return supplyAsync(() ->\n`;
     classContent += `            ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}\n`;
-    classContent += `                .eq("isDeleted", false)\n`;
+    classContent += `                .eq("${isDeletedProp}", ${isDeletedFalseVal})\n`;
     classContent += `                .findCount()\n`;
     classContent += `        , executionContext);\n`;
     classContent += `    }\n\n`;
@@ -192,7 +215,7 @@ public abstract class BaseRepository<T extends BaseModel> {
 
     classContent += `    /**\n     * 検索条件に基づいてクエリを構築します。\n     * @param filter 検索条件\n     * @return 構築されたクエリ\n     */\n`;
     classContent += `    private io.ebean.ExpressionList<${modelName}> createQueryWithFilter(${modelName} filter) {\n`;
-    classContent += `        io.ebean.ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}.eq("isDeleted", false);\n\n`;
+    classContent += `        io.ebean.ExpressionList<${modelName}> query = ${extendsBaseRepo ? 'rlsFilter()' : `DB.find(${modelName}.class).where()`}.eq("${isDeletedProp}", ${isDeletedFalseVal});\n\n`;
     table.columns.forEach(col => {
       if (!baseModelCols.has(col.colName)) {
         const colCamel = toCamelCase(col.colName);
@@ -232,9 +255,9 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param newData 更新データ\n     * @param updatedAt タイムスタンプ\n     * @return 更新後のデータ\n     */\n`;
     classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} newData, Instant updatedAt) {\n`;
     classContent += `        return supplyAsync(() -> {\n`;
-    classContent += `            newData.setId(id);\n`;
+    classContent += `            newData.set${toPascalCase(config.id)}(id);\n`;
     classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
-    classContent += `                .set("updatedAt", Instant.now())\n`;
+    classContent += `                .set("${updatedAtProp}", Instant.now())\n`;
     table.columns.forEach(col => {
       if (!baseModelCols.has(col.colName)) {
         const colCamel = toCamelCase(col.colName);
@@ -242,7 +265,7 @@ public abstract class BaseRepository<T extends BaseModel> {
         classContent += `                .set("${colCamel}", newData.get${colPascal}())\n`;
       }
     });
-    classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
+    classContent += `                .where().eq("${idProp}", id).eq("${updatedAtProp}", updatedAt)\n`;
     classContent += `                .update();\n\n`;
     classContent += `            if (updatedRows == 0) {\n`;
     classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;
@@ -256,9 +279,9 @@ public abstract class BaseRepository<T extends BaseModel> {
     classContent += `    public CompletionStage<Void> delete(Long id, Instant updatedAt) {\n`;
     classContent += `        return supplyAsync(() -> {\n`;
     classContent += `            int updatedRows = DB.update(${modelName}.class)\n`;
-    classContent += `                .set("isDeleted", true)\n`;
-    classContent += `                .set("updatedAt", Instant.now())\n`;
-    classContent += `                .where().eq("id", id).eq("updatedAt", updatedAt)\n`;
+    classContent += `                .set("${isDeletedProp}", ${isDeletedTrueVal})\n`;
+    classContent += `                .set("${updatedAtProp}", Instant.now())\n`;
+    classContent += `                .where().eq("${idProp}", id).eq("${updatedAtProp}", updatedAt)\n`;
     classContent += `                .update();\n\n`;
     classContent += `            if (updatedRows == 0) {\n`;
     classContent += `                throw new OptimisticLockingFailureException("${modelName} not found with id: " + id + " and updatedAt: " + updatedAt);\n`;

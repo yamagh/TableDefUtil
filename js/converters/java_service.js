@@ -2,6 +2,18 @@
  * Javaサービスクラス生成
  */
 function generateJavaService(tables, rlsOptions) {
+  const config = (AppState.config && AppState.config.commonColumns) ? AppState.config.commonColumns : {
+    id: 'id',
+    is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false },
+    created_at: 'created_at',
+    updated_at: 'updated_at'
+  };
+
+  const idCol = config.id;
+  const createdAtCol = config.created_at;
+  const updatedAtCol = config.updated_at;
+  const isDeletedCol = config.is_deleted.name;
+
   const files = [];
 
   tables.forEach(table => {
@@ -58,7 +70,7 @@ function generateJavaService(tables, rlsOptions) {
         const javaType = mapPostgresToJavaType(col.type);
 
         // 必須チェック
-        if (col.constraint && col.constraint.includes('NN') && col.colName !== 'id' && col.colName !== 'created_at' && col.colName !== 'updated_at' && col.colName !== 'is_deleted') {
+        if (col.constraint && col.constraint.includes('NN') && col.colName !== idCol && col.colName !== createdAtCol && col.colName !== updatedAtCol && col.colName !== isDeletedCol) {
           checks += `        if (${modelVar}.get${colPascal}() == null) {\n`;
           checks += `            throw new RuntimeException("${col.colNameJP}は必須です。");\n`;
           checks += `        }\n`;
@@ -79,7 +91,8 @@ function generateJavaService(tables, rlsOptions) {
         // 値が存在する場合のみDBチェックを行う
         checks += `        if (${modelVar}.get${colPascal}() != null) {\n`;
         checks += `            ${repoVar}.findBy${colPascal}(${modelVar}.get${colPascal}()).thenAccept(opt -> {\n`;
-        checks += `                if (opt.isPresent() && !opt.get().getId().equals(${modelVar}.getId())) {\n`;
+        const idGetter = `get${toPascalCase(idCol)}`;
+        checks += `                if (opt.isPresent() && !opt.get().${idGetter}().equals(${modelVar}.${idGetter}())) {\n`;
         checks += `                    throw new RuntimeException("${col.colNameJP}は既に使用されています。");\n`;
         checks += `                }\n`;
         checks += `            }).toCompletableFuture().join();\n`;
@@ -139,9 +152,9 @@ function generateJavaService(tables, rlsOptions) {
     // update
     classContent += `    /**\n     * ${table.tableNameJP} を更新します。\n     * @param id 主キー\n     * @param ${modelVar} 更新データ\n     * @return 更新後のデータ\n     */\n`;
     classContent += `    public CompletionStage<${modelName}> update(Long id, ${modelName} ${modelVar}) {\n`;
-    classContent += `        ${modelVar}.setId(id);\n`;
+    classContent += `        ${modelVar}.set${toPascalCase(idCol)}(id);\n`;
     classContent += `        validate(${modelVar});\n`;
-    classContent += `        return ${repoVar}.update(id, ${modelVar}, ${modelVar}.getUpdatedAt());\n`;
+    classContent += `        return ${repoVar}.update(id, ${modelVar}, ${modelVar}.get${toPascalCase(updatedAtCol)}());\n`;
     classContent += `    }\n\n`;
 
     // delete
@@ -150,7 +163,7 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `        return ${repoVar}.delete(id, updatedAt);\n`;
     classContent += `    }\n\n`;
 
-    const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+    const nonKeyColumns = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== idCol);
     const csvHeader = nonKeyColumns.map(c => `\"${c.colNameJP}\"`).join("\n                        ,");
     const csvPlaceHolder = `("\\"%s\\",").repeat(${nonKeyColumns.length}) + "\\"%s\\"\\n"` // nonKeyColumns.map(c => `\\"%s\\"`).join(",") + "\\n";
     const csvRow = nonKeyColumns.map(c => `CsvHelper.processCsvField(String.valueOf(m.get${toPascalCase(c.colName)}()))`).join('\n                            ,');
@@ -181,7 +194,7 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `        });\n`;
     classContent += `    }\n\n`;
 
-    const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== 'id');
+    const nonKeyColumnsForImport = table.columns.filter(c => c.pkfk !== 'PK' && c.colName !== idCol);
 
     classContent += `    /**\n     * CSVファイルから ${table.tableNameJP} のデータを取り込みます。\n     * @param csvFile 取り込むCSVファイル\n     * @return 取り込み件数\n     */\n`;
     classContent += `    public CompletionStage<Integer> importCsv(File csvFile) {\n`;

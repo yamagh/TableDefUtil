@@ -3,6 +3,9 @@ const OptionsSection = {
     <article>
       <header>変換オプション</header>
       <section>
+        <div style="margin-bottom: 1rem;">
+          <CommonColumnsConfig />
+        </div>
         <details>
           <summary>変換先フォーマット</summary>
           <fieldset>
@@ -35,6 +38,9 @@ const OptionsSection = {
       <footer><button @click="handleConvert" style="width: 100%;">変換実行</button></footer>
     </article>
   `,
+  components: {
+    CommonColumnsConfig
+  },
   emits: ['convert'],
   setup(props, { emit }) {
     // 選択されたフォーマット
