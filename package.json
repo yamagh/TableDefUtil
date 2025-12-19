@@ -1,0 +1,32 @@
+{
+  "name": "tabledefutil",
+  "version": "1.0.0",
+  "description": "TSV, CSV, または JSON 形式で記述されたテーブル定義から、各種プログラミング言語のモデルやDDL（データ定義言語）、SQLを自動生成するウェブツールです。\r Vue.js を使用したモダンなシングルページアプリケーション (SPA) として実装されています。",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yamagh/TableDefUtil.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yamagh/TableDefUtil/issues"
+  },
+  "homepage": "https://github.com/yamagh/TableDefUtil#readme",
+  "dependencies": {
+    "@picocss/pico": "^2.1.1",
+    "bootstrap-icons": "^1.13.1",
+    "jszip": "^3.10.1",
+    "papaparse": "^5.5.3",
+    "sql-formatter": "^15.6.12",
+    "vue": "^3.5.26"
+  }
+}
