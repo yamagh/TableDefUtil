@@ -27,6 +27,45 @@ const InputSection = {
           <button @click="handleTextSubmit" style="margin-top: 1rem;"><i class="bi bi-upload"></i> 読み込み</button>
         </div>
         <div v-show="activeTab === 'server'" class="tab-content" style="display: block;">
+          <!-- オフライン時の警告とサーバー起動方法 -->
+          <div v-if="isOffline" style="margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--pico-del-color); border-radius: 0.5rem; background-color: rgba(255, 0, 0, 0.05);">
+            <p>
+              <strong><i class="bi bi-exclamation-triangle"></i> オフラインモード</strong><br>
+              現在、ローカルファイルとして開かれています。サーバー上のファイルリスト取得などは動作しません。<br>
+              正常に利用するには、Webサーバー経由でアクセスしてください。
+            </p>
+            <details>
+              <summary>サーバーの起動方法 (Windows 推奨)</summary>
+              <div style="font-size: 0.9em;">
+                <p>プロジェクトのルートディレクトリで、以下のいずれかのコマンドを実行してください。</p>
+                
+                <article style="padding: 0.5rem; margin-bottom: 0.5rem;">
+                  <header style="padding: 0.25rem; font-size: 0.8em; margin-bottom: 0;"><strong>Python 3</strong> (推奨)</header>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <code style="flex-grow: 1; word-break: break-all;">python -m http.server 8000</code>
+                    <button class="outline" style="padding: 0.25rem 0.5rem; font-size: 0.8em; width: auto;" @click="copyToClipboard('python -m http.server 8000')"><i class="bi bi-clipboard"></i></button>
+                  </div>
+                </article>
+
+                <article style="padding: 0.5rem; margin-bottom: 0.5rem;">
+                  <header style="padding: 0.25rem; font-size: 0.8em; margin-bottom: 0;"><strong>IIS Express</strong> (Command Prompt)</header>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <code style="flex-grow: 1; word-break: break-all;">"C:\\Program Files\\IIS Express\\iisexpress.exe" /path:"%cd%" /port:8000</code>
+                    <button class="outline" style="padding: 0.25rem 0.5rem; font-size: 0.8em; width: auto;" @click="copyToClipboard('&quot;C:\\Program Files\\IIS Express\\iisexpress.exe&quot; /path:&quot;%cd%&quot; /port:8000')"><i class="bi bi-clipboard"></i></button>
+                  </div>
+                </article>
+
+                <article style="padding: 0.5rem; margin-bottom: 0;">
+                  <header style="padding: 0.25rem; font-size: 0.8em; margin-bottom: 0;"><strong>IIS Express</strong> (PowerShell)</header>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <code style="flex-grow: 1; word-break: break-all;">& "C:\\Program Files\\IIS Express\\iisexpress.exe" /path:(Get-Location).Path /port:8000</code>
+                    <button class="outline" style="padding: 0.25rem 0.5rem; font-size: 0.8em; width: auto;" @click="copyToClipboard('& &quot;C:\\Program Files\\IIS Express\\iisexpress.exe&quot; /path:(Get-Location).Path /port:8000')"><i class="bi bi-clipboard"></i></button>
+                  </div>
+                </article>
+              </div>
+            </details>
+          </div>
+
           <div v-if="serverFiles.length > 0">
             <details style="margin-bottom: 1rem;">
               <summary style="font-size: 0.9em; cursor: pointer;"><i class="bi bi-info-circle"></i> 使い方</summary>
@@ -54,6 +93,43 @@ const InputSection = {
     const activeTab = Vue.ref('server');
     const textInput = Vue.ref('');
     const fileInput = Vue.ref(null);
+    const isOffline = window.location.protocol === 'file:';
+
+    const copyToClipboard = (text) => {
+      // フォールバック用の関数
+      const fallbackCopy = (text) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          const successful = document.execCommand('copy');
+          if (successful) {
+            alert('クリップボードにコピーしました');
+          } else {
+            alert('コピーに失敗しました');
+          }
+        } catch (err) {
+          console.error('Fallback: Oops, unable to copy', err);
+          alert('コピーに失敗しました');
+        }
+        document.body.removeChild(textArea);
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('クリップボードにコピーしました');
+        }).catch(err => {
+          console.error('Async: Could not copy text: ', err);
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    };
 
     // サーバー上のファイル一覧
     const serverFiles = Vue.ref([]);
@@ -134,6 +210,8 @@ const InputSection = {
 
     return {
       activeTab,
+      isOffline,
+      copyToClipboard,
       textInput,
       fileInput,
       serverFiles,
