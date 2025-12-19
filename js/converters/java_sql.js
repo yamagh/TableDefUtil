@@ -114,7 +114,7 @@ function parseSelectClause(selectClause, sqlState, parsedTables) {
           if (colName !== '*') {
             const colDef = tableDef.columns.find(c => c.colName === colName);
             if (colDef) {
-              javaType = mapPostgresToJavaType(colDef.type);
+              javaType = mapPostgresToJavaType(colDef.type, colDef.length);
               originalColName = colDef.colName;
               colNameJP = colDef.colNameJP; // Extract Japanese Name
             }

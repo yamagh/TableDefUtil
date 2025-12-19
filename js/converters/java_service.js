@@ -67,7 +67,7 @@ function generateJavaService(tables, rlsOptions) {
       table.columns.forEach(col => {
         const colPascal = toPascalCase(col.colName);
         const colCamel = toCamelCase(col.colName);
-        const javaType = mapPostgresToJavaType(col.type);
+        const javaType = mapPostgresToJavaType(col.type, col.length);
 
         // 必須チェック
         if (col.constraint && col.constraint.includes('NN') && col.colName !== idCol && col.colName !== createdAtCol && col.colName !== updatedAtCol && col.colName !== isDeletedCol) {
@@ -207,7 +207,7 @@ function generateJavaService(tables, rlsOptions) {
     classContent += `                        ${modelName} model = new ${modelName}();\n`;
     nonKeyColumnsForImport.forEach((col, i) => {
       const setter = `set${toPascalCase(col.colName)}`;
-      const javaType = mapPostgresToJavaType(col.type);
+      const javaType = mapPostgresToJavaType(col.type, col.length);
       let parseLogic = `values[${i}]`;
       if (javaType === 'Long') parseLogic = `Long.parseLong(values[${i}])`;
       else if (javaType === 'Integer') parseLogic = `Integer.parseInt(values[${i}])`;

@@ -6,8 +6,32 @@ function generateZodSchema(tables) {
     const pgType = col.type.toLowerCase();
     let zodType;
 
-    if (['bigint', 'bigserial', 'integer', 'smallint', 'numeric', 'decimal'].includes(pgType)) {
+    if (['bigint', 'bigserial', 'integer', 'smallint'].includes(pgType)) {
       zodType = 'z.number()';
+    } else if (['numeric', 'decimal'].includes(pgType)) {
+      if (col.length) {
+        // numeric(10,2) -> precision=10, scale=2
+        const parts = col.length.toString().replace(/[()]/g, '').split(',');
+        const precision = parseInt(parts[0], 10);
+        const scale = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+
+        if (!isNaN(precision)) {
+          const integerPart = precision - scale;
+          let regexPattern;
+          if (scale > 0) {
+            // Integer part 1 to I digits, optional fraction part 1 to F digits
+            regexPattern = `/^\\d{1,${integerPart}}(\\.\\d{1,${scale}})?$/`;
+          } else {
+            // Integer part only
+            regexPattern = `/^\\d{1,${integerPart}}$/`;
+          }
+          zodType = `z.string().regex(${regexPattern}, "有効な数値を入力してください").transform((val) => Number(val))`;
+        } else {
+          zodType = 'z.number()';
+        }
+      } else {
+        zodType = 'z.number()';
+      }
     } else if (['varchar', 'char', 'text', 'bytea', 'bit'].includes(pgType)) {
       zodType = 'z.string()';
       const isNotNull = col.constraint && col.constraint.includes('NN');

@@ -150,7 +150,7 @@ public abstract class BaseRepository<T extends BaseModel> {
 
       const colCamel = toCamelCase(col.colName);
       const colPascal = toPascalCase(col.colName);
-      const colType = mapPostgresToJavaType(col.type);
+      const colType = mapPostgresToJavaType(col.type, col.length);
       classContent += `    /**\n     * ${col.colNameJP} で ${table.tableNameJP} を検索します（論理削除済みは除く）。\n     * @param ${colCamel} ${col.colNameJP}\n     * @return 検索結果\n     */\n`;
       classContent += `    public CompletionStage<Optional<${modelName}>> findBy${colPascal}(${colType} ${colCamel}) {\n`;
       classContent += `        return supplyAsync(() -> {\n`;
@@ -220,7 +220,7 @@ public abstract class BaseRepository<T extends BaseModel> {
       if (!baseModelCols.has(col.colName)) {
         const colCamel = toCamelCase(col.colName);
         const colPascal = toPascalCase(col.colName);
-        const javaType = mapPostgresToJavaType(col.type);
+        const javaType = mapPostgresToJavaType(col.type, col.length);
         classContent += `        if (filter.get${colPascal}() != null) {\n`;
         if (javaType === 'String') {
           classContent += `            query.contains("${colCamel}", filter.get${colPascal}());\n`;

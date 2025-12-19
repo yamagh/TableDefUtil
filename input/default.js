@@ -49,6 +49,21 @@ window.DefaultData = [
         "idx5": ""
       },
       {
+        "colName": "age",
+        "colNameJP": "年齢",
+        "pkfk": "",
+        "type": "numeric",
+        "length": "3",
+        "constraint": "NN",
+        "default": "",
+        "description": "",
+        "idx1": "",
+        "idx2": "",
+        "idx3": "",
+        "idx4": "",
+        "idx5": ""
+      },
+      {
         "colName": "is_active",
         "colNameJP": "有効フラグ",
         "pkfk": "",
@@ -250,6 +265,21 @@ window.DefaultData = [
         "default": "",
         "description": "",
         "idx1": "2",
+        "idx2": "",
+        "idx3": "",
+        "idx4": "",
+        "idx5": ""
+      },
+      {
+        "colName": "rate",
+        "colNameJP": "レート",
+        "pkfk": "",
+        "type": "numeric",
+        "length": "5,2",
+        "constraint": "",
+        "default": "",
+        "description": "",
+        "idx1": "",
         "idx2": "",
         "idx3": "",
         "idx4": "",

@@ -137,7 +137,7 @@ public class BaseModel extends Model {
         return; // Skip columns defined in BaseModel
       }
       const fieldName = toCamelCase(col.colName);
-      const javaType = mapPostgresToJavaType(col.type);
+      const javaType = mapPostgresToJavaType(col.type, col.length);
 
       if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
         implementsRls = true;
@@ -157,17 +157,32 @@ public class BaseModel extends Model {
         imports.add('import javax.validation.constraints.NotNull;');
       }
 
-      const sizeAttributes = [];
-      const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
-      if (javaType === 'String' && isNotNull && !excludeMinLength) {
-        sizeAttributes.push('min = 1');
+      // Numeric handling: Use @Digits
+      if (['numeric', 'decimal'].includes(col.type.toLowerCase()) && col.length) {
+        const parts = col.length.toString().replace(/[()]/g, '').split(',');
+        const precision = parseInt(parts[0], 10);
+        const scale = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+
+        if (!isNaN(precision)) {
+          const integerPart = precision - scale;
+          annotations.push(`@Digits(integer=${integerPart}, fraction=${scale})`);
+          imports.add('import javax.validation.constraints.Digits;');
+        }
       }
-      if (col.length) {
-        sizeAttributes.push(`max = ${col.length}`);
-      }
-      if (sizeAttributes.length > 0) {
-        annotations.push(`@Size(${sizeAttributes.join(', ')})`);
-        imports.add('import javax.validation.constraints.Size;');
+      // String handling: Use @Size
+      else if (javaType === 'String') {
+        const sizeAttributes = [];
+        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+        if (isNotNull && !excludeMinLength) {
+          sizeAttributes.push('min = 1');
+        }
+        if (col.length) {
+          sizeAttributes.push(`max = ${col.length}`);
+        }
+        if (sizeAttributes.length > 0) {
+          annotations.push(`@Size(${sizeAttributes.join(', ')})`);
+          imports.add('import javax.validation.constraints.Size;');
+        }
       }
 
       fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
