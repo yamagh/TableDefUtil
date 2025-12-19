@@ -124,11 +124,18 @@ const SqlLogic = {
     }
 
     // 削除フラグの一致
-    if (leftCols.includes('is_deleted')) {
-      condition += `\nAND ${leftTableState.alias}.is_deleted = false`;
+    const isDeletedConfig = window.AppConfig?.commonColumns?.is_deleted || { name: 'is_deleted', valFalse: false };
+    const isDeletedColName = isDeletedConfig.name;
+    let isDeletedValFalse = isDeletedConfig.valFalse;
+    if (typeof isDeletedValFalse === 'string') {
+      isDeletedValFalse = `'${isDeletedValFalse}'`;
     }
-    if (rightCols.includes('is_deleted')) {
-      condition += `\nAND ${rightTableState.alias}.is_deleted = false`;
+
+    if (leftCols.includes(isDeletedColName)) {
+      condition += `\nAND ${leftTableState.alias}.${isDeletedColName} = ${isDeletedValFalse}`;
+    }
+    if (rightCols.includes(isDeletedColName)) {
+      condition += `\nAND ${rightTableState.alias}.${isDeletedColName} = ${isDeletedValFalse}`;
     }
 
     // ANDを削除
