@@ -81,7 +81,3 @@ department	部署	created_at	作成日時		timestamp		NN	now()
 ## 使用しない技術
 
 - Spring
-
-## テスト
-
-- このプロジェクトにはテストコードはありません。

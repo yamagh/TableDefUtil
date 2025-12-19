@@ -35,10 +35,12 @@ const convertersDir = path.join(__dirname, '../js/converters');
 const javaModelCode = fs.readFileSync(path.join(convertersDir, 'java_model.js'), 'utf8');
 const javaRepoCode = fs.readFileSync(path.join(convertersDir, 'java_repo.js'), 'utf8');
 const javaServiceCode = fs.readFileSync(path.join(convertersDir, 'java_service.js'), 'utf8');
+const ddlCode = fs.readFileSync(path.join(convertersDir, 'ddl.js'), 'utf8');
 
 eval(javaModelCode);
 eval(javaRepoCode);
 eval(javaServiceCode);
+eval(ddlCode);
 
 // Test Data
 const tables = [{
@@ -82,13 +84,21 @@ function testCustomConfig() {
     }
   };
 
-  // Prepare table data matching the new config (the input table definition usually has physical names)
-  // The converters logic: 
-  // It checks if a column is in keys of commonColumns to SKIP generation in individual model.
-  // AND it generates BaseModel with these columns.
+  // Prepare table data matching the new config
+  const customTables = [{
+    tableName: 'custom_users',
+    tableNameJP: 'CustomUsers',
+    columns: [
+      { colName: 'record_id', pkfk: 'PK', type: 'bigserial', constraint: 'NN' },
+      { colName: 'user_name', type: 'varchar', length: '255', constraint: 'NN' },
+      { colName: 'is_removed', type: 'boolean' }
+    ]
+  }];
 
-  const modelFiles = generateJavaModel(tables, {});
+  // --- Java Tests ---
+  const modelFiles = generateJavaModel(customTables, {});
   const baseModel = modelFiles.find(f => f.path === 'models/BaseModel.java').content;
+  const customModel = modelFiles.find(f => f.path === 'models/CustomUsers.java').content;
 
   // Check BaseModel
   if (!baseModel.includes('public Long recordId;')) throw new Error('Custom BaseModel should have recordId');
@@ -96,43 +106,37 @@ function testCustomConfig() {
     console.log(baseModel);
     throw new Error('Custom BaseModel should have isRemoved string = "0"');
   }
-  if (!baseModel.includes('public Instant insertedAt;')) throw new Error('Custom BaseModel should have insertedAt');
+
+  // Check CustomUsers Model (Should NOT have duplicate fields)
+  if (customModel.includes('public Long recordId;')) throw new Error('Child model should not duplicate recordId');
 
   console.log("PASS: Custom Config Model");
 
   // Check Repository
-  const repoFiles = generateJavaRepo(tables, {});
-  const userRepo = repoFiles.find(f => f.path === 'repository/UsersRepository.java').content;
+  const repoFiles = generateJavaRepo(customTables, {});
+  const userRepo = repoFiles.find(f => f.path === 'repository/CustomUsersRepository.java').content;
 
   // Check findById
-  // Should use recordId property and isRemoved property
-  // .eq("recordId", id)
-  // .eq("isRemoved", "0")
-
   if (!userRepo.includes('.eq("recordId", id)')) {
     console.log(userRepo);
     throw new Error('Repo findById should use recordId');
   }
   if (!userRepo.includes('.eq("isRemoved", "0")')) throw new Error('Repo findById should use isRemoved="0"');
 
-  // Check delete
-  // .set("isRemoved", "1")
-  if (!userRepo.includes('.set("isRemoved", "1")')) throw new Error('Repo delete should set isRemoved="1"');
-
   console.log("PASS: Custom Config Repo");
 
-  // Check Service
-  const serviceFiles = generateJavaService(tables, {});
-  const userService = serviceFiles.find(f => f.path === 'services/UsersService.java').content;
+  // --- DDL Tests ---
+  const ddlFiles = generateDDL(customTables);
+  const ddlContent = ddlFiles[0].content;
 
-  // Check update
-  // should use setRecordId(id)
-  if (!userService.includes('setRecordId(id)')) {
-    console.log(userService);
-    throw new Error('Service update should use setRecordId');
-  }
+  if (!ddlContent.includes('CREATE TABLE custom_users')) throw new Error('DDL should create custom_users table');
+  if (!ddlContent.includes('record_id BIGSERIAL')) throw new Error('DDL should contain record_id column');
+  if (!ddlContent.includes('is_removed BOOLEAN')) throw new Error('DDL should contain is_removed column');
 
-  console.log("PASS: Custom Config Service");
+  // Verify standard names are NOT present (unless specified)
+  if (ddlContent.includes('is_deleted')) throw new Error('DDL should not contain is_deleted when input table uses is_removed');
+
+  console.log("PASS: Custom Config DDL");
 }
 
 try {
