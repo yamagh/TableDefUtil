@@ -216,23 +216,24 @@ const App = {
         </div>
       </header>
       <main class="container-fluid">
-        <InputSection @data-loaded="handleDataLoaded" />
-        
         <div v-if="hasData">
           <ProcessingOptions @update:mode="currentMode = $event" />
+        </div>
+        <div v-show="!hasData || currentMode === 'input'">
+          <InputSection @data-loaded="handleDataLoaded" />
+        </div>
           
-          <div v-show="currentMode === 'scaffolding'">
-            <OptionsSection @convert="handleConvert" />
-            <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
-          </div>
+        <div v-show="hasData && currentMode === 'scaffolding'">
+          <OptionsSection @convert="handleConvert" />
+          <ResultSection :results="conversionResults" :formats="convertedFormats" @download-all="handleDownloadAll"/>
+        </div>
 
-          <div v-show="currentMode === 'sql'">
-            <SqlBuilder />
-          </div>
+        <div v-show="hasData && currentMode === 'sql'">
+          <SqlBuilder />
+        </div>
 
-          <div v-show="currentMode === 'preview'">
-            <TablePreviewSection />
-          </div>
+        <div v-show="hasData && currentMode === 'preview'">
+          <TablePreviewSection />
         </div>
       </main>
     </div>

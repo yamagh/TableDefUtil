@@ -20,6 +20,15 @@ const ProcessingOptions = {
       <h2>処理オプション</h2>
       <div class="grid">
         <article 
+          :class="{ 'selected-mode': selectedMode === 'input' }"
+          @click="updateMode('input')"
+          style="cursor: pointer;"
+        >
+          <header><strong><i class="bi bi-pencil-square"></i> 入力</strong></header>
+          ファイルロードやテキスト貼付を行います。
+        </article>
+
+        <article 
           :class="{ 'selected-mode': selectedMode === 'preview' }"
           @click="updateMode('preview')"
           style="cursor: pointer;"
