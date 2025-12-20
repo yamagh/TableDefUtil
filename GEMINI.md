@@ -27,7 +27,7 @@ Vue.js を使用したモダンなシングルページアプリケーション 
       - 構築したクエリに対応する Java (EBean) / TypeScript コードの生成。
       - `count(*)` メソッドの生成オプション。
 - **設定管理**:
-  - `config/config.json` によるデフォルト設定（テーマ、表示カラム、生成オプションなど）の管理。
+  - `config/config.js` によるデフォルト設定（テーマ、表示カラム、生成オプションなど）の管理。
   - 共通カラム（作成日時、更新日時、論理削除など）のカスタマイズ。
 
 ## 使用方法
@@ -94,7 +94,7 @@ department	部署	created_at	作成日時		timestamp		NN	now()
   - `app.js`: メインロジック。
   - `components/`: UIコンポーネント。
   - `converters/`: 各言語への変換ロジック。
-- `config/`: 設定ファイル (`config.json`, `config.js`)。
+- `config/`: 設定ファイル (`config.js`)。
 - `input/`: サーバー入力用のデータファイル。
 - `css/`: スタイルシート。
 - `tests/`: テストコード。

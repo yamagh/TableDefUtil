@@ -225,21 +225,7 @@ const loadConfig = async () => {
     return;
   }
 
-  try {
-    const response = await fetch('config/config.json');
-    if (response.ok) {
-      const config = await response.json();
-      AppState.config = config;
-      // Config-based initialization
-      if (config.sql && config.sql.includeCountMethod !== undefined) {
-        AppState.sql.includeCountMethod = config.sql.includeCountMethod;
-      }
-    } else {
-      console.warn('Failed to load config.json, using defaults.');
-    }
-  } catch (e) {
-    console.warn('Error loading config.json:', e);
-  }
+  console.warn('window.AppConfig is not defined. Using default settings.');
 };
 
 // アプリケーションの起動
