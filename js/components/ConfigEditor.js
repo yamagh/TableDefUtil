@@ -159,7 +159,7 @@ const ConfigEditor = {
 
         <!-- 右カラム -->
         <div>
-          <!-- 共通カラム設定 (旧CommonColumnsConfig) -->
+          <!-- 共通カラム設定 -->
           <article>
             <header><strong>共通カラム設定 (Common Columns)</strong></header>
             <p><small>全テーブル共通で付与されるカラム（BaseModel等）の定義です。</small></p>
