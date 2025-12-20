@@ -32,30 +32,37 @@ const ConfigEditor = {
       { id: 'java-controller', label: 'Java (Controller)' }
     ];
 
-    // CommonColumns用のJSON編集用
-    const commonColumnsJson = Vue.ref('');
-    const commonColumnsError = Vue.ref(null);
+    // --- Global Settings (Theme & FontSize) ---
+    // Note: これらの設定はlocalStorageと連動しているため、ここでの変更もそれを反映する必要があるが、
+    // AppState.configにも保持されているため、そちらを更新するUIを提供する。
+    // 実際の適用はApp.svelte/js側で行われているが、config.jsに保存する値として編集可能にする。
 
-    // 初期化時に CommonColumns を JSON 文字列にする
-    Vue.watchEffect(() => {
-      if (AppState.config && AppState.config.commonColumns) {
-        // 編集中でなければ同期
-        if (document.activeElement && document.activeElement.id === 'common-columns-editor') return;
-        commonColumnsJson.value = JSON.stringify(AppState.config.commonColumns, null, 2);
-      }
+    const globalSettings = Vue.reactive({
+      theme: AppState.config.theme || 'auto',
+      fontSize: AppState.config.fontSize || '100%'
     });
 
-    // CommonColumns JSONの変更を監視してパース
-    const updateCommonColumns = (event) => {
-      commonColumnsJson.value = event.target.value;
-      try {
-        const parsed = JSON.parse(commonColumnsJson.value);
-        AppState.config.commonColumns = parsed;
-        commonColumnsError.value = null;
-      } catch (e) {
-        commonColumnsError.value = 'JSONの形式が正しくありません: ' + e.message;
-      }
-    };
+    // 設定変更をAppStateに反映
+    Vue.watch(() => globalSettings.theme, (val) => {
+      AppState.config.theme = val;
+    });
+    Vue.watch(() => globalSettings.fontSize, (val) => {
+      AppState.config.fontSize = val;
+    });
+
+
+    // --- Common Columns Config (GUI Logic) ---
+    const commonCols = Vue.computed(() => {
+        if (!AppState.config.commonColumns) {
+            AppState.config.commonColumns = {
+                id: 'id',
+                created_at: 'created_at', created_by: 'created_by',
+                updated_at: 'updated_at', updated_by: 'updated_by',
+                is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false }
+            };
+        }
+        return AppState.config.commonColumns;
+    });
 
     // 設定コードの生成
     const generateConfigCode = () => {
@@ -80,9 +87,8 @@ const ConfigEditor = {
       AppState,
       availablePreviewColumns,
       availableExportFormats,
-      commonColumnsJson,
-      commonColumnsError,
-      updateCommonColumns,
+      globalSettings,
+      commonCols,
       copyToClipboard,
       generateConfigCode
     };
@@ -105,8 +111,31 @@ const ConfigEditor = {
       <div v-if="!AppState.config" aria-busy="true">Loading config...</div>
       
       <div v-else class="grid">
-        <!-- 左カラム: 一般設定 -->
+        <!-- 左カラム -->
         <div>
+          <!-- 一般設定 -->
+          <article>
+            <header><strong>一般設定</strong></header>
+            <label>
+              テーマ (初期値)
+              <select v-model="globalSettings.theme">
+                <option value="auto">自動 (システム設定)</option>
+                <option value="light">ライト</option>
+                <option value="dark">ダーク</option>
+              </select>
+            </label>
+            <label>
+              フォントサイズ (初期値)
+              <select v-model="globalSettings.fontSize">
+                <option value="80%">80%</option>
+                <option value="90%">90%</option>
+                <option value="100%">100%</option>
+                <option value="110%">110%</option>
+                <option value="125%">125%</option>
+              </select>
+            </label>
+          </article>
+
           <!-- 表示設定 -->
           <article>
             <header><strong>定義プレビュー初期表示列</strong></header>
@@ -128,8 +157,71 @@ const ConfigEditor = {
           </article>
         </div>
 
-        <!-- 右カラム: 出力設定 -->
+        <!-- 右カラム -->
         <div>
+          <!-- 共通カラム設定 (旧CommonColumnsConfig) -->
+          <article>
+            <header><strong>共通カラム設定 (Common Columns)</strong></header>
+            <p><small>全テーブル共通で付与されるカラム（BaseModel等）の定義です。</small></p>
+            
+            <details>
+                <summary>基本カラム名</summary>
+                <div class="grid">
+                  <label>
+                    ID (PK)
+                    <input type="text" v-model="commonCols.id">
+                  </label>
+                  <label>
+                    作成日時
+                    <input type="text" v-model="commonCols.created_at">
+                  </label>
+                  <label>
+                    作成者
+                    <input type="text" v-model="commonCols.created_by">
+                  </label>
+                </div>
+                <div class="grid">
+                  <label>
+                    更新日時
+                    <input type="text" v-model="commonCols.updated_at">
+                  </label>
+                  <label>
+                    更新者
+                    <input type="text" v-model="commonCols.updated_by">
+                  </label>
+                </div>
+            </details>
+
+            <details>
+                <summary>論理削除 (Logical Delete)</summary>
+                <div class="grid">
+                  <label>
+                    カラム名
+                    <input type="text" v-model="commonCols.is_deleted.name">
+                  </label>
+                  <label>
+                    型
+                    <select v-model="commonCols.is_deleted.type">
+                      <option value="boolean">Boolean</option>
+                      <option value="string">String</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div v-if="commonCols.is_deleted.type === 'string'" class="grid">
+                   <label>
+                     削除済の値 (Trueとして扱う値)
+                     <input type="text" v-model="commonCols.is_deleted.valTrue">
+                   </label>
+                   <label>
+                     有効な値 (Falseとして扱う値)
+                     <input type="text" v-model="commonCols.is_deleted.valFalse">
+                   </label>
+                </div>
+                 <p v-if="commonCols.is_deleted.type === 'string'"><small>※ String型の場合、指定された文字以外の値は考慮されません。</small></p>
+            </details>
+          </article>
+
           <!-- アプリケーション雛形 -->
           <article>
             <header><strong>雛形生成 デフォルトフォーマット</strong></header>
@@ -162,23 +254,6 @@ const ConfigEditor = {
           </article>
         </div>
       </div>
-
-      <!-- 下段: 共通カラム設定 (JSON) -->
-      <article>
-        <header><strong>共通カラム設定 (Common Columns)</strong></header>
-        <p><small>論理削除フラグなどの共通カラム定義をJSON形式で編集します。</small></p>
-        <textarea 
-          id="common-columns-editor"
-          :value="commonColumnsJson"
-          @input="updateCommonColumns"
-          rows="10" 
-          style="font-family: monospace; font-size: 0.9rem;"
-          :aria-invalid="commonColumnsError ? 'true' : null"
-        ></textarea>
-        <small v-if="commonColumnsError" style="color: var(--pico-form-element-invalid-border-color);">
-          {{ commonColumnsError }}
-        </small>
-      </article>
 
     </section>
   `
