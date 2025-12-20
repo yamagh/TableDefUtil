@@ -4,12 +4,12 @@ const { createApp, ref, reactive, computed } = Vue;
 const App = {
   components: {
     InputSection,
-    ProcessingOptions,
     OptionsSection,
     ResultSection,
     SqlBuilder,
     TablePreviewSection,
-    ConfigEditor
+    ConfigEditor,
+    Navigation,
   },
   setup() {
     // モード: preview, scaffolding, sql
@@ -199,27 +199,18 @@ const App = {
   },
   template: `
     <div>
-      <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem; display: flex; justify-content: space-between; align-items: center;">
-        <h1>テーブル定義変換ツール</h1>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-
-          <select v-model="fontSize" @change="updateFontSize($event.target.value)" style="margin-bottom: 0; padding: 0.25rem; font-size: 0.8rem; width: auto; border-color: var(--pico-muted-border-color);">
-            <option value="80%">極小 (80%)</option>
-            <option value="90%">小 (90%)</option>
-            <option value="100%">標準 (100%)</option>
-            <option value="110%">大 (110%)</option>
-            <option value="125%">特大 (125%)</option>
-          </select>
-          <button style="border: none;" class="outline secondary" @click="toggleTheme">
-            <i v-if="theme === 'light'" class="bi bi-moon-fill"></i>
-            <i v-else class="bi bi-sun-fill"></i>
-          </button>
-        </div>
-      </header>
+      <Navigation 
+        :current-mode="currentMode" 
+        :has-data="hasData" 
+        :theme="theme" 
+        :font-size="fontSize"
+        @update:mode="currentMode = $event"
+        @toggle-theme="toggleTheme"
+        @update:font-size="updateFontSize"
+      />
+      
       <main class="container-fluid">
-        <div v-if="hasData">
-          <ProcessingOptions @update:mode="currentMode = $event" />
-        </div>
+        <!-- Default to Input mode if hasData is false, or if explicit input mode -->
         <div v-show="!hasData || currentMode === 'input'">
           <InputSection @data-loaded="handleDataLoaded" />
         </div>
