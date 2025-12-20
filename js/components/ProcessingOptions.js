@@ -55,6 +55,16 @@ const ProcessingOptions = {
           GUIでSQLを構築し、Java/TSコードを生成します。
         </article>
       </div>
+      <div class="grid" style="margin-top: 1rem;">
+        <article
+          :class="{ 'selected-mode': selectedMode === 'config' }"
+          @click="updateMode('config')"
+          style="cursor: pointer;"
+        >
+          <header><strong><i class="bi bi-gear"></i> 設定</strong></header>
+          設定ファイルの編集を行います。
+        </article>
+      </div>
     </section>
   `
 };

@@ -8,7 +8,8 @@ const App = {
     OptionsSection,
     ResultSection,
     SqlBuilder,
-    TablePreviewSection
+    TablePreviewSection,
+    ConfigEditor
   },
   setup() {
     // モード: preview, scaffolding, sql
@@ -234,6 +235,10 @@ const App = {
 
         <div v-show="hasData && currentMode === 'preview'">
           <TablePreviewSection />
+        </div>
+
+        <div v-show="hasData && currentMode === 'config'">
+          <ConfigEditor />
         </div>
       </main>
     </div>
