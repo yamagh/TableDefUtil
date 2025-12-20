@@ -155,3 +155,75 @@ input.sm {
   min-width: 60px;
   height: 1.5rem;
 }
+
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none; /* Allow clicking through container */
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 300px;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--pico-card-background-color);
+  color: var(--pico-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideIn 0.3s ease-out;
+  border-left: 5px solid var(--pico-color-zinc-500);
+}
+
+.toast i {
+  font-size: 1.25rem;
+}
+
+.toast-success {
+  border-left-color: var(--pico-color-jade-500);
+}
+.toast-success i {
+  color: var(--pico-color-jade-500);
+}
+
+.toast-error {
+  border-left-color: var(--pico-color-red-500);
+}
+.toast-error i {
+  color: var(--pico-color-red-500);
+}
+
+.toast-warning {
+  border-left-color: var(--pico-color-amber-500);
+}
+.toast-warning i {
+  color: var(--pico-color-amber-500);
+}
+
+.toast-info {
+  border-left-color: var(--pico-color-azure-500);
+}
+.toast-info i {
+  color: var(--pico-color-azure-500);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.fade-out {
+  animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+  to { transform: translateX(100%); opacity: 0; }
+}

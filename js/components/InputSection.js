@@ -108,20 +108,20 @@ const InputSection = {
         try {
           const successful = document.execCommand('copy');
           if (successful) {
-            alert('クリップボードにコピーしました');
+            Toast.success('クリップボードにコピーしました');
           } else {
-            alert('コピーに失敗しました');
+            Toast.error('コピーに失敗しました');
           }
         } catch (err) {
           console.error('Fallback: Oops, unable to copy', err);
-          alert('コピーに失敗しました');
+          Toast.error('コピーに失敗しました');
         }
         document.body.removeChild(textArea);
       };
 
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(() => {
-          alert('クリップボードにコピーしました');
+          Toast.success('クリップボードにコピーしました');
         }).catch(err => {
           console.error('Async: Could not copy text: ', err);
           fallbackCopy(text);
@@ -165,7 +165,7 @@ const InputSection = {
     // サーバーファイル読み込みハンドラ
     const handleServerFileLoad = async () => {
       if (!selectedServerFile.value) {
-        alert('ファイルを選択してください。');
+        Toast.warning('ファイルを選択してください。');
         return;
       }
 
@@ -184,7 +184,7 @@ const InputSection = {
         emit('data-loaded', text);
       } catch (e) {
         console.error(e);
-        alert('ファイルの読み込みに失敗しました。');
+        Toast.error('ファイルの読み込みに失敗しました。');
       }
     };
 
@@ -202,7 +202,7 @@ const InputSection = {
     // テキストエリア入力時
     const handleTextSubmit = () => {
       if (!textInput.value.trim()) {
-        alert('入力データがありません。');
+        Toast.warning('入力データがありません。');
         return;
       }
       emit('data-loaded', textInput.value);

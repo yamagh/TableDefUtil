@@ -87,6 +87,8 @@ const App = {
             convertedFormats.value = [];
             convertedRlsOptions.value = null;
             // alert('JSONファイルを読み込みました。');
+            Toast.success('JSONデータを読み込みました');
+            currentMode.value = 'preview';
             return;
           }
         } catch (e) {
@@ -101,7 +103,7 @@ const App = {
         complete: (results) => {
           if (results.errors.length > 0) {
             console.error(results.errors);
-            alert('パースエラー: ' + JSON.stringify(results.errors));
+            Toast.error('パースエラー: ' + JSON.stringify(results.errors));
             return;
           }
           const tables = transformToIntermediate(results.data);
@@ -114,6 +116,9 @@ const App = {
           conversionResults.value = null;
           convertedFormats.value = [];
           convertedRlsOptions.value = null;
+
+          Toast.success('データを読み込みました');
+          currentMode.value = 'preview';
         }
       });
     };
@@ -121,7 +126,7 @@ const App = {
     // 変換ハンドラ
     const handleConvert = ({ formats, rls }) => {
       if (AppState.parsedTables.length === 0) {
-        alert('データを入力してください。');
+        Toast.warning('データを入力してください。');
         return;
       }
 
@@ -143,12 +148,13 @@ const App = {
       conversionResults.value = results;
       convertedFormats.value = formats;
       convertedRlsOptions.value = rls;
+      Toast.success('変換が完了しました');
     };
 
     // 全てのファイルをダウンロードするハンドラ
     const handleDownloadAll = () => {
       if (!convertedFormats.value || convertedFormats.value.length === 0) {
-        alert("先に「変換実行」を押してください。");
+        Toast.warning("先に「変換実行」を押してください。");
         return;
       }
 
