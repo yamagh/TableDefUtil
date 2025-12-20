@@ -39,6 +39,19 @@ const App = {
       updateTheme(next);
     };
 
+    // フォントサイズ
+    const initialFontSize = localStorage.getItem('fontSize') || (AppState.config && AppState.config.fontSize) || '100%';
+    const fontSize = ref(initialFontSize);
+
+    const updateFontSize = (newSize) => {
+      fontSize.value = newSize;
+      localStorage.setItem('fontSize', newSize);
+      document.documentElement.style.fontSize = newSize;
+    };
+
+    // 初期化
+    document.documentElement.style.fontSize = fontSize.value;
+
     // 変換結果
     const conversionResults = ref(null);
     // 変換形式
@@ -178,17 +191,29 @@ const App = {
       handleDownloadAll,
       conversionResults,
       convertedFormats,
-      hasData
+      hasData,
+      fontSize,
+      updateFontSize
     };
   },
   template: `
     <div>
       <header class="container-fluid" style="padding-top: 3rem; padding-bottom: 6rem; display: flex; justify-content: space-between; align-items: center;">
         <h1>テーブル定義変換ツール</h1>
-        <button style="border: none;" class="outline secondary" @click="toggleTheme">
-          <i v-if="theme === 'light'" class="bi bi-moon-fill"></i>
-          <i v-else class="bi bi-sun-fill"></i>
-        </button>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+
+          <select v-model="fontSize" @change="updateFontSize($event.target.value)" style="margin-bottom: 0; padding: 0.25rem; font-size: 0.8rem; width: auto; border-color: var(--pico-muted-border-color);">
+            <option value="80%">極小 (80%)</option>
+            <option value="90%">小 (90%)</option>
+            <option value="100%">標準 (100%)</option>
+            <option value="110%">大 (110%)</option>
+            <option value="125%">特大 (125%)</option>
+          </select>
+          <button style="border: none;" class="outline secondary" @click="toggleTheme">
+            <i v-if="theme === 'light'" class="bi bi-moon-fill"></i>
+            <i v-else class="bi bi-sun-fill"></i>
+          </button>
+        </div>
       </header>
       <main class="container-fluid">
         <InputSection @data-loaded="handleDataLoaded" />

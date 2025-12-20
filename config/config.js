@@ -1,5 +1,6 @@
 window.AppConfig = {
   "theme": "auto",
+  "fontSize": "100%",
   "preview": {
     "defaultVisibleColumns": [
       "colNameJP",
