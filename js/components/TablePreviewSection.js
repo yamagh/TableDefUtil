@@ -9,6 +9,10 @@ const TablePreviewSection = {
     // 現在表示中のテーブル (スクロール追従用)
     const activeTable = Vue.ref('');
 
+    // Handsontable instance
+    let hotInstance = null;
+    const hotContainer = Vue.ref(null);
+
     // 検索結果
     const filteredTables = Vue.computed(() => {
       const query = searchQuery.value.trim().toLowerCase();
@@ -153,17 +157,173 @@ const TablePreviewSection = {
       });
     };
 
-    // テーブルデータが変わったり、フィルタリングが変わったりしたらObserverを再設定
+    // Edit Mode Toggle Logic
+    const isEditMode = Vue.ref(false);
+
+    // Flatten tables for Handsontable
+    const flattenTables = (tables) => {
+      const flatData = [];
+      tables.forEach(table => {
+        table.columns.forEach(col => {
+          flatData.push({
+            tableName: table.tableName,
+            tableNameJP: table.tableNameJP,
+            colName: col.colName,
+            colNameJP: col.colNameJP,
+            pkfk: col.pkfk,
+            type: col.type,
+            length: col.length,
+            constraint: col.constraint,
+            default: col.default,
+            description: col.description,
+            idx1: col.idx1,
+            idx2: col.idx2,
+            idx3: col.idx3,
+            idx4: col.idx4,
+            idx5: col.idx5
+          });
+        });
+      });
+      return flatData;
+    };
+
+    // Reconstruct tables from Handsontable data
+    const reconstructTables = (flatData) => {
+      // Group by tableName
+      const tablesMap = new Map();
+      
+      // Preserve original structure to keep generic table props if any (though currently simple)
+      // We will rebuild from scratch based on flatData order to allow reordering tables/columns via grid
+      
+      flatData.forEach(row => {
+        // Skip empty rows if user clears them (optional check)
+        if (!row.tableName || !row.colName) return;
+
+        if (!tablesMap.has(row.tableName)) {
+          tablesMap.set(row.tableName, {
+            tableName: row.tableName,
+            tableNameJP: row.tableNameJP || row.tableName, // fallback
+            columns: []
+          });
+        }
+        
+        const table = tablesMap.get(row.tableName);
+        // Ensure logical name sync (last row wins or first? let's update it to ensure consistency)
+        if (row.tableNameJP) table.tableNameJP = row.tableNameJP;
+
+        table.columns.push({
+          colName: row.colName,
+          colNameJP: row.colNameJP || '',
+          pkfk: row.pkfk || '',
+          type: row.type || '',
+          length: row.length || '',
+          constraint: row.constraint || '',
+          default: row.default || '',
+          description: row.description || '',
+          idx1: row.idx1 || '',
+          idx2: row.idx2 || '',
+          idx3: row.idx3 || '',
+          idx4: row.idx4 || '',
+          idx5: row.idx5 || ''
+        });
+      });
+
+      return Array.from(tablesMap.values());
+    };
+
+    const initHandsontable = () => {
+      const container = document.getElementById('hot-container');
+      if (!container) return;
+
+      const data = flattenTables(AppState.parsedTables);
+
+      hotInstance = new Handsontable(container, {
+        data: data,
+        colHeaders: [
+          'Table Name', 'Table Name (JP)', 
+          'Column Name', 'Column Name (JP)', 
+          'PK/FK', 'Type', 'Length', 'Constraint', 
+          'Default', 'Description', 
+          'Idx1', 'Idx2', 'Idx3', 'Idx4', 'Idx5'
+        ],
+        columns: [
+          { data: 'tableName', type: 'text' },
+          { data: 'tableNameJP', type: 'text' },
+          { data: 'colName', type: 'text' },
+          { data: 'colNameJP', type: 'text' },
+          { data: 'pkfk', type: 'text' },
+          { data: 'type', type: 'text' },
+          { data: 'length', type: 'text' },
+          { data: 'constraint', type: 'text' },
+          { data: 'default', type: 'text' },
+          { data: 'description', type: 'text' },
+          { data: 'idx1', type: 'text' },
+          { data: 'idx2', type: 'text' },
+          { data: 'idx3', type: 'text' },
+          { data: 'idx4', type: 'text' },
+          { data: 'idx5', type: 'text' }
+        ],
+        rowHeaders: true,
+        width: '100%',
+        height: 'auto',
+        licenseKey: 'non-commercial-and-evaluation',
+        contextMenu: true,
+        filters: true,
+        dropdownMenu: true,
+        autoWrapRow: true,
+        autoWrapCol: true,
+        manualRowMove: true,
+        manualColumnMove: true, // Allow reordering columns in grid? Maybe not necessary but standard features
+        minSpareRows: 1, // Always have an empty row at bottom for adding new columns/tables
+        afterChange: (changes, source) => {
+          if (source === 'loadData') return;
+          // Sync back to AppState
+          // Debounce could be good here if performance is an issue, but for now direct update
+          // However, be careful not to rebuild everything on every keystroke if it causes UI flicker
+          // Since we are in Edit Mode, the Preview UI (Cards) is hidden, so re-reactivity might be cheap.
+          
+          const newData = hotInstance.getSourceData();
+          // Filter out empty rows (minSpareRows)
+          const validRows = newData.filter(r => r.tableName && r.colName);
+          
+          // Rebuild AppState
+          AppState.parsedTables.splice(0, AppState.parsedTables.length, ...reconstructTables(validRows));
+        }
+      });
+    };
+
+    Vue.watch(isEditMode, (newVal) => {
+      if (newVal) {
+        // Switch to Edit Mode -> Init HOT
+        Vue.nextTick(() => {
+          initHandsontable();
+        });
+      } else {
+        // Switch to Preview Mode -> Destroy HOT
+        if (hotInstance) {
+          hotInstance.destroy();
+          hotInstance = null;
+        }
+        setupIntersectionObserver();
+      }
+    });
+
+    // テーブルデータが変わったり、フィルタリングが変わったりしたらObserverを再設定 (Preview Mode Only)
     Vue.watch(filteredTables, () => {
-      setupIntersectionObserver();
+      if (!isEditMode.value) {
+        setupIntersectionObserver();
+      }
     }, { flush: 'post' }); // DOM更新後に実行
 
     Vue.onMounted(() => {
-      setupIntersectionObserver();
+      if (!isEditMode.value) {
+        setupIntersectionObserver();
+      }
     });
 
     Vue.onUnmounted(() => {
       if (observer) observer.disconnect();
+      if (hotInstance) hotInstance.destroy();
     });
 
     return {
@@ -179,7 +339,7 @@ const TablePreviewSection = {
       displayOptionColumns,
       searchQuery,
       activeTable,
-      isEditMode: Vue.ref(false),
+      isEditMode,
       tables,
       addTable: () => {
         let i = 1;
@@ -192,55 +352,27 @@ const TablePreviewSection = {
         AppState.parsedTables.push({
           tableName: pName,
           tableNameJP: '新規テーブル',
-          columns: []
+          columns: [{
+             colName: 'id', colNameJP: 'ID', pkfk: 'PK', type: 'bigserial', constraint: 'NN',
+             idx1: '1'
+          }]
         });
+        
+        // If in edit mode, refresh the table? 
+        // Or user mainly adds via grid in edit mode.
+        // If they click "Add Table" button (which is hidden in edit mode now per plan strategy), this works.
+        // Wait, "Add Table" button location: 
+        // In the new plan, "Hide Sidebar and Card Layout" -> So "Add Table" button is also hidden.
+        // Users should just add rows in Handsontable.
       },
       removeTable: (index) => {
         if (confirm('このテーブルを削除しますか？')) {
           AppState.parsedTables.splice(index, 1);
         }
       },
-      addColumn: (table) => {
-        let i = 1;
-        let cName = 'new_col';
-        while (table.columns.some(c => c.colName === cName)) {
-          i++;
-          cName = `new_col_${i}`;
-        }
-
-        table.columns.push({
-          colName: cName,
-          colNameJP: '新規カラム',
-          type: 'varchar',
-          length: '255',
-          constraint: '',
-          pkfk: '',
-          default: '',
-          description: '',
-          idx1: '', idx2: '', idx3: '', idx4: '', idx5: ''
-        });
-      },
-      removeColumn: (table, index) => {
-        table.columns.splice(index, 1);
-      },
-      moveColumn: (table, index, direction) => {
-        if (direction === 'up' && index > 0) {
-          const temp = table.columns[index];
-          table.columns[index] = table.columns[index - 1];
-          table.columns[index - 1] = temp;
-        } else if (direction === 'down' && index < table.columns.length - 1) {
-          const temp = table.columns[index];
-          table.columns[index] = table.columns[index + 1];
-          table.columns[index + 1] = temp;
-        }
-      },
       downloadTsv: () => {
         const data = [];
         AppState.parsedTables.forEach(table => {
-          // カラムがないテーブルも出力する場合はここで空行を追加するなどの処理が必要だが、
-          // 基本的にカラム定義がメインなので、カラムがないテーブルは出力されない（行が作られない）
-          // 必要ならダミーカラムを入れるなどの対応検討。今のところはカラム必須とする。
-
           table.columns.forEach(col => {
             data.push({
               'TableName': table.tableName,
@@ -267,7 +399,7 @@ const TablePreviewSection = {
           delimiter: "\t",
           header: true,
           newline: "\n",
-          quotes: false, // 必要なければクォートしない（TSVは通常しないことが多いが、改行などある場合は自動判定される）
+          quotes: false,
         });
 
         downloadFile(tsvContent, 'table_definitions_edited.tsv');
@@ -280,23 +412,32 @@ const TablePreviewSection = {
   },
   template: `
     <section id="table-preview" v-if="tables.length > 0">
-      <div class="grid" style="grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
+      
+      <!-- Top Actions Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--muted-border-color);">
+         <div>
+            <label style="display: inline-flex; align-items: center; cursor: pointer;">
+              <input type="checkbox" role="switch" v-model="isEditMode">
+              <span style="font-weight: bold; margin-left: 0.5rem;">編集モード (Spreadsheet)</span>
+            </label>
+         </div>
+         <div style="display: flex; gap: 0.5rem;">
+            <button class="outline secondary" style="font-size: 0.9rem; padding: 0.4rem 1rem;" @click="downloadTsv"><i class="bi bi-file-earmark-arrow-down"></i> TSV保存</button>
+            <button class="outline secondary" style="font-size: 0.9rem; padding: 0.4rem 1rem;" @click="downloadJson"><i class="bi bi-file-earmark-code"></i> JSON保存</button>
+         </div>
+      </div>
+
+      <!-- Edit Mode: Handsontable -->
+      <div v-if="isEditMode">
+         <div id="hot-container" style="width: 100%; height: 80vh; overflow: hidden;"></div>
+         <small class="muted">※ 行を追加するには最下部の空行に入力してください。テーブル名が同じ行は同じテーブルとして扱われます。</small>
+      </div>
+
+      <!-- View Mode: Card List -->
+      <div v-else class="grid" style="grid-template-columns: 350px 1fr; gap: 2rem; align-items: start;">
         <!-- Sidebar Navigation -->
         <aside style="position: sticky; top: 2rem; max-height: 100vh; overflow-y: auto;">
           
-          <!-- Edit Mode & Actions -->
-          <div style="margin-bottom: 1rem; border-bottom: 1px solid var(--muted-border-color); padding-bottom: 1rem;">
-            <label>
-              <input type="checkbox" role="switch" v-model="isEditMode">
-              編集モード
-            </label>
-            <div v-if="isEditMode" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-               <button class="outline" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="addTable"><i class="bi bi-plus-circle"></i> テーブル追加</button>
-               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadTsv"><i class="bi bi-file-earmark-arrow-down"></i> TSV保存</button>
-               <button class="outline secondary" style="font-size: 0.8rem; padding: 0.2rem 0.5rem;" @click="downloadJson"><i class="bi bi-file-earmark-code"></i> JSON保存</button>
-            </div>
-          </div>
-
           <!-- Column Visibility Settings (Dropdown) -->
           <details class="dropdown" style="margin-bottom: 1rem;">
             <summary><i class="bi bi-layout-three-columns"></i> 表示カラム設定</summary>
@@ -342,53 +483,26 @@ const TablePreviewSection = {
         <div>
           <!-- Table List -->
           <div v-for="(table, tIndex) in tables" :key="table.tableName + '_' + tIndex" :id="'table-def-' + table.tableName" class="card" style="margin-bottom: 2rem;">
-            <header style="display: flex; justify-content: space-between; align-items: center;">
-              <div v-if="!isEditMode">
+            <header>
                 <strong>{{ table.tableNameJP }} ({{ table.tableName }})</strong>
-                <!-- <p v-if="table.description" style="margin-bottom: 0; font-size: 0.9rem; color: var(--muted-color);">{{ table.description }}</p> -->
-              </div>
-              <div v-else style="display: flex; gap: 0.5rem; width: 100%;">
-                <input type="text" v-model="table.tableNameJP" placeholder="論理名" style="margin-bottom: 0;">
-                <input type="text" v-model="table.tableName" placeholder="物理名" style="margin-bottom: 0;">
-              </div>
-              
-              
-              <button v-if="isEditMode" class="outline contrast" style="margin-left: 1rem; padding: 0.2rem 0.5rem; font-size: 0.8rem; white-space: nowrap;" @click="removeTable(tIndex)"><i class="bi bi-trash"></i> 削除</button>
             </header>
             <div style="overflow-x: auto;">
               <table role="grid">
                 <thead>
                   <tr>
-                    <th v-if="isEditMode" style="width: 80px;">操作</th>
                     <th v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
                       {{ def.label }}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(col, cIndex) in table.columns" :key="cIndex" v-show="shouldShowRow(col) || isEditMode">
-                    <td v-if="isEditMode">
-                       <div style="display: flex; gap: 2px;">
-                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'up')" :disabled="cIndex === 0"><i class="bi bi-arrow-up"></i></button>
-                         <button class="outline" style="padding: 2px 4px; font-size: 0.7rem;" @click="moveColumn(table, cIndex, 'down')" :disabled="cIndex === table.columns.length - 1"><i class="bi bi-arrow-down"></i></button>
-                         <button class="outline contrast" style="padding: 2px 4px; font-size: 0.7rem;" @click="removeColumn(table, cIndex)"><i class="bi bi-x-lg"></i></button>
-                       </div>
-                    </td>
+                  <tr v-for="(col, cIndex) in table.columns" :key="cIndex" v-show="shouldShowRow(col)">
                     <td v-for="def in columnsDef" :key="def.key" v-show="visibleColumns.includes(def.key)">
-                      <template v-if="!isEditMode">
                         {{ col[def.key] }}
-                      </template>
-                      <template v-else>
-                         <input v-if="def.key !== 'colNo'" type="text" v-model="col[def.key]" class="sm">
-                         <span v-else>{{ cIndex + 1 }}</span>
-                      </template>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="isEditMode" style="padding: 0.5rem; text-align: center;">
-                 <button class="outline" style="width: 100%;" @click="addColumn(table)"><i class="bi bi-plus-lg"></i> カラム追加</button>
-              </div>
             </div>
           </div>
         </div>

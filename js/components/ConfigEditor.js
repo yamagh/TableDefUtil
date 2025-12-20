@@ -32,11 +32,7 @@ const ConfigEditor = {
       { id: 'java-controller', label: 'Java (Controller)' }
     ];
 
-    // --- Global Settings (Theme & FontSize) ---
-    // Note: これらの設定はlocalStorageと連動しているため、ここでの変更もそれを反映する必要があるが、
-    // AppState.configにも保持されているため、そちらを更新するUIを提供する。
-    // 実際の適用はApp.svelte/js側で行われているが、config.jsに保存する値として編集可能にする。
-
+    // --- Global Settings (テーマ & フォントサイズ) ---
     const globalSettings = Vue.reactive({
       theme: AppState.config.theme || 'auto',
       fontSize: AppState.config.fontSize || '100%'

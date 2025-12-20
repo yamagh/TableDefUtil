@@ -24,6 +24,7 @@
   "dependencies": {
     "@picocss/pico": "^2.1.1",
     "bootstrap-icons": "^1.13.1",
+    "handsontable": "^16.2.0",
     "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "sql-formatter": "^15.6.12",
