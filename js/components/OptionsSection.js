@@ -40,8 +40,8 @@ const OptionsSection = {
   emits: ['convert'],
   setup(props, { emit }) {
     // 選択されたフォーマット
-    const defaultFormats = (AppState.config && AppState.config.export && AppState.config.export.defaultFormats)
-      ? AppState.config.export.defaultFormats
+    const defaultFormats = (App.State.config && App.State.config.export && App.State.config.export.defaultFormats)
+      ? App.State.config.export.defaultFormats
       : ['ddl', 'ddl-play', 'typescript', 'zod-schema', 'zod-type', 'java-model', 'java-repo', 'java-service', 'java-controller'];
 
     const selectedFormats = Vue.ref(defaultFormats);
@@ -60,7 +60,7 @@ const OptionsSection = {
     ];
 
     // RLS (Row-Level Security) オプション
-    const rlsConfig = (AppState.config && AppState.config.export && AppState.config.export.rls) || {};
+    const rlsConfig = (App.State.config && App.State.config.export && App.State.config.export.rls) || {};
     const rls = Vue.reactive({
       enabled: rlsConfig.enabled !== undefined ? rlsConfig.enabled : false,
       tenantIdColumn: rlsConfig.tenantIdColumn || 'tenant_id',

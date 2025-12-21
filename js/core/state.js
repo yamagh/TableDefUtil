@@ -1,7 +1,11 @@
 // Global の状態管理
 // Vue はグローバルにロードされていることを前提
 
-const AppState = Vue.reactive({
+// Initialize Namespace
+window.App = window.App || {};
+
+// Define State in Namespace
+App.State = Vue.reactive({
   // パースされたテーブル定義
   parsedTables: [],
 
@@ -38,5 +42,5 @@ const AppState = Vue.reactive({
   }
 });
 
-// コンソールデバッグ用
-window.AppState = AppState;
+// Backward compatibility alias & Console debug
+window.AppState = App.State;

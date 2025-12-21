@@ -84,7 +84,7 @@ const SqlBuilder = {
      </article>
   `,
   setup() {
-    const sql = Vue.computed(() => AppState.sql);
+    const sql = Vue.computed(() => App.State.sql);
     const selectClauseQuery = Vue.ref('');
     const generatedFiles = Vue.shallowRef([]);
     const activeTab = Vue.ref('');
@@ -93,7 +93,7 @@ const SqlBuilder = {
     Vue.watch(() => sql.value.selectedTables, (newTables) => {
       const selects = [];
       newTables.forEach(t => {
-        const def = AppState.parsedTables.find(table => table.tableName === t.tableName);
+        const def = App.State.parsedTables.find(table => table.tableName === t.tableName);
         if (def) {
           def.columns.forEach(col => {
             selects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}${col.colNameJP ? (' /* ' + col.colNameJP + ' */') : ''}`);
@@ -112,7 +112,7 @@ const SqlBuilder = {
         return;
       }
       try {
-        const files = SqlLogic.generateAutoCode(selectClauseQuery.value);
+        const files = App.Core.SqlLogic.generateAutoCode(selectClauseQuery.value);
         generatedFiles.value = Array.isArray(files) ? files : [];
         if (generatedFiles.value.length > 0 && !generatedFiles.value.find(f => f.path === activeTab.value)) {
           activeTab.value = generatedFiles.value[0].path;
@@ -143,6 +143,8 @@ const SqlBuilder = {
     const downloadZip = () => {
       if (!generatedFiles.value.length) return;
       if (typeof JSZip === 'undefined') {
+        // Toast is available globally via ToastNotification.js logic (assumed) or app.js
+        // For safety, keeping alert if unsure, but app.js uses Toast.
         alert('JSZip not loaded');
         return;
       }
@@ -150,7 +152,7 @@ const SqlBuilder = {
       generatedFiles.value.forEach(f => zip.file(f.path, f.content));
       zip.generateAsync({ type: "blob" }).then(content => {
         const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
-        downloadFile(content, `sql-generated-code-${now}.zip`);
+        App.Utils.Common.downloadFile(content, `sql-generated-code-${now}.zip`);
       });
     };
 

@@ -1,4 +1,6 @@
-window.AppConfig = {
+App = App || {};
+
+App.State.config = {
   "theme": "auto",
   "fontSize": "100%",
   "preview": {
@@ -46,3 +48,5 @@ window.AppConfig = {
     }
   }
 };
+
+window.AppConfig = App.State.config;

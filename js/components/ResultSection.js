@@ -58,7 +58,7 @@ const ResultSection = {
     // 現在の結果をダウンロード
     const downloadCurrent = () => {
       const content = getResultContent(activeTab.value);
-      downloadFile(content, 'output.txt'); // Helper from common.js
+      App.Utils.Common.downloadFile(content, 'output.txt'); // Helper from common.js
     };
 
     // すべての結果をダウンロード

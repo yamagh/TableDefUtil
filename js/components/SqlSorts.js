@@ -27,22 +27,22 @@ const SqlSorts = {
   `,
   setup() {
     // ソート順
-    const sorts = Vue.computed(() => AppState.sql.sorts);
+    const sorts = Vue.computed(() => App.State.sql.sorts);
     // 選択されたテーブル
-    const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
+    const selectedTables = Vue.computed(() => App.State.sql.selectedTables);
 
     // ソート順を追加
-    const addSort = () => SqlLogic.addSort();
+    const addSort = () => App.Core.SqlLogic.addSort();
     // ソート順を削除
-    const removeSort = (index) => SqlLogic.removeSort(index);
+    const removeSort = (index) => App.Core.SqlLogic.removeSort(index);
     // ソート順を移動
-    const moveSort = (index, dir) => SqlLogic.moveSort(index, dir);
+    const moveSort = (index, dir) => App.Core.SqlLogic.moveSort(index, dir);
 
     // 列を取得
     const getColumns = (alias) => {
-      const t = AppState.sql.selectedTables.find(t => t.alias === alias);
+      const t = App.State.sql.selectedTables.find(t => t.alias === alias);
       if (!t) return [];
-      const def = AppState.parsedTables.find(d => d.tableName === t.tableName);
+      const def = App.State.parsedTables.find(d => d.tableName === t.tableName);
       return def ? def.columns : [];
     };
 

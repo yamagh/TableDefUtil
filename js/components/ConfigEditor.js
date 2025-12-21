@@ -34,37 +34,37 @@ const ConfigEditor = {
 
     // --- Global Settings (テーマ & フォントサイズ) ---
     const globalSettings = Vue.reactive({
-      theme: AppState.config.theme || 'auto',
-      fontSize: AppState.config.fontSize || '100%'
+      theme: App.State.config.theme || 'auto',
+      fontSize: App.State.config.fontSize || '100%'
     });
 
     // 設定変更をAppStateに反映
     Vue.watch(() => globalSettings.theme, (val) => {
-      AppState.config.theme = val;
+      App.State.config.theme = val;
     });
     Vue.watch(() => globalSettings.fontSize, (val) => {
-      AppState.config.fontSize = val;
+      App.State.config.fontSize = val;
     });
 
 
     // --- Common Columns Config (GUI Logic) ---
     const commonCols = Vue.computed(() => {
-        if (!AppState.config.commonColumns) {
-            AppState.config.commonColumns = {
+        if (!App.State.config.commonColumns) {
+            App.State.config.commonColumns = {
                 id: 'id',
                 created_at: 'created_at', created_by: 'created_by',
                 updated_at: 'updated_at', updated_by: 'updated_by',
                 is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false }
             };
         }
-        return AppState.config.commonColumns;
+        return App.State.config.commonColumns;
     });
 
     // 設定コードの生成
     const generateConfigCode = () => {
-      if (!AppState.config) return '';
+      if (!App.State.config) return '';
       // デープコピーして整形（必要なら）
-      const configObj = JSON.parse(JSON.stringify(AppState.config));
+      const configObj = JSON.parse(JSON.stringify(App.State.config));
       return `window.AppConfig = ${JSON.stringify(configObj, null, 2)};`;
     };
 
@@ -80,7 +80,7 @@ const ConfigEditor = {
     };
 
     return {
-      AppState,
+      AppState: App.State,
       availablePreviewColumns,
       availableExportFormats,
       globalSettings,

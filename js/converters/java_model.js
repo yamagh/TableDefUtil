@@ -1,28 +1,33 @@
-/**
- * Javaモデルクラス生成
- */
-function generateJavaModel(tables, rlsOptions) {
-  const config = (AppState.config && AppState.config.commonColumns) ? AppState.config.commonColumns : {
-    id: 'id',
-    is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false },
-    created_at: 'created_at',
-    created_by: 'created_by',
-    updated_at: 'updated_at',
-    updated_by: 'updated_by'
-  };
+// Initialize Namespace
+window.App = window.App || {};
+App.Converters = App.Converters || {};
 
-  const baseModelCols = new Set([
-    config.id,
-    config.is_deleted.name,
-    config.created_at,
-    config.created_by,
-    config.updated_at,
-    config.updated_by
-  ]);
-  const files = [];
+App.Converters.JavaModel = {
+  /**
+   * Javaモデルクラス生成
+   */
+  generateJavaModel(tables, rlsOptions) {
+    const config = (App.State.config && App.State.config.commonColumns) ? App.State.config.commonColumns : {
+      id: 'id',
+      is_deleted: { name: 'is_deleted', type: 'boolean', valTrue: true, valFalse: false },
+      created_at: 'created_at',
+      created_by: 'created_by',
+      updated_at: 'updated_at',
+      updated_by: 'updated_by'
+    };
 
-  if (rlsOptions && rlsOptions.enabled) {
-    const sessionInfoContent = `
+    const baseModelCols = new Set([
+      config.id,
+      config.is_deleted.name,
+      config.created_at,
+      config.created_by,
+      config.updated_at,
+      config.updated_by
+    ]);
+    const files = [];
+
+    if (rlsOptions && rlsOptions.enabled) {
+      const sessionInfoContent = `
 package models;
 
 import lombok.AllArgsConstructor;
@@ -42,9 +47,9 @@ public class SessionInfo {
     private String tenantId;
 }
 `;
-    files.push({ path: 'models/SessionInfo.java', content: sessionInfoContent.trim() });
+      files.push({ path: 'models/SessionInfo.java', content: sessionInfoContent.trim() });
 
-    const rlsAwareContent = `
+      const rlsAwareContent = `
 package models;
 
 /**
@@ -54,19 +59,19 @@ public interface RlsAware {
     String getTenantId();
 }
 `;
-    files.push({ path: 'models/RlsAware.java', content: rlsAwareContent.trim() });
-  }
+      files.push({ path: 'models/RlsAware.java', content: rlsAwareContent.trim() });
+    }
 
 
-  let isDeletedField = '';
-  if (config.is_deleted.type === 'string') {
-    const defaultVal = config.is_deleted.valFalse !== undefined ? `"${config.is_deleted.valFalse}"` : '"0"';
-    isDeletedField = `    public String ${toCamelCase(config.is_deleted.name)} = ${defaultVal};`;
-  } else {
-    isDeletedField = `    public Boolean ${toCamelCase(config.is_deleted.name)} = false;`;
-  }
+    let isDeletedField = '';
+    if (config.is_deleted.type === 'string') {
+      const defaultVal = config.is_deleted.valFalse !== undefined ? `"${config.is_deleted.valFalse}"` : '"0"';
+      isDeletedField = `    public String ${toCamelCase(config.is_deleted.name)} = ${defaultVal};`;
+    } else {
+      isDeletedField = `    public Boolean ${toCamelCase(config.is_deleted.name)} = false;`;
+    }
 
-  const baseModelContent = `
+    const baseModelContent = `
 package models;
 
 import io.ebean.Model;
@@ -116,105 +121,109 @@ public class BaseModel extends Model {
     public String ${toCamelCase(config.updated_by)};
 }
 `;
-  files.push({ path: 'models/BaseModel.java', content: baseModelContent.trim() });
+    files.push({ path: 'models/BaseModel.java', content: baseModelContent.trim() });
 
-  tables.forEach(table => {
-    const className = toPascalCase(table.tableName);
-    const imports = new Set([
-      'import io.ebean.Finder;',
-      'import jakarta.persistence.Entity;',
-      'import jakarta.persistence.Table;',
-      'import lombok.Getter;',
-      'import lombok.Setter;'
-    ]);
+    tables.forEach(table => {
+      const className = toPascalCase(table.tableName);
+      const imports = new Set([
+        'import io.ebean.Finder;',
+        'import jakarta.persistence.Entity;',
+        'import jakarta.persistence.Table;',
+        'import lombok.Getter;',
+        'import lombok.Setter;'
+      ]);
 
-    let fieldsContent = '';
-    let implementsRls = false;
-    let tenantIdGetter = '';
+      let fieldsContent = '';
+      let implementsRls = false;
+      let tenantIdGetter = '';
 
-    table.columns.forEach(col => {
-      if (baseModelCols.has(col.colName)) {
-        return; // Skip columns defined in BaseModel
-      }
-      const fieldName = toCamelCase(col.colName);
-      const javaType = mapPostgresToJavaType(col.type, col.length);
+      table.columns.forEach(col => {
+        if (baseModelCols.has(col.colName)) {
+          return; // Skip columns defined in BaseModel
+        }
+        const fieldName = toCamelCase(col.colName);
+        const javaType = mapPostgresToJavaType(col.type, col.length);
 
-      if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
-        implementsRls = true;
-        tenantIdGetter = `
+        if (rlsOptions && rlsOptions.enabled && col.colName === rlsOptions.tenantIdColumn) {
+          implementsRls = true;
+          tenantIdGetter = `
     @Override
     public String getTenantId() {
         return this.${fieldName};
     }
 `;
-      }
-
-      let annotations = [];
-      const isNotNull = col.constraint && col.constraint.includes('NN');
-
-      if (isNotNull) {
-        annotations.push('@NotNull');
-        imports.add('import javax.validation.constraints.NotNull;');
-      }
-
-      // Numeric handling: Use @Digits
-      if (['numeric', 'decimal'].includes(col.type.toLowerCase()) && col.length) {
-        const parts = col.length.toString().replace(/[()]/g, '').split(',');
-        const precision = parseInt(parts[0], 10);
-        const scale = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-
-        if (!isNaN(precision)) {
-          const integerPart = precision - scale;
-          annotations.push(`@Digits(integer=${integerPart}, fraction=${scale})`);
-          imports.add('import javax.validation.constraints.Digits;');
         }
+
+        let annotations = [];
+        const isNotNull = col.constraint && col.constraint.includes('NN');
+
+        if (isNotNull) {
+          annotations.push('@NotNull');
+          imports.add('import javax.validation.constraints.NotNull;');
+        }
+
+        // Numeric handling: Use @Digits
+        if (['numeric', 'decimal'].includes(col.type.toLowerCase()) && col.length) {
+          const parts = col.length.toString().replace(/[()]/g, '').split(',');
+          const precision = parseInt(parts[0], 10);
+          const scale = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+
+          if (!isNaN(precision)) {
+            const integerPart = precision - scale;
+            annotations.push(`@Digits(integer=${integerPart}, fraction=${scale})`);
+            imports.add('import javax.validation.constraints.Digits;');
+          }
+        }
+        // String handling: Use @Size
+        else if (javaType === 'String') {
+          const sizeAttributes = [];
+          const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
+          if (isNotNull && !excludeMinLength) {
+            sizeAttributes.push('min = 1');
+          }
+          if (col.length) {
+            sizeAttributes.push(`max = ${col.length}`);
+          }
+          if (sizeAttributes.length > 0) {
+            annotations.push(`@Size(${sizeAttributes.join(', ')})`);
+            imports.add('import javax.validation.constraints.Size;');
+          }
+        }
+
+        fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
+        if (annotations.length > 0) {
+          fieldsContent += `    ${annotations.join('\n    ')}\n`;
+        }
+        fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
+      });
+
+      let classContent = `package models;\n\n`;
+      classContent += `${[...imports].sort().join('\n')}\n\n`;
+      classContent += `/**\n * ${table.tableNameJP}\n */\n`;
+      classContent += `@Entity\n@Getter\n@Setter\n`;
+      classContent += `@Table(name = "${table.tableName}")\n`;
+
+      let extendsPart = 'extends BaseModel';
+      if (implementsRls) {
+        extendsPart += ' implements RlsAware';
       }
-      // String handling: Use @Size
-      else if (javaType === 'String') {
-        const sizeAttributes = [];
-        const excludeMinLength = ['description', 'note', 'remarks'].some(keyword => col.colName.toLowerCase().includes(keyword));
-        if (isNotNull && !excludeMinLength) {
-          sizeAttributes.push('min = 1');
-        }
-        if (col.length) {
-          sizeAttributes.push(`max = ${col.length}`);
-        }
-        if (sizeAttributes.length > 0) {
-          annotations.push(`@Size(${sizeAttributes.join(', ')})`);
-          imports.add('import javax.validation.constraints.Size;');
-        }
+      classContent += `public class ${className} ${extendsPart} {\n\n`;
+
+      classContent += fieldsContent;
+
+      if (implementsRls) {
+        classContent += tenantIdGetter;
       }
 
-      fieldsContent += `    /**\n     * ${col.colNameJP}\n     */\n`;
-      if (annotations.length > 0) {
-        fieldsContent += `    ${annotations.join('\n    ')}\n`;
-      }
-      fieldsContent += `    public ${javaType} ${fieldName};\n\n`;
+      classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
+      classContent += `}\n`;
+
+      files.push({ path: `models/${className}.java`, content: classContent });
     });
 
-    let classContent = `package models;\n\n`;
-    classContent += `${[...imports].sort().join('\n')}\n\n`;
-    classContent += `/**\n * ${table.tableNameJP}\n */\n`;
-    classContent += `@Entity\n@Getter\n@Setter\n`;
-    classContent += `@Table(name = "${table.tableName}")\n`;
+    return files;
+  }
+};
 
-    let extendsPart = 'extends BaseModel';
-    if (implementsRls) {
-      extendsPart += ' implements RlsAware';
-    }
-    classContent += `public class ${className} ${extendsPart} {\n\n`;
-
-    classContent += fieldsContent;
-
-    if (implementsRls) {
-      classContent += tenantIdGetter;
-    }
-
-    classContent += `    public static Finder<Long, ${className}> find = new Finder<>(${className}.class);\n`;
-    classContent += `}\n`;
-
-    files.push({ path: `models/${className}.java`, content: classContent });
-  });
-
-  return files;
-}
+// Backward compat
+window.generateJavaModel = App.Converters.JavaModel.generateJavaModel;

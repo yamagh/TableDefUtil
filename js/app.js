@@ -1,7 +1,7 @@
 // Main App Entry
 const { createApp, ref, reactive, computed } = Vue;
 
-const App = {
+const RootComponent = {
   components: {
     InputSection,
     OptionsSection,
@@ -16,7 +16,7 @@ const App = {
     const currentMode = ref('preview');
 
     // テーマ: light, dark, auto
-    const initialTheme = localStorage.getItem('theme') || (AppState.config && AppState.config.theme) || 'auto';
+    const initialTheme = localStorage.getItem('theme') || (App.State.config && App.State.config.theme) || 'auto';
     const theme = ref(initialTheme);
 
     // テーマを更新
@@ -41,7 +41,7 @@ const App = {
     };
 
     // フォントサイズ
-    const initialFontSize = localStorage.getItem('fontSize') || (AppState.config && AppState.config.fontSize) || '100%';
+    const initialFontSize = localStorage.getItem('fontSize') || (App.State.config && App.State.config.fontSize) || '100%';
     const fontSize = ref(initialFontSize);
 
     const updateFontSize = (newSize) => {
@@ -60,14 +60,14 @@ const App = {
     // RLS オプション
     const convertedRlsOptions = ref(null);
     // データが存在するかどうか
-    const hasData = computed(() => AppState.parsedTables.length > 0);
+    const hasData = computed(() => App.State.parsedTables.length > 0);
 
     // データロードハンドラ
     const handleDataLoaded = (rawData) => {
       // すでにオブジェクトの場合はそのまま利用
       if (typeof rawData === 'object' && rawData !== null) {
-        AppState.parsedTables = rawData;
-        AppState.resetSqlState();
+        App.State.parsedTables = rawData;
+        App.State.resetSqlState();
         conversionResults.value = null;
         convertedFormats.value = [];
         convertedRlsOptions.value = null;
@@ -81,8 +81,8 @@ const App = {
           const jsonData = JSON.parse(rawData);
           // 配列であり、かつ中身が期待する形式（空配列 または tableNameを持つオブジェクト）か簡易チェック
           if (Array.isArray(jsonData) && (jsonData.length === 0 || (jsonData[0] && jsonData[0].tableName))) {
-            AppState.parsedTables = jsonData;
-            AppState.resetSqlState();
+            App.State.parsedTables = jsonData;
+            App.State.resetSqlState();
             conversionResults.value = null;
             convertedFormats.value = [];
             convertedRlsOptions.value = null;
@@ -106,11 +106,11 @@ const App = {
             Toast.error('パースエラー: ' + JSON.stringify(results.errors));
             return;
           }
-          const tables = transformToIntermediate(results.data);
-          AppState.parsedTables = tables;
+          const tables = App.Core.Parser.transformToIntermediate(results.data);
+          App.State.parsedTables = tables;
 
           // SQL Builderの状態をリセット
-          AppState.resetSqlState();
+          App.State.resetSqlState();
 
           // 変換結果をクリア
           conversionResults.value = null;
@@ -125,7 +125,7 @@ const App = {
 
     // 変換ハンドラ
     const handleConvert = ({ formats, rls }) => {
-      if (AppState.parsedTables.length === 0) {
+      if (App.State.parsedTables.length === 0) {
         Toast.warning('データを入力してください。');
         return;
       }
@@ -133,15 +133,15 @@ const App = {
       const results = {};
       formats.forEach(format => {
         switch (format) {
-          case 'ddl': results[format] = generateDDL(AppState.parsedTables); break;
-          case 'ddl-play': results[format] = generatePlayEvolution(AppState.parsedTables); break;
-          case 'typescript': results[format] = generateTypeScript(AppState.parsedTables); break;
-          case 'zod-schema': results[format] = generateZodSchema(AppState.parsedTables); break;
-          case 'zod-type': results[format] = generateZodType(AppState.parsedTables); break;
-          case 'java-model': results[format] = generateJavaModel(AppState.parsedTables, rls); break;
-          case 'java-repo': results[format] = generateJavaRepo(AppState.parsedTables, rls); break;
-          case 'java-service': results[format] = generateJavaService(AppState.parsedTables, rls); break;
-          case 'java-controller': results[format] = generateJavaController(AppState.parsedTables, rls); break;
+          case 'ddl': results[format] = App.Converters.Ddl.generateDDL(App.State.parsedTables); break;
+          case 'ddl-play': results[format] = App.Converters.Ddl.generatePlayEvolution(App.State.parsedTables); break;
+          case 'typescript': results[format] = App.Converters.Typescript.generateTypeScript(App.State.parsedTables); break;
+          case 'zod-schema': results[format] = App.Converters.Zod.generateZodSchema(App.State.parsedTables); break;
+          case 'zod-type': results[format] = App.Converters.Zod.generateZodType(App.State.parsedTables); break;
+          case 'java-model': results[format] = App.Converters.JavaModel.generateJavaModel(App.State.parsedTables, rls); break;
+          case 'java-repo': results[format] = App.Converters.JavaRepo.generateJavaRepo(App.State.parsedTables, rls); break;
+          case 'java-service': results[format] = App.Converters.JavaService.generateJavaService(App.State.parsedTables, rls); break;
+          case 'java-controller': results[format] = App.Converters.JavaController.generateJavaController(App.State.parsedTables, rls); break;
         }
       });
 
@@ -158,7 +158,7 @@ const App = {
         return;
       }
 
-      Zipper.generateZip(AppState.parsedTables, convertedFormats.value, convertedRlsOptions.value).then(content => {
+      App.Core.Zipper.generateZip(App.State.parsedTables, convertedFormats.value, convertedRlsOptions.value).then(content => {
         const now = (d => { d.setHours(d.getHours() + 9); return d.toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '') })(new Date())
         downloadFile(content, `table-definitions-${now}.zip`);
       });
@@ -166,7 +166,7 @@ const App = {
 
     // デフォルトデータの読み込み
     Vue.onMounted(async () => {
-      if (AppState.parsedTables.length === 0) {
+      if (App.State.parsedTables.length === 0) {
         // window.DefaultDataがあればそれを使う (files.js で定義されることを想定、あるいは default.js)
         if (window.DefaultData) {
           console.log('Loading default data from window.DefaultData...');
@@ -244,11 +244,11 @@ const App = {
 // 設定をロードする
 const loadConfig = async () => {
   // window.AppConfig があればそれを使う
-  if (typeof window.AppConfig === 'object') {
+  if (typeof App.State === 'object') {
     console.log('Using window.AppConfig');
-    AppState.config = window.AppConfig;
-    if (AppState.config.sql && AppState.config.sql.includeCountMethod !== undefined) {
-      AppState.sql.includeCountMethod = AppState.config.sql.includeCountMethod;
+    window.AppConfig = App.State.config;
+    if (App.State.config.sql && App.State.config.sql.includeCountMethod !== undefined) {
+      App.State.sql.includeCountMethod = App.State.config.sql.includeCountMethod;
     }
     return;
   }
@@ -258,5 +258,5 @@ const loadConfig = async () => {
 
 // アプリケーションの起動
 loadConfig().then(() => {
-  createApp(App).mount('#app');
+  createApp(RootComponent).mount('#app');
 });

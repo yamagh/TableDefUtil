@@ -1,7 +1,14 @@
 /**
  * コード生成とZIPファイル生成のロジック
  */
-const Zipper = {
+// Initialize Namespace
+window.App = window.App || {};
+App.Core = App.Core || {};
+
+/**
+ * コード生成とZIPファイル生成のロジック
+ */
+App.Core.Zipper = {
   /**
    * テーブルとオプションからZIPファイルを生成
    * @param {Array} tables Parsed tables
@@ -19,11 +26,12 @@ const Zipper = {
     formats.forEach(format => {
       let output;
       // コンバータがグローバルにロードされていることを前提
+      // Namespace: App.Converters.*
 
       switch (format) {
         case 'ddl':
           // 通常の DDL を返す
-          output = generateDDL(tables);
+          output = App.Converters.Ddl.generateDDL(tables);
           if (typeof output === 'string') {
             zip.file('schema.sql', output);
           } else {
@@ -32,7 +40,7 @@ const Zipper = {
           break;
         case 'ddl-play':
           // Play Evolution 用の DDL を返す
-          output = generatePlayEvolution(tables);
+          output = App.Converters.Ddl.generatePlayEvolution(tables);
           if (typeof output === 'string') {
             zip.file('evolutions/1.sql', output);
           } else {
@@ -41,19 +49,19 @@ const Zipper = {
           break;
         case 'typescript':
           // TypeScript を返す
-          output = generateTypeScript(tables);
+          output = App.Converters.Typescript.generateTypeScript(tables);
           if (typeof output === 'string') zip.file('entities.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
           break;
         case 'zod-schema':
           // Zod スキーマを返す
-          output = generateZodSchema(tables);
+          output = App.Converters.Zod.generateZodSchema(tables);
           if (typeof output === 'string') zip.file('schemas.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
           break;
         case 'zod-type':
           // Zod 型を返す
-          output = generateZodType(tables);
+          output = App.Converters.Zod.generateZodType(tables);
           if (typeof output === 'string') zip.file('zod-types.ts', output);
           else output.forEach(f => zip.file(f.path, f.content));
           break;
@@ -61,10 +69,10 @@ const Zipper = {
         case 'java-repo':
         case 'java-service':
         case 'java-controller':
-          if (format === 'java-model') output = generateJavaModel(tables, rlsOptions);
-          else if (format === 'java-repo') output = generateJavaRepo(tables, rlsOptions);
-          else if (format === 'java-controller') output = generateJavaController(tables, rlsOptions);
-          else output = generateJavaService(tables, rlsOptions);
+          if (format === 'java-model') output = App.Converters.JavaModel.generateJavaModel(tables, rlsOptions);
+          else if (format === 'java-repo') output = App.Converters.JavaRepo.generateJavaRepo(tables, rlsOptions);
+          else if (format === 'java-controller') output = App.Converters.JavaController.generateJavaController(tables, rlsOptions);
+          else output = App.Converters.JavaService.generateJavaService(tables, rlsOptions);
 
           if (typeof output === 'string') {
             const files = output.split('// --- FileName: ');
@@ -95,3 +103,6 @@ const Zipper = {
     return zip.generateAsync({ type: "blob" });
   }
 };
+
+// Backward compat
+window.Zipper = App.Core.Zipper;

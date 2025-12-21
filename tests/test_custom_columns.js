@@ -2,31 +2,47 @@ const fs = require('fs');
 const path = require('path');
 
 // Mocks
+global.window = global;
+global.App = global.App || {};
+
+// Mock AppState (mimic state.js behavior but simple object)
 global.AppState = {
   config: {
     commonColumns: null // will be set in tests
   }
 };
+global.App.State = global.AppState;
 
-// Utils
-function toPascalCase(s) {
-  return s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-}
-function toCamelCase(s) {
-  const pascal = toPascalCase(s);
-  return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-}
-function mapPostgresToJavaType(pgType) {
-  pgType = pgType.toLowerCase();
-  if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
-  if (['integer', 'smallint'].includes(pgType)) return 'Integer';
-  if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
-  if (['boolean'].includes(pgType)) return 'Boolean';
-  if (['timestamp', 'date'].includes(pgType)) return 'java.time.Instant';
-  if (['time'].includes(pgType)) return 'java.time.LocalTime';
-  if (['bytea'].includes(pgType)) return 'byte[]';
-  return 'Object';
-}
+// Mock Utils
+global.App.Utils = {};
+global.App.Utils.Common = {
+  toPascalCase: function(s) {
+    return s.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+  },
+  toCamelCase: function(s) {
+    const pascal = global.App.Utils.Common.toPascalCase(s);
+    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
+  },
+  downloadFile: () => {}
+};
+global.App.Utils.TypeMapper = {
+  mapPostgresToJavaType: function(pgType) {
+    pgType = pgType.toLowerCase();
+    if (['bigserial', 'bigint'].includes(pgType)) return 'Long';
+    if (['integer', 'smallint'].includes(pgType)) return 'Integer';
+    if (['varchar', 'char', 'text', 'bit'].includes(pgType)) return 'String';
+    if (['boolean'].includes(pgType)) return 'Boolean';
+    if (['timestamp', 'date'].includes(pgType)) return 'java.time.Instant';
+    if (['time'].includes(pgType)) return 'java.time.LocalTime';
+    if (['bytea'].includes(pgType)) return 'byte[]';
+    return 'Object';
+  }
+};
+
+// Aliases for local usage if needed (test logic uses them?)
+const { toPascalCase, toCamelCase } = global.App.Utils.Common;
+const { mapPostgresToJavaType } = global.App.Utils.TypeMapper;
+
 
 // Load Converters
 // Adjusted path to point to parent directory's js/converters

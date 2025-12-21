@@ -60,33 +60,33 @@ const SqlTableSelect = {
   `,
   setup() {
     // 選択可能なテーブル
-    const availableTables = Vue.computed(() => AppState.parsedTables);
+    const availableTables = Vue.computed(() => App.State.parsedTables);
     // 選択されたテーブル
-    const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
+    const selectedTables = Vue.computed(() => App.State.sql.selectedTables);
     // 追加するテーブル
     const selectedTableToAdd = Vue.ref('');
 
     // テーブル名を取得
     const getTableNameJP = (name) => {
-      const t = AppState.parsedTables.find(x => x.tableName === name);
+      const t = App.State.parsedTables.find(x => x.tableName === name);
       return t ? t.tableNameJP : '';
     };
 
     // テーブルを追加
     const addTable = () => {
       if (!selectedTableToAdd.value) return;
-      SqlLogic.addTable(selectedTableToAdd.value); // Logic operates on AppState
+      App.Core.SqlLogic.addTable(selectedTableToAdd.value); // Logic operates on AppState
       selectedTableToAdd.value = '';
     };
 
     // テーブルを削除
     const removeTable = (index) => {
-      SqlLogic.removeTable(index);
+      App.Core.SqlLogic.removeTable(index);
     };
 
     // テーブルを移動
     const moveTable = (index, dir) => {
-      SqlLogic.moveTable(index, dir);
+      App.Core.SqlLogic.moveTable(index, dir);
     };
 
     return {

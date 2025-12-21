@@ -25,13 +25,13 @@ const SqlJoins = {
     </div>
   `,
   setup() {
-    const joins = Vue.computed(() => AppState.sql.joins);
-    const selectedTables = Vue.computed(() => AppState.sql.selectedTables);
+    const joins = Vue.computed(() => App.State.sql.joins);
+    const selectedTables = Vue.computed(() => App.State.sql.selectedTables);
 
     // 結合条件を追加
     const addJoin = () => {
       try {
-        SqlLogic.addJoin();
+        App.Core.SqlLogic.addJoin();
       } catch (e) {
         alert(e.message);
       }
@@ -39,12 +39,12 @@ const SqlJoins = {
 
     // 結合条件を削除
     const removeJoin = (index) => {
-      SqlLogic.removeJoin(index);
+      App.Core.SqlLogic.removeJoin(index);
     };
 
     // 結合条件を移動
     const moveJoin = (index, dir) => {
-      SqlLogic.moveJoin(index, dir);
+      App.Core.SqlLogic.moveJoin(index, dir);
     };
 
     return {

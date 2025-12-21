@@ -16,12 +16,12 @@ const SqlFilters = {
   `,
   setup() {
     // 絞り込み条件
-    const filters = Vue.computed(() => AppState.sql.filters);
+    const filters = Vue.computed(() => App.State.sql.filters);
 
-    const addFilter = () => SqlLogic.addFilter();
-    const removeFilter = (index) => SqlLogic.removeFilter(index);
+    const addFilter = () => App.Core.SqlLogic.addFilter();
+    const removeFilter = (index) => App.Core.SqlLogic.removeFilter(index);
     const updateFilter = (index, value) => {
-      AppState.sql.filters[index] = value;
+      App.State.sql.filters[index] = value;
     };
 
     return {

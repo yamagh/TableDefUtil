@@ -1,7 +1,7 @@
 const TablePreviewSection = {
   setup() {
     // 全テーブル
-    const tables = Vue.computed(() => AppState.parsedTables);
+    const tables = Vue.computed(() => App.State.parsedTables);
 
     // 検索
     const searchQuery = Vue.ref('');
@@ -43,8 +43,8 @@ const TablePreviewSection = {
     ];
 
     // 表示するカラム
-    const defaultCols = (AppState.config && AppState.config.preview && AppState.config.preview.defaultVisibleColumns)
-      ? AppState.config.preview.defaultVisibleColumns
+    const defaultCols = (App.State.config && App.State.config.preview && App.State.config.preview.defaultVisibleColumns)
+      ? App.State.config.preview.defaultVisibleColumns
       : columnsDef.filter(c => c.defaultVisibility).map(c => c.key);
     const visibleColumns = Vue.ref(defaultCols);
 
@@ -235,7 +235,7 @@ const TablePreviewSection = {
       const container = document.getElementById('hot-container');
       if (!container) return;
 
-      const data = flattenTables(AppState.parsedTables);
+      const data = flattenTables(App.State.parsedTables);
 
       hotInstance = new Handsontable(container, {
         data: data,
@@ -287,7 +287,7 @@ const TablePreviewSection = {
           const validRows = newData.filter(r => r.tableName && r.colName);
           
           // Rebuild AppState
-          AppState.parsedTables.splice(0, AppState.parsedTables.length, ...reconstructTables(validRows));
+          App.State.parsedTables.splice(0, App.State.parsedTables.length, ...reconstructTables(validRows));
         }
       });
     };
@@ -344,12 +344,12 @@ const TablePreviewSection = {
       addTable: () => {
         let i = 1;
         let pName = 'new_table';
-        while (AppState.parsedTables.some(t => t.tableName === pName)) {
+        while (App.State.parsedTables.some(t => t.tableName === pName)) {
           i++;
           pName = `new_table_${i}`;
         }
 
-        AppState.parsedTables.push({
+        App.State.parsedTables.push({
           tableName: pName,
           tableNameJP: '新規テーブル',
           columns: [{
@@ -367,12 +367,12 @@ const TablePreviewSection = {
       },
       removeTable: (index) => {
         if (confirm('このテーブルを削除しますか？')) {
-          AppState.parsedTables.splice(index, 1);
+          App.State.parsedTables.splice(index, 1);
         }
       },
       downloadTsv: () => {
         const data = [];
-        AppState.parsedTables.forEach(table => {
+        App.State.parsedTables.forEach(table => {
           table.columns.forEach(col => {
             data.push({
               'TableName': table.tableName,
@@ -402,11 +402,11 @@ const TablePreviewSection = {
           quotes: false,
         });
 
-        downloadFile(tsvContent, 'table_definitions_edited.tsv');
+        App.Utils.Common.downloadFile(tsvContent, 'table_definitions_edited.tsv');
       },
       downloadJson: () => {
-        const jsonContent = JSON.stringify(AppState.parsedTables, null, 2);
-        downloadFile(jsonContent, 'table_definitions_edited.json');
+        const jsonContent = JSON.stringify(App.State.parsedTables, null, 2);
+        App.Utils.Common.downloadFile(jsonContent, 'table_definitions_edited.json');
       }
     };
   },

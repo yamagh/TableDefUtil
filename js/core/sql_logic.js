@@ -1,23 +1,30 @@
 /**
  * SQL Construction Logic
  */
-const SqlLogic = {
+// Initialize Namespace
+window.App = window.App || {};
+App.Core = App.Core || {};
+
+/**
+ * SQL Construction Logic
+ */
+App.Core.SqlLogic = {
   /**
    * セクションにテーブルを追加
    */
   addTable(tableName) {
-    const alias = `t${AppState.sql.selectedTables.length}`;
-    AppState.sql.selectedTables.push({ tableName, alias });
-    return AppState.sql.selectedTables;
+    const alias = `t${App.State.sql.selectedTables.length}`;
+    App.State.sql.selectedTables.push({ tableName, alias });
+    return App.State.sql.selectedTables;
   },
 
   /**
    * セクションからテーブルを削除
    */
   removeTable(index) {
-    AppState.sql.selectedTables.splice(index, 1);
+    App.State.sql.selectedTables.splice(index, 1);
     // エイリアスの再割り当て
-    AppState.sql.selectedTables.forEach((item, idx) => {
+    App.State.sql.selectedTables.forEach((item, idx) => {
       item.alias = `t${idx}`;
     });
   },
@@ -27,11 +34,11 @@ const SqlLogic = {
    */
   moveTable(index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= AppState.sql.selectedTables.length) return Promise.resolve(); // or just return
-    const item = AppState.sql.selectedTables.splice(index, 1)[0];
-    AppState.sql.selectedTables.splice(newIndex, 0, item);
+    if (newIndex < 0 || newIndex >= App.State.sql.selectedTables.length) return Promise.resolve(); // or just return
+    const item = App.State.sql.selectedTables.splice(index, 1)[0];
+    App.State.sql.selectedTables.splice(newIndex, 0, item);
     // エイリアスの再割り当て
-    AppState.sql.selectedTables.forEach((item, idx) => {
+    App.State.sql.selectedTables.forEach((item, idx) => {
       item.alias = `t${idx}`;
     });
   },
@@ -40,24 +47,24 @@ const SqlLogic = {
    * セクションに結合条件を追加
    */
   addJoin() {
-    if (AppState.sql.selectedTables.length < 2) {
+    if (App.State.sql.selectedTables.length < 2) {
       throw new Error('結合条件を追加するには、2つ以上のテーブルが必要です。');
     }
     // 右側のテーブル
-    const rightIdx = AppState.sql.selectedTables.length - 1;
+    const rightIdx = App.State.sql.selectedTables.length - 1;
     // 左側のテーブル
     const leftIdx = Math.max(0, rightIdx - 1);
 
     // 結合条件を生成
     const condition = this.generateDefaultJoinCondition(
-      AppState.sql.selectedTables[leftIdx],
-      AppState.sql.selectedTables[rightIdx]
+      App.State.sql.selectedTables[leftIdx],
+      App.State.sql.selectedTables[rightIdx]
     );
 
     // 結合条件を追加
-    AppState.sql.joins.push({
-      leftAlias: AppState.sql.selectedTables[leftIdx].alias,
-      rightAlias: AppState.sql.selectedTables[rightIdx].alias,
+    App.State.sql.joins.push({
+      leftAlias: App.State.sql.selectedTables[leftIdx].alias,
+      rightAlias: App.State.sql.selectedTables[rightIdx].alias,
       type: 'INNER JOIN',
       condition: condition
     });
@@ -67,8 +74,8 @@ const SqlLogic = {
    * 結合条件を更新
    */
   updateJoin(index, key, value) {
-    if (AppState.sql.joins[index]) {
-      AppState.sql.joins[index][key] = value;
+    if (App.State.sql.joins[index]) {
+      App.State.sql.joins[index][key] = value;
     }
   },
 
@@ -76,7 +83,7 @@ const SqlLogic = {
    * 結合条件を削除
    */
   removeJoin(index) {
-    AppState.sql.joins.splice(index, 1);
+    App.State.sql.joins.splice(index, 1);
   },
 
   /**
@@ -84,17 +91,17 @@ const SqlLogic = {
    */
   moveJoin(index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= AppState.sql.joins.length) return;
-    const item = AppState.sql.joins.splice(index, 1)[0];
-    AppState.sql.joins.splice(newIndex, 0, item);
+    if (newIndex < 0 || newIndex >= App.State.sql.joins.length) return;
+    const item = App.State.sql.joins.splice(index, 1)[0];
+    App.State.sql.joins.splice(newIndex, 0, item);
   },
 
   /**
    * 結合条件を生成
    */
   generateDefaultJoinCondition(leftTableState, rightTableState) {
-    const leftDef = AppState.parsedTables.find(t => t.tableName === leftTableState.tableName);
-    const rightDef = AppState.parsedTables.find(t => t.tableName === rightTableState.tableName);
+    const leftDef = App.State.parsedTables.find(t => t.tableName === leftTableState.tableName);
+    const rightDef = App.State.parsedTables.find(t => t.tableName === rightTableState.tableName);
 
     if (!leftDef || !rightDef) return '/* テーブル定義が見つかりません */';
 
@@ -145,27 +152,27 @@ const SqlLogic = {
   },
 
   addFilter() {
-    AppState.sql.filters.push('');
+    App.State.sql.filters.push('');
   },
 
   updateFilter(index, value) {
-    AppState.sql.filters[index] = value;
+    App.State.sql.filters[index] = value;
   },
 
   removeFilter(index) {
-    AppState.sql.filters.splice(index, 1);
+    App.State.sql.filters.splice(index, 1);
   },
 
   addSort() {
     // 1つ以上のテーブルが選択されているかチェック
-    if (AppState.sql.selectedTables.length === 0) return;
-    const firstTbl = AppState.sql.selectedTables[0];
-    const firstDef = AppState.parsedTables.find(t => t.tableName === firstTbl.tableName);
+    if (App.State.sql.selectedTables.length === 0) return;
+    const firstTbl = App.State.sql.selectedTables[0];
+    const firstDef = App.State.parsedTables.find(t => t.tableName === firstTbl.tableName);
 
     // 安全チェック
     if (!firstDef || firstDef.columns.length === 0) return;
 
-    AppState.sql.sorts.push({
+    App.State.sql.sorts.push({
       alias: firstTbl.alias,
       column: firstDef.columns[0].colName,
       direction: 'ASC'
@@ -174,15 +181,15 @@ const SqlLogic = {
 
   updateSort(index, key, value) {
     // ソートを更新
-    const sort = AppState.sql.sorts[index];
+    const sort = App.State.sql.sorts[index];
     if (!sort) return;
     sort[key] = value;
 
     // エイリアスが変更された場合、カラムを再設定
     if (key === 'alias') {
-      const tblState = AppState.sql.selectedTables.find(t => t.alias === value);
+      const tblState = App.State.sql.selectedTables.find(t => t.alias === value);
       if (tblState) {
-        const def = AppState.parsedTables.find(t => t.tableName === tblState.tableName);
+        const def = App.State.parsedTables.find(t => t.tableName === tblState.tableName);
         if (def && def.columns.length > 0) {
           sort.column = def.columns[0].colName;
         }
@@ -191,51 +198,51 @@ const SqlLogic = {
   },
 
   removeSort(index) {
-    AppState.sql.sorts.splice(index, 1);
+    App.State.sql.sorts.splice(index, 1);
   },
 
   moveSort(index, direction) {
     const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= AppState.sql.sorts.length) return;
-    const item = AppState.sql.sorts.splice(index, 1)[0];
-    AppState.sql.sorts.splice(newIndex, 0, item);
+    if (newIndex < 0 || newIndex >= App.State.sql.sorts.length) return;
+    const item = App.State.sql.sorts.splice(index, 1)[0];
+    App.State.sql.sorts.splice(newIndex, 0, item);
   },
 
   generateSql(selectClause) {
-    if (AppState.sql.selectedTables.length === 0) return '';
+    if (App.State.sql.selectedTables.length === 0) return '';
 
     let sql = 'SELECT\n';
     sql += selectClause || '*';
     sql += '\nFROM\n';
 
-    const first = AppState.sql.selectedTables[0];
+    const first = App.State.sql.selectedTables[0];
     sql += `    ${first.tableName} AS ${first.alias}\n`;
 
-    AppState.sql.joins.forEach(join => {
-      const rightTbl = AppState.sql.selectedTables.find(t => t.alias === join.rightAlias);
+    App.State.sql.joins.forEach(join => {
+      const rightTbl = App.State.sql.selectedTables.find(t => t.alias === join.rightAlias);
       const rightName = rightTbl ? rightTbl.tableName : '???';
       sql += `${join.type} ${rightName} AS ${join.rightAlias} ON ${join.condition}\n`;
     });
 
-    const validFilters = AppState.sql.filters.filter(f => f.trim() !== '');
+    const validFilters = App.State.sql.filters.filter(f => f.trim() !== '');
     if (validFilters.length > 0) {
       sql += 'WHERE\n';
       sql += validFilters.map(f => `    ${f}`).join(' AND\n');
       sql += '\n';
     }
 
-    if (AppState.sql.sorts.length > 0) {
+    if (App.State.sql.sorts.length > 0) {
       sql += 'ORDER BY\n';
-      sql += AppState.sql.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
+      sql += App.State.sql.sorts.map(s => `    ${s.alias}.${s.column} ${s.direction}`).join(',\n');
       sql += '\n';
     }
 
-    if (AppState.sql.limit && AppState.sql.limit.trim() !== '') {
-      sql += `LIMIT ${AppState.sql.limit.trim()}\n`;
+    if (App.State.sql.limit && App.State.sql.limit.trim() !== '') {
+      sql += `LIMIT ${App.State.sql.limit.trim()}\n`;
     }
 
-    if (AppState.sql.offset && AppState.sql.offset.trim() !== '') {
-      sql += `OFFSET ${AppState.sql.offset.trim()}\n`;
+    if (App.State.sql.offset && App.State.sql.offset.trim() !== '') {
+      sql += `OFFSET ${App.State.sql.offset.trim()}\n`;
     }
 
     sql += ';';
@@ -252,12 +259,12 @@ const SqlLogic = {
 
   generateAutoCode(selectClause) {
     const autoGenResult = {};
-    if (AppState.sql.selectedTables.length === 0) return autoGenResult;
+    if (App.State.sql.selectedTables.length === 0) return autoGenResult;
 
     // select句が編集されているかチェック
     let defaultSelects = [];
-    AppState.sql.selectedTables.forEach(t => {
-      const def = AppState.parsedTables.find(table => table.tableName === t.tableName);
+    App.State.sql.selectedTables.forEach(t => {
+      const def = App.State.parsedTables.find(table => table.tableName === t.tableName);
       if (def) {
         def.columns.forEach(col => {
           defaultSelects.push(`${t.alias}.${col.colName} as ${t.alias}_${col.colName}`);
@@ -270,9 +277,9 @@ const SqlLogic = {
     const isSelectEdited = (selectClause.replace(/\s/g, '') !== defaultSelectClause.replace(/\s/g, ''));
 
     // Javaコード生成
-    const javaFiles = generateJavaSql(AppState.sql, AppState.parsedTables, selectClause, isSelectEdited);
+    const javaFiles = generateJavaSql(App.State.sql, App.State.parsedTables, selectClause, isSelectEdited);
     // TypeScriptコード生成
-    const tsFiles = generateTsSql(AppState.sql, AppState.parsedTables, selectClause, isSelectEdited);
+    const tsFiles = generateTsSql(App.State.sql, App.State.parsedTables, selectClause, isSelectEdited);
 
     // 結果をマージ
     const allFiles = [];
@@ -281,11 +288,11 @@ const SqlLogic = {
     const sqlContent = this.generateSql(selectClause);
     if (sqlContent && sqlContent.trim() !== '') {
       let baseName = "CustomQuery";
-      if (AppState.sql.selectedTables.length === 1) {
-        const t = AppState.parsedTables.find(table => table.tableName === AppState.sql.selectedTables[0].tableName);
+      if (App.State.sql.selectedTables.length === 1) {
+        const t = App.State.parsedTables.find(table => table.tableName === App.State.sql.selectedTables[0].tableName);
         if (t) baseName = toPascalCase(t.tableName);
-      } else if (AppState.sql.selectedTables.length > 0) {
-        const t = AppState.parsedTables.find(table => table.tableName === AppState.sql.selectedTables[0].tableName);
+      } else if (App.State.sql.selectedTables.length > 0) {
+        const t = App.State.parsedTables.find(table => table.tableName === App.State.sql.selectedTables[0].tableName);
         if (t) baseName = toPascalCase(t.tableName) + "Custom";
       }
       allFiles.push({ path: `sql/${baseName}.sql`, content: sqlContent });
@@ -299,3 +306,6 @@ const SqlLogic = {
     return allFiles;
   }
 };
+
+// Backward compat
+window.SqlLogic = App.Core.SqlLogic;
