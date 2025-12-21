@@ -263,9 +263,10 @@ const TablePreviewSection = {
           { data: 'idx4', type: 'text' },
           { data: 'idx5', type: 'text' }
         ],
+        fixedColumnsLeft: 1,
         rowHeaders: true,
         width: '100%',
-        height: 'auto',
+        height: '80vh', // ヘッダーを固定するために高さを指定
         licenseKey: 'non-commercial-and-evaluation',
         contextMenu: true,
         filters: true,
@@ -273,20 +274,12 @@ const TablePreviewSection = {
         autoWrapRow: true,
         autoWrapCol: true,
         manualRowMove: true,
-        manualColumnMove: true, // Allow reordering columns in grid? Maybe not necessary but standard features
-        minSpareRows: 1, // Always have an empty row at bottom for adding new columns/tables
+        manualColumnMove: true,
+        minSpareRows: 1,
         afterChange: (changes, source) => {
           if (source === 'loadData') return;
-          // Sync back to AppState
-          // Debounce could be good here if performance is an issue, but for now direct update
-          // However, be careful not to rebuild everything on every keystroke if it causes UI flicker
-          // Since we are in Edit Mode, the Preview UI (Cards) is hidden, so re-reactivity might be cheap.
-          
           const newData = hotInstance.getSourceData();
-          // Filter out empty rows (minSpareRows)
           const validRows = newData.filter(r => r.tableName && r.colName);
-          
-          // Rebuild AppState
           App.State.parsedTables.splice(0, App.State.parsedTables.length, ...reconstructTables(validRows));
         }
       });
@@ -357,13 +350,6 @@ const TablePreviewSection = {
              idx1: '1'
           }]
         });
-        
-        // If in edit mode, refresh the table? 
-        // Or user mainly adds via grid in edit mode.
-        // If they click "Add Table" button (which is hidden in edit mode now per plan strategy), this works.
-        // Wait, "Add Table" button location: 
-        // In the new plan, "Hide Sidebar and Card Layout" -> So "Add Table" button is also hidden.
-        // Users should just add rows in Handsontable.
       },
       removeTable: (index) => {
         if (confirm('このテーブルを削除しますか？')) {
@@ -429,7 +415,7 @@ const TablePreviewSection = {
 
       <!-- Edit Mode: Handsontable -->
       <div v-if="isEditMode">
-         <div id="hot-container" style="width: 100%; height: 80vh; overflow: hidden;"></div>
+         <div id="hot-container" style="width: 100%; height: 80vh; overflow: scroll;"></div>
          <small class="muted">※ 行を追加するには最下部の空行に入力してください。テーブル名が同じ行は同じテーブルとして扱われます。</small>
       </div>
 
