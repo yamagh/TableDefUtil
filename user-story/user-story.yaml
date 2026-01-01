@@ -1,0 +1,158 @@
+# User Story Format
+#
+# ## Attributes
+#
+# id: <int> required
+#   ユーザーストーリーの ID
+# 
+# title: <string> required
+#   ユーザーストーリーのタイトル
+# 
+# persona: <string> required
+#   ユーザーストーリーのPersona
+# 
+# goal: <string> required
+#   ユーザーストーリーの目標
+# 
+# reason: <string> required
+#   ユーザーストーリーの理由
+# 
+# acceptance_criteria: <list> required
+#   ユーザーストーリーの受け入れ条件のリスト。
+#   より厳密に記述したい場合は、以下のように Gherkin (Given-When-Then) 形式を用いる。
+# 
+# ```
+# acceptance_criteria:
+#   - scenario: "管理者がアクティブなユーザーを無効化する"
+#     given: "管理者としてログインしており、ユーザー'A'が有効な状態である"
+#     when: "ユーザー'A'の無効化ボタンをクリックする"
+#     then: "ユーザー'A'のステータスが'無効'になり、そのユーザーはログインできなくなる"
+# ```
+# 
+# status: <string> required
+#   ユーザーストーリーのステータス
+# 
+# tags: <list>
+#   ユーザーストーリーのタグ
+# 
+# notes: <string>
+#   ユーザーストーリーに関する追加情報
+# 
+# ## Example
+# 
+# ```
+# user_stories:
+#   - id: 1
+#     title: テーブル定義の読み込み機能
+#     persona: 開発者
+#     goal: テーブル定義ファイル（TSV, CSV, Json）またはプレインテキストを読み込める
+#     reason: 既存のテーブル定義を参照・編集やコード生成などするため
+#     acceptance_criteria: 
+#       - テーブル定義ファイル（TSV, CSV, Json）またはプレインテキストを読み込めること
+#       - 不正な内容の場合はエラーメッセージが表示されること
+#     status: Backlog
+#     tags: [""]
+#     notes: |
+#       tsv と csv のパースは mholt/PapaParse を使用する
+# ```
+#
+user_stories:
+  - id: 1
+    title: テーブル定義の読み込み機能
+    persona: 開発者
+    goal: テーブル定義ファイル（TSV, CSV, Json）またはプレインテキストを読み込める
+    reason: 既存のテーブル定義を参照・編集やコード生成などするため
+    acceptance_criteria: 
+      - テーブル定義ファイル（TSV, CSV, Json）またはプレインテキストを読み込めること
+      - 不正な内容の場合はエラーメッセージが表示されること
+    status: Backlog
+    tags: ["tsv", "csv", "json", "プレインテキスト"]
+    notes: |
+      tsv と csv のパースは mholt/PapaParse を使用する
+
+  - id: 2
+    title: テーブル定義の閲覧・検索
+    persona: 開発者
+    goal: 読み込んだテーブル定義を表形式で閲覧し、テーブル名での検索や表示カラムの制御ができる
+    reason: 目的のテーブルやカラム定義を素早く確認するため
+    acceptance_criteria:
+      - 読み込んだテーブル定義が一覧表示されること（物理名・論理名）
+      - キーワード入力によりテーブルをフィルタリングできること (物理名・論理名)
+      - 表示するカラム（型、長さ、インデックス等）の表示/非表示を切り替えられること
+      - 共通カラム（Created, Updated 等）を隠す機能があること
+    status: Backlog
+    tags: ["閲覧", "検索"]
+    notes: |
+      大量のテーブルがある場合でもIntersection Observer等を用いてスムーズに表示する
+
+  - id: 3
+    title: テーブル定義の編集・エクスポート
+    persona: 開発者
+    goal: スプレッドシートのような操作性でテーブル定義を編集し、TSV/JSON形式でダウンロードできる
+    reason: 定義の追加・修正を直感的かつ効率的に行い、永続化するため
+    acceptance_criteria:
+      - 編集モードに切り替えると、グリッド形式で編集が可能になること
+      - 行の追加・削除、コピー＆ペーストができること
+      - 編集結果をTSVまたはJSONファイルとしてダウンロードできること
+    status: Backlog
+    tags: ["編集", "エクスポート"]
+    notes: |
+      グリッド編集には Handsontable を使用する
+
+  - id: 4
+    title: アプリケーション雛形の生成
+    persona: 開発者
+    goal: 定義されたテーブルに基づき、DDLやアプリケーションコード（Java, TS, Zod等）を一括生成できる
+    reason: 開発の初期セットアップやモデルクラス作成の工数を削減し、記述ミスをなくすため
+    acceptance_criteria:
+      - 選択したフォーマット（DDL, Entity, TypeDef等）でコードが生成されること
+      - 複数ファイルをZIP形式でまとめてダウンロードできること
+      - RLS（Row Level Security）設定が有効な場合、対応したコードが含まれること
+    status: Backlog
+    tags: ["雛形", "生成"]
+    notes: |
+      ZIP圧縮には JSZip を使用する。
+      対応言語: Java (EBean), TypeScript, SQL, Play Framework Evolution
+
+  - id: 5
+    title: SQL構築・コード生成
+    persona: 開発者
+    goal: GUIでテーブルとカラムを選択してSQLを構築し、それを実行するコード（Java/TS）を生成できる
+    reason: 複雑なSQL記述の手間を省き、ボイラープレートコードを自動生成するため
+    acceptance_criteria:
+      - テーブル選択、JOIN (Inner/Left)、WHERE、ORDER BY、LIMIT/OFFSET をGUIで設定できること
+      - 設定に応じてリアルタイムに SELECT 文がプレビューされること
+      - 構築したSQLに対応する Java (EBean) および TypeScript のコードが生成されること
+      - コード一式をZIPダウンロードできること
+    status: Backlog
+    tags: ["SQL", "コード生成"]
+    notes: |
+      エイリアス管理や自動的なON句の生成をサポートする
+
+  - id: 6
+    title: アプリケーション設定
+    persona: 開発者
+    goal: アプリケーションの挙動やコード生成のルール（共通カラム、テーマ等）を設定・保存できる
+    reason: プロジェクト固有の要件や個人の作業環境に合わせるため
+    acceptance_criteria:
+      - 共通カラム（作成日時、更新日時、論理削除等）の名前や型を変更できること
+      - UIテーマ（Light/Dark/Auto）やフォントサイズを変更できること
+      - 設定内容を config.js 用のコードとしてクリップボードにコピーできること
+    status: Backlog
+    tags: ["設定"]
+    notes: |
+      設定ロジックは ConfigEditor コンポーネントに集約する
+
+  - id: 7
+    title: VS Code スニペット生成
+    persona: 開発者
+    goal: テーブル定義から VS Code 用のスニペットを生成できる
+    reason: コーディング時にテーブル名やカラム名を補完し、開発効率を向上させるため
+    acceptance_criteria:
+      - テーブル名（英語、日本語、英→日、日→英）のスニペットが生成されること
+      - カラム名（英語、日本語、英→日、日→英）のスニペットが生成されること
+      - スニペットファイル (.code-snippets) としてダウンロードできること
+    status: Done
+    tags: ["雛形", "スニペット", "VS Code"]
+    notes: |
+      生成する種類: Table Name (En, Jp, En->Jp, Jp->En), Column Name (En, Jp, En->Jp, Jp->En)
