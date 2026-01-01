@@ -97,6 +97,12 @@ App.Core.Zipper = {
             });
           }
           break;
+        case 'vscode-snippets':
+          output = App.Converters.VscodeSnippets.generateVscodeSnippets(tables);
+          if (Array.isArray(output)) {
+             output.forEach(f => zip.file(f.path, f.content));
+          }
+          break;
       }
     });
 

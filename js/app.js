@@ -142,6 +142,7 @@ const RootComponent = {
           case 'java-repo': results[format] = App.Converters.JavaRepo.generateJavaRepo(App.State.parsedTables, rls); break;
           case 'java-service': results[format] = App.Converters.JavaService.generateJavaService(App.State.parsedTables, rls); break;
           case 'java-controller': results[format] = App.Converters.JavaController.generateJavaController(App.State.parsedTables, rls); break;
+          case 'vscode-snippets': results[format] = App.Converters.VscodeSnippets.generateVscodeSnippets(App.State.parsedTables); break;
         }
       });
 

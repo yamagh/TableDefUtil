@@ -56,7 +56,8 @@ const OptionsSection = {
       { value: 'java-model', label: 'Java (EBean) model' },
       { value: 'java-repo', label: 'Java repository' },
       { value: 'java-service', label: 'Java service' },
-      { value: 'java-controller', label: 'Java controller' }
+      { value: 'java-controller', label: 'Java controller' },
+      { value: 'vscode-snippets', label: 'VS Code Snippets' }
     ];
 
     // RLS (Row-Level Security) オプション
