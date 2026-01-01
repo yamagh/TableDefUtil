@@ -192,11 +192,24 @@ const InputSection = {
     const handleFileChange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
+      
       reader.onload = (e) => {
         emit('data-loaded', e.target.result);
       };
-      reader.readAsText(file);
+      
+      reader.onerror = (e) => {
+        console.error('File read error:', e);
+        Toast.error('ファイルの読み込みに失敗しました。');
+      };
+
+      try {
+        reader.readAsText(file);
+      } catch (e) {
+        console.error('File read synch error:', e);
+        Toast.error('ファイルの読み込みに失敗しました。');
+      }
     };
 
     // テキストエリア入力時

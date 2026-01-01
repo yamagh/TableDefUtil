@@ -110,4 +110,5 @@ department	部署	created_at	作成日時		timestamp		NN	now()
 
 ## 注意事項
 
-- 本ツールは静的HTML+JSのため、Webサーバー上で動作させることが推奨されます(`python -m http.server` 等)。
+- 本ツールはWebサーバーを必要とせず使用できるポータビリティに大きな価値があります。そのため、静的HTML+JSで動作するように設定する必要があります。
+- Native ES Module には対応しない。
